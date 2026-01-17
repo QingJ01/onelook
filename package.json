@@ -1,0 +1,44 @@
+{
+  "name": "onelook",
+  "version": "0.1.0",
+  "description": "OneLook（一目）- 现代化开源思维导图工具",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "dependencies": {
+    "dexie": "^4.0.10",
+    "katex": "^0.16.27",
+    "lucide-vue-next": "^0.468.0",
+    "marked": "^17.0.1",
+    "pinia": "^2.3.0",
+    "uuid": "^11.0.4"
+  },
+  "devDependencies": {
+    "@types/katex": "^0.16.8",
+    "@types/marked": "^6.0.0",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.6.3",
+    "vite": "^6.0.5",
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.26",
+    "vue-tsc": "^2.2.0"
+  },
+  "keywords": [
+    "mindmap",
+    "思维导图",
+    "vue3",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT"
+}

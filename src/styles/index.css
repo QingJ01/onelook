@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* OneLook Global Styles */
+:root,
+[data-theme="light"] {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-border: #e5e7eb;
+  --color-text: #1f2937;
+  --color-text-secondary: #6b7280;
+  --color-node-root: #3b82f6;
+  --color-canvas-grid: rgba(0, 0, 0, 0.05);
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 暗色主题 */
+[data-theme="dark"] {
+  --color-primary: #60a5fa;
+  --color-primary-hover: #3b82f6;
+  --color-bg: #1e1e2e;
+  --color-bg-secondary: #2a2a3e;
+  --color-border: #3f3f5a;
+  --color-text: #e4e4ef;
+  --color-text-secondary: #9999b3;
+  --color-node-root: #60a5fa;
+  --color-canvas-grid: rgba(255, 255, 255, 0.03);
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* 清新主题 */
+[data-theme="fresh"] {
+  --color-primary: #10b981;
+  --color-primary-hover: #059669;
+  --color-bg: #f0fdf9;
+  --color-bg-secondary: #e6f7f3;
+  --color-border: #a7f3d0;
+  --color-text: #064e3b;
+  --color-text-secondary: #047857;
+  --color-node-root: #10b981;
+  --color-canvas-grid: rgba(16, 185, 129, 0.05);
+  --shadow-soft: 0 4px 12px rgba(16, 185, 129, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* 选中文字样式 */
+::selection {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: inherit;
+}

@@ -1,0 +1,35 @@
+/**
+ * 品牌色：#3B82F6 (Blue 500) -> #8B5CF6 (Purple 500)
+ */
+:root {
+    --vp-c-brand-1: #3B82F6;
+    --vp-c-brand-2: #6366f1;
+    --vp-c-brand-3: #8B5CF6;
+
+    --vp-home-hero-name-color: transparent;
+    --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #3B82F6 30%, #8B5CF6);
+
+    --vp-c-bg-alt: #f6f6f7;
+}
+
+.dark {
+    --vp-c-bg-alt: #161618;
+}
+
+/* Hero Image 静态效果 */
+.VPHero .image-src {
+    filter: drop-shadow(0 0 30px rgba(139, 92, 246, 0.3));
+}
+
+/* Feature 格子美化 */
+.VPFeature {
+    border-radius: 12px !important;
+    background-color: var(--vp-c-bg-soft) !important;
+    transition: all 0.25s !important;
+}
+
+.VPFeature:hover {
+    background-color: var(--vp-c-bg-alt) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}

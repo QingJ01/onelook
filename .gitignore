@@ -1,0 +1,12 @@
+.idea
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+dist/
+node_modules/
+_drafts/
+native-support/archive/src/tmp/
+native-support/archive/upload/
+ui/theme/default/css/*.css
+ui/theme/default/css/*.css.map
+lib/bower/
