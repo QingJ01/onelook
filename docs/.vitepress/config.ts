@@ -32,7 +32,8 @@ export default defineConfig({
                 text: '参考手册',
                 items: [
                     { text: '快捷键大全', link: '/guide/shortcuts' },
-                    { text: '常见问题', link: '/guide/faq' }
+                    { text: '常见问题', link: '/guide/faq' },
+                    { text: '更新日志', link: '/guide/changelog' }
                 ]
             }
         ],
