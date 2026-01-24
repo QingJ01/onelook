@@ -119,7 +119,13 @@
           </button>
         </div>
         <div v-if="node.data?.image" class="image-preview">
-          <img :src="node.data.image" @error="handleImageError" />
+          <img 
+            v-if="!imageLoadError"
+            :src="node.data.image" 
+            @error="handleImageError" 
+            @load="handleImageLoad"
+          />
+          <div v-else class="image-error">图片加载失败</div>
         </div>
       </div>
       
@@ -264,7 +270,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { X, ExternalLink, Type, RotateCcw } from 'lucide-vue-next'
 import { renderMarkdown } from '@/utils/markdown'
 import type { MindMapNode, NodeStyle } from '@/types'
@@ -282,6 +288,14 @@ const mapStore = useMapStore()
 
 // 备注预览状态
 const showNotePreview = ref(false)
+const imageLoadError = ref(false)
+
+watch(
+  () => props.node?.data?.image,
+  () => {
+    imageLoadError.value = false
+  }
+)
 
 // Markdown 预览 HTML
 const notePreviewHtml = computed(() => {
@@ -366,9 +380,12 @@ function clearImage() {
   }
 }
 
-function handleImageError(event: Event) {
-  const img = event.target as HTMLImageElement
-  img.style.display = 'none'
+function handleImageError() {
+  imageLoadError.value = true
+}
+
+function handleImageLoad() {
+  imageLoadError.value = false
 }
 
 function setIcon(icon: string | undefined) {
@@ -617,6 +634,13 @@ function handleSummaryTextChange(event: Event) {
   width: 100%;
   max-height: 120px;
   object-fit: cover;
+}
+
+.image-error {
+  padding: 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-secondary);
 }
 
 /* 图标选择器 */

@@ -144,6 +144,19 @@
     
     <!-- 快捷键帮助 -->
     <ShortcutsHelp ref="showShortcutsHelp" />
+    
+    <!-- Toast 通知 -->
+    <Transition name="toast">
+      <div v-if="showToast" class="toast" :class="toastType">
+        {{ toastMessage }}
+      </div>
+    </Transition>
+    
+    <!-- Loading 遮罩 -->
+    <div v-if="isExporting" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <span>正在导出...</span>
+    </div>
   </div>
 </template>
 
@@ -193,6 +206,19 @@ const showExportMenu = ref(false)
 const showSidePanel = ref(false)
 const showSettingsMenu = ref(false)
 const showOutlinePanel = ref(false)
+
+// Toast 提示
+const toastMessage = ref('')
+const toastType = ref<'success' | 'error' | 'info'>('info')
+const showToast = ref(false)
+const isExporting = ref(false)
+
+function showNotification(message: string, type: 'success' | 'error' | 'info' = 'info') {
+  toastMessage.value = message
+  toastType.value = type
+  showToast.value = true
+  setTimeout(() => showToast.value = false, 3000)
+}
 
 // 布局标签
 const layoutLabels: Record<string, string> = {
@@ -271,12 +297,21 @@ function handleExportMarkdown() {
   showExportMenu.value = false
 }
 
-function handleExportPNG() {
+async function handleExportPNG() {
   const svg = document.querySelector('.mindmap-canvas') as SVGSVGElement
-  if (svg) {
-    exportService.exportPNG(svg, mapStore.document.name)
-  }
+  if (!svg) return
+  
   showExportMenu.value = false
+  isExporting.value = true
+  try {
+    await exportService.exportPNG(svg, mapStore.document.name)
+    showNotification('PNG 导出成功', 'success')
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : '导出失败'
+    showNotification(msg, 'error')
+  } finally {
+    isExporting.value = false
+  }
 }
 
 function handleExportSVG() {
@@ -314,19 +349,14 @@ function handleImport() {
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '未知错误'
-      alert(`导入失败：${errorMessage}\n\n请确保文件格式正确。`)
+      showNotification(`导入失败：${errorMessage}`, 'error')
       console.error('导入错误:', err)
     }
   }
   input.click()
 }
 
-function handleTextChange(event: Event) {
-  const target = event.target as HTMLInputElement
-  if (mapStore.focusedId) {
-    mapStore.updateNodeText(mapStore.focusedId, target.value)
-  }
-}
+
 
 // 打开搜索
 function openSearch() {
@@ -651,5 +681,73 @@ onUnmounted(() => {
 .status-btn:hover {
   background: var(--color-bg-secondary);
   color: var(--color-text);
+}
+
+/* Toast 通知 */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toast.success {
+  background: #10b981;
+  color: white;
+}
+
+.toast.error {
+  background: #ef4444;
+  color: white;
+}
+
+.toast.info {
+  background: #3b82f6;
+  color: white;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
+
+/* Loading 遮罩 */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 9998;
+  color: white;
+  font-size: 14px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

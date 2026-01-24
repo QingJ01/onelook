@@ -42,7 +42,7 @@
 import { ref, computed, nextTick, onMounted, onUnmounted, markRaw, type Component } from 'vue'
 import { 
   Search, Plus, Trash2, Undo2, Redo2, Copy, Clipboard,
-  Download, Upload, FilePlus, Maximize, Moon, Sun,
+  Download, FilePlus, Maximize, Moon, Sun,
   CornerDownRight, ZoomIn, ZoomOut, GitBranch, Network
 } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'

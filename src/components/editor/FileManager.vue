@@ -295,7 +295,7 @@ function handleNameChange(event: Event) {
 }
 
 // 右键菜单
-function handleHeaderContextMenu(event: MouseEvent) {
+function handleHeaderContextMenu(_event: MouseEvent) {
   contextMenuDoc.value = null
   startRename({ id: currentDocId.value, name: mapStore.document.name } as MindMapDocument)
 }

@@ -362,6 +362,10 @@ export const useMapStore = defineStore('map', () => {
         if (!oldParent || !newParent) return false
 
         recordHistory()
+        // 清理自定义位置，避免移动后位置飘移
+        if (node.position) {
+            delete node.position
+        }
 
         // 从原父节点移除
         const oldIndex = oldParent.children.findIndex(c => c.id === nodeId)
@@ -394,6 +398,10 @@ export const useMapStore = defineStore('map', () => {
         if (currentIndex === -1 || currentIndex === newIndex) return false
 
         recordHistory()
+        // 重新排序时清理自定义位置，交由布局计算
+        if (node.position) {
+            delete node.position
+        }
 
         // 移除并插入到新位置
         parent.children.splice(currentIndex, 1)
@@ -407,7 +415,9 @@ export const useMapStore = defineStore('map', () => {
     function toggleExpand(nodeId: string) {
         const node = findNode(nodeId)
         if (node && node.children.length > 0) {
+            recordHistory()
             node.isExpanded = !node.isExpanded
+            document.value.updatedAt = Date.now()
         }
     }
 

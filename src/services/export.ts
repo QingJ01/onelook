@@ -26,45 +26,53 @@ export const exportService = {
      * 导出为 PNG（需要 Canvas）
      */
     async exportPNG(svgElement: SVGSVGElement, fileName: string): Promise<void> {
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return
+        return new Promise((resolve, reject) => {
+            const canvas = document.createElement('canvas')
+            const ctx = canvas.getContext('2d')
+            if (!ctx) {
+                reject(new Error('无法创建 Canvas 上下文'))
+                return
+            }
 
-        // 获取 SVG 尺寸
-        const bbox = svgElement.getBBox()
-        const padding = 60
-        const scale = 2 // 高分辨率
-        canvas.width = (bbox.width + padding * 2) * scale
-        canvas.height = (bbox.height + padding * 2) * scale
+            // 获取 SVG 尺寸
+            const bbox = svgElement.getBBox()
+            const padding = 60
+            const scale = 2 // 高分辨率
+            canvas.width = (bbox.width + padding * 2) * scale
+            canvas.height = (bbox.height + padding * 2) * scale
 
-        // 填充白色背景
-        ctx.fillStyle = 'white'
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
+            // 填充白色背景
+            ctx.fillStyle = 'white'
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-        // 准备导出专用的 SVG
-        const exportSvg = prepareExportSvg(svgElement, bbox, padding)
+            // 准备导出专用的 SVG
+            const exportSvg = prepareExportSvg(svgElement, bbox, padding)
 
-        // 转换为图片
-        const svgData = new XMLSerializer().serializeToString(exportSvg)
-        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
-        const url = URL.createObjectURL(svgBlob)
+            // 转换为图片
+            const svgData = new XMLSerializer().serializeToString(exportSvg)
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
+            const url = URL.createObjectURL(svgBlob)
 
-        const img = new Image()
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-            URL.revokeObjectURL(url)
+            const img = new Image()
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+                URL.revokeObjectURL(url)
 
-            canvas.toBlob((blob) => {
-                if (blob) {
-                    downloadBlob(blob, `${fileName}.png`)
-                }
-            }, 'image/png')
-        }
-        img.onerror = () => {
-            URL.revokeObjectURL(url)
-            console.error('PNG export failed')
-        }
-        img.src = url
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        downloadBlob(blob, `${fileName}.png`)
+                        resolve()
+                    } else {
+                        reject(new Error('导出 PNG 失败：无法生成图片'))
+                    }
+                }, 'image/png')
+            }
+            img.onerror = () => {
+                URL.revokeObjectURL(url)
+                reject(new Error('导出 PNG 失败：图片加载错误'))
+            }
+            img.src = url
+        })
     },
 
     /**
@@ -195,7 +203,12 @@ export const importService = {
      */
     async importJSON(file: File): Promise<MindMapDocument> {
         const text = await file.text()
-        return JSON.parse(text)
+        const data = JSON.parse(text)
+
+        // 验证文档结构
+        validateDocument(data)
+
+        return data as MindMapDocument
     },
 
     /**
@@ -218,8 +231,67 @@ export const importService = {
             throw new Error('无效的 OneLook 文件格式')
         }
 
+        // 验证文档结构
+        validateDocument(data.document)
+
         return data.document
     },
+}
+
+/**
+ * 验证文档结构
+ */
+function validateDocument(data: unknown): asserts data is MindMapDocument {
+    if (!data || typeof data !== 'object') {
+        throw new Error('文件内容不是有效的 JSON 对象')
+    }
+
+    const doc = data as Record<string, unknown>
+
+    // 验证必需字段
+    if (typeof doc.id !== 'string' || !doc.id) {
+        throw new Error('文档缺少有效的 id 字段')
+    }
+    if (typeof doc.name !== 'string') {
+        throw new Error('文档缺少有效的 name 字段')
+    }
+    if (!doc.root || typeof doc.root !== 'object') {
+        throw new Error('文档缺少有效的 root 节点')
+    }
+
+    // 验证根节点
+    validateNode(doc.root, 0)
+}
+
+/**
+ * 递归验证节点结构（限制深度防止栈溢出）
+ */
+function validateNode(node: unknown, depth: number): void {
+    const MAX_DEPTH = 100
+    if (depth > MAX_DEPTH) {
+        throw new Error(`节点嵌套层级超过最大限制 (${MAX_DEPTH})`)
+    }
+
+    if (!node || typeof node !== 'object') {
+        throw new Error('节点结构无效')
+    }
+
+    const n = node as Record<string, unknown>
+
+    if (typeof n.id !== 'string' || !n.id) {
+        throw new Error('节点缺少有效的 id')
+    }
+    if (typeof n.text !== 'string') {
+        throw new Error('节点缺少有效的 text')
+    }
+    if (!Array.isArray(n.children)) {
+        throw new Error('节点 children 必须是数组')
+    }
+
+    // 递归验证子节点
+    for (const child of n.children) {
+        validateNode(child, depth + 1)
+    }
 }
 
 /**

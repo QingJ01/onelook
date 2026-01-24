@@ -55,7 +55,7 @@ import { GitBranch, Network, Fish, Users } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'
 import type { LayoutType, ThemeType, ConnectionStyle } from '@/types'
 
-const props = defineProps<{
+defineProps<{
   isOpen: boolean
 }>()
 

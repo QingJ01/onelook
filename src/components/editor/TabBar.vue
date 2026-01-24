@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { X, Plus } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'
 import { documentService } from '@/services/db'
@@ -46,7 +46,7 @@ const activeTabId = ref<string>('')
 const mountedTime = Date.now()
 
 // 监听文档变化（包括初始加载和切换）
-watch(() => mapStore.document.id, (newId, oldId) => {
+watch(() => mapStore.document.id, (newId, _oldId) => {
   if (!newId) return
   
   // 首次初始化或文档切换
@@ -86,7 +86,7 @@ watch(() => mapStore.document.name, (newName) => {
   }
 })
 
-function selectTab(tabId: string) {
+async function selectTab(tabId: string) {
   if (tabId === activeTabId.value) return
   
   // 保存当前文档到当前标签
@@ -99,7 +99,24 @@ function selectTab(tabId: string) {
   const newTab = tabs.value.find(t => t.id === tabId)
   if (newTab) {
     activeTabId.value = tabId
-    mapStore.loadDocument(JSON.parse(JSON.stringify(newTab.document)))
+    let docToLoad = newTab.document
+    try {
+      const latest = await documentService.get(tabId)
+      if (latest) {
+        const latestUpdatedAt = latest.updatedAt || 0
+        const tabUpdatedAt = newTab.document?.updatedAt || 0
+        if (!newTab.document || latestUpdatedAt >= tabUpdatedAt) {
+          newTab.name = latest.name
+          newTab.document = JSON.parse(JSON.stringify(latest))
+          docToLoad = newTab.document
+        }
+      }
+    } catch (e) {
+      console.warn('Load tab document failed, fallback to cached snapshot.', e)
+    }
+    if (docToLoad && activeTabId.value === tabId) {
+      mapStore.loadDocument(JSON.parse(JSON.stringify(docToLoad)))
+    }
   }
 }
 
@@ -138,9 +155,19 @@ async function closeTab(tabId: string) {
     const tabIndex = tabs.value.findIndex(t => t.id === tabId)
     if (tabIndex === -1) return
     
-    // 保存要关闭的文档
+    // 保存要关闭的文档（避免缓存比数据库更新时丢失）
     const closingTab = tabs.value[tabIndex]
-    await documentService.save(JSON.parse(JSON.stringify(closingTab.document)))
+    if (tabId === activeTabId.value) {
+      closingTab.document = JSON.parse(JSON.stringify(mapStore.document))
+    }
+    if (closingTab.document) {
+      const latest = await documentService.get(tabId)
+      const latestUpdatedAt = latest?.updatedAt || 0
+      const tabUpdatedAt = closingTab.document.updatedAt || 0
+      if (!latest || tabUpdatedAt > latestUpdatedAt) {
+        await documentService.save(JSON.parse(JSON.stringify(closingTab.document)))
+      }
+    }
     
     // 移除标签
     tabs.value.splice(tabIndex, 1)

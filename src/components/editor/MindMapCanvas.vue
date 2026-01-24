@@ -119,7 +119,7 @@
             
             <!-- 展开/收起按钮 -->
             <g 
-              v-if="node.node.children.length > 0 && !node.node.isExpanded === false"
+              v-if="node.node.children.length > 0"
               class="expand-btn"
               :transform="`translate(${getExpandBtnX(node)}, 0)`"
               @click.stop="handleToggleExpand(node)"
@@ -174,7 +174,7 @@ import { useMapStore } from '@/stores/mapStore'
 import { MindMapLayout, generateConnectionPath, type LayoutNode } from '@/core/layout/mindLayout'
 import { TreeLayout, OrgLayout, FishboneLayout } from '@/core/layout/layouts'
 import { documentService } from '@/services/db'
-import { renderLatex, hasLatex } from '@/utils/latex'
+
 import { renderMarkdown } from '@/utils/markdown'
 import NodeEditor from './NodeEditor.vue'
 import ContextMenu from './ContextMenu.vue'
@@ -573,7 +573,10 @@ function handleSummaryClick(summary: SummaryData) {
 // 画布拖拽或框选
 function handleMouseDown(event: MouseEvent) {
   if (editingNodeId.value) return
-  if (event.target === svgRef.value) {
+  const target = event.target as Element
+  if (target?.closest('.node')) return
+  if (target?.closest('.summary')) return
+  if (svgRef.value) {
     const rect = svgRef.value?.getBoundingClientRect()
     if (!rect) return
     
@@ -655,8 +658,8 @@ function handleMouseMove(event: MouseEvent) {
           }
           
           const horizontalDist = Math.abs(node.x - mouseX)
-          const verticalDist = node.y - mouseY
-          const distance = Math.sqrt(Math.pow(horizontalDist, 2) + Math.pow(verticalDist, 2))
+          const verticalOffset = mouseY - node.y
+          const distance = Math.sqrt(Math.pow(horizontalDist, 2) + Math.pow(verticalOffset, 2))
           
           if (distance < minDistance && distance < 120) {
             minDistance = distance
@@ -666,10 +669,10 @@ function handleMouseMove(event: MouseEvent) {
             const nodeHalfHeight = node.height / 2
             if (horizontalDist < node.width / 2 + 30) {
               // 鼠标在节点水平范围内
-              if (verticalDist < -nodeHalfHeight * 0.6) {
+              if (verticalOffset < -nodeHalfHeight * 0.6) {
                 // 鼠标在节点上方 - 插入为上方兄弟
                 insertPosition = 'before'
-              } else if (verticalDist > nodeHalfHeight * 0.6) {
+              } else if (verticalOffset > nodeHalfHeight * 0.6) {
                 // 鼠标在节点下方 - 插入为下方兄弟
                 insertPosition = 'after'
               } else {
@@ -768,6 +771,9 @@ function handleWheel(event: WheelEvent) {
 function handleKeyDown(event: KeyboardEvent) {
   // 编辑模式下不处理
   if (editingNodeId.value) return
+  
+  // 输入法组合状态（如中文输入）不处理
+  if (event.isComposing) return
   
   // 如果焦点在输入框或文本域内，不拦截快捷键
   const activeElement = document.activeElement

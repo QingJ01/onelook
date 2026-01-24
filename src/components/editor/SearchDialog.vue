@@ -87,6 +87,10 @@ const results = ref<MindMapNode[]>([])
 const currentIndex = ref(0)
 const inputRef = ref<HTMLInputElement | null>(null)
 
+function escapeRegExp(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 // 搜索节点
 function handleSearch() {
   if (query.value.trim().length === 0) {
@@ -140,10 +144,12 @@ function selectResult(index: number) {
 // 替换当前
 function handleReplace() {
   if (results.value.length === 0 || !replaceText.value) return
+  if (!query.value) return
   
   const node = results.value[currentIndex.value]
   if (node) {
-    const newText = node.text.replace(new RegExp(query.value, 'gi'), replaceText.value)
+    const regex = new RegExp(escapeRegExp(query.value), 'gi')
+    const newText = node.text.replace(regex, replaceText.value)
     mapStore.updateNodeText(node.id, newText)
     
     // 重新搜索
@@ -154,8 +160,9 @@ function handleReplace() {
 // 替换全部
 function handleReplaceAll() {
   if (results.value.length === 0 || !replaceText.value) return
+  if (!query.value) return
   
-  const regex = new RegExp(query.value, 'gi')
+  const regex = new RegExp(escapeRegExp(query.value), 'gi')
   
   for (const node of results.value) {
     const newText = node.text.replace(regex, replaceText.value)

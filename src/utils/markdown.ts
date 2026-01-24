@@ -8,8 +8,25 @@ import { renderLatex } from './latex'
 const renderer = new marked.Renderer()
 const linkRenderer = renderer.link.bind(renderer)
 renderer.link = (tokens: any) => {
+    const href = tokens?.href || ''
+    if (/^javascript:/i.test(href) || /^data:/i.test(href)) {
+        return escapeHtml(tokens?.text || '')
+    }
     const html = linkRenderer(tokens)
     return html.replace(/^<a /, '<a target="_blank" rel="noopener noreferrer" ')
+}
+renderer.html = (token: any) => {
+    const raw = token?.raw ?? token?.text ?? ''
+    return escapeHtml(raw)
+}
+
+function escapeHtml(input: string): string {
+    return input
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
 }
 
 /**
