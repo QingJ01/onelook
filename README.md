@@ -55,16 +55,15 @@ src/
     └── markdown.ts # Markdown 渲染
 ```
 
-## 🗺️ Roadmap
+## 🗺️ Roadmap (V2)
 
-- [x] 基础思维导图功能
-- [x] Markdown & LaTeX 支持
-- [x] 多主题与自定义样式
-- [x] 本地持久化存储
-- [ ] 协同编辑 (WebRTC)
-- [ ] 插件系统
-- [ ] 移动端 App 适配
-- [ ] AI 辅助生成导图
+- [x] **Core**: 基础思维导图、多布局切换、Markdown & LaTeX 支持
+- [x] **UX**: 全键盘快捷键、多选/框选、自动居中、暗黑模式
+- [x] **Quality**: 导入数据验证、导出 Loading 提示、IME 兼容优化
+- [ ] **Pitch Mode**: 演说模式，一键变身演示文稿
+- [ ] **Import+**: XMind、OPML 等更多专业格式导入支持
+- [ ] **AI Assistant**: 接入 LLM，支持自然语言一键生成导图、节点扩写与总结
+- [ ] **PWA**: 深度支持离线使用与桌面安装
 
 ## 🤝 贡献指南
 

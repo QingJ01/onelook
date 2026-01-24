@@ -4,7 +4,7 @@ export default defineConfig({
     title: "OneLook",
     description: "极简、高效的现代化思维导图工具",
     lang: 'zh-CN',
-    base: '/',
+    base: '/docs/',
     head: [['link', { rel: 'icon', href: '/favicon.svg' }]],
 
     themeConfig: {
@@ -15,7 +15,7 @@ export default defineConfig({
             { text: '首页', link: '/' },
             { text: '指南', link: '/guide/' },
             { text: '快捷键', link: '/guide/shortcuts' },
-            { text: '开始使用', link: 'http://localhost:3000' }
+            { text: '进入应用', link: '/' }
         ],
 
         sidebar: [
@@ -38,7 +38,7 @@ export default defineConfig({
         ],
 
         socialLinks: [
-            { icon: 'github', link: 'https://github.com/your-repo/onelook' }
+            { icon: 'github', link: 'https://github.com/QingJ01/onelook' }
         ],
 
         footer: {

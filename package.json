@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "build:vercel": "pnpm run build && pnpm run docs:build && mkdir -p dist/docs && cp -rv docs/.vitepress/dist/* dist/docs/"
   },
   "dependencies": {
     "dexie": "^4.0.10",

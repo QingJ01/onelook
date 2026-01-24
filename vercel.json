@@ -1,0 +1,13 @@
+{
+    "version": 2,
+    "rewrites": [
+        {
+            "source": "/docs/(.*)",
+            "destination": "/docs/$1"
+        },
+        {
+            "source": "/((?!docs/).*)",
+            "destination": "/index.html"
+        }
+    ]
+}
