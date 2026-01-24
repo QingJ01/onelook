@@ -4,7 +4,7 @@ export default defineConfig({
     title: "OneLook",
     description: "极简、高效的现代化思维导图工具",
     lang: 'zh-CN',
-    base: '/docs/',
+    base: '/',
     head: [['link', { rel: 'icon', href: '/favicon.svg' }]],
 
     themeConfig: {

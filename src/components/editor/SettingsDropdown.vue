@@ -46,12 +46,53 @@
         </button>
       </div>
     </div>
+    
+    <div class="settings-divider"></div>
+    
+    <button class="about-btn" @click="showAbout = true">
+      <Info :size="16" />
+      <span>关于 OneLook</span>
+    </button>
   </div>
+  
+  <!-- 关于弹窗 -->
+  <Teleport to="body">
+    <div v-if="showAbout" class="about-overlay" @click.self="showAbout = false">
+      <div class="about-dialog">
+        <div class="about-header">
+          <img src="/logo.svg" alt="OneLook" class="about-logo" />
+          <h2>OneLook 一目</h2>
+          <span class="about-version">v0.1.0</span>
+        </div>
+        
+        <p class="about-tagline">一目了然，思维如流</p>
+        <p class="about-desc">极简、高效、现代化的 Web 端思维导图工具。数据完全本地存储，隐私无忧。</p>
+        
+        <div class="about-links">
+          <a href="https://github.com/QingJ01/onelook" target="_blank" rel="noopener noreferrer">
+            <Github :size="18" /> GitHub
+          </a>
+          <a href="https://docs-onelook.vercel.app" target="_blank" rel="noopener noreferrer">
+            <BookOpen :size="18" /> 使用手册
+          </a>
+        </div>
+        
+        <div class="about-footer">
+          <p>Released under the MIT License</p>
+          <p>© 2024-present OneLook</p>
+        </div>
+        
+        <button class="about-close" @click="showAbout = false">
+          <X :size="18" />
+        </button>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
-import { GitBranch, Network, Fish, Users } from 'lucide-vue-next'
+import { ref, computed, watch } from 'vue'
+import { GitBranch, Network, Fish, Users, Info, Github, BookOpen, X } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'
 import type { LayoutType, ThemeType, ConnectionStyle } from '@/types'
 
@@ -64,6 +105,7 @@ const emit = defineEmits<{
 }>()
 
 const mapStore = useMapStore()
+const showAbout = ref(false)
 
 const themes = [
   { value: 'light' as ThemeType, label: '亮色', color: '#ffffff' },
@@ -207,5 +249,151 @@ watch(() => mapStore.theme, (theme) => {
 .layout-btn.active {
   background: rgba(59, 130, 246, 0.1);
   color: var(--color-primary);
+}
+
+.settings-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 12px 0;
+}
+
+.about-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.about-btn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+}
+
+/* 关于弹窗 */
+.about-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.about-dialog {
+  position: relative;
+  background: var(--color-bg);
+  border-radius: 16px;
+  padding: 32px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+}
+
+.about-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.about-logo {
+  width: 64px;
+  height: 64px;
+}
+
+.about-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.about-version {
+  font-size: 12px;
+  padding: 2px 8px;
+  background: var(--color-bg-secondary);
+  border-radius: 4px;
+  color: var(--color-text-secondary);
+}
+
+.about-tagline {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-primary);
+  margin: 0 0 8px;
+}
+
+.about-desc {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.about-links {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.about-links a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--color-bg-secondary);
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  color: var(--color-text);
+  transition: all 0.15s ease;
+}
+
+.about-links a:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.about-footer {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.about-footer p {
+  margin: 4px 0;
+}
+
+.about-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.about-close:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
 }
 </style>

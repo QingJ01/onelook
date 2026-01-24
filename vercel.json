@@ -1,12 +1,9 @@
 {
     "version": 2,
+    "cleanUrls": true,
     "rewrites": [
         {
-            "source": "/docs/(.*)",
-            "destination": "/docs/$1"
-        },
-        {
-            "source": "/((?!docs/).*)",
+            "source": "/(.*)",
             "destination": "/index.html"
         }
     ]
