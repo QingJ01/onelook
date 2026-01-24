@@ -109,6 +109,14 @@ pnpm docs:dev
 # 访问 http://localhost:5173 (端口可能不同)
 ```
 
+## 💬 交流与反馈
+
+欢迎加入 OneLook 官方 QQ 交流群：**1081533635**
+
+[点击一键加入 QQ 群](http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=DSrAYoXsT_GwfKIyeb_X83s1ub3Q5NCg)
+
+<img src="docs/public/qun.jpg" width="200" alt="QQ 群二维码" />
+
 ## 📄 许可证
 
 本项目基于 [MIT License](./LICENSE) 开源。

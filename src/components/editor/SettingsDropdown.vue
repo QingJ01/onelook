@@ -79,7 +79,7 @@
         
         <div class="about-footer">
           <p>Released under the MIT License</p>
-          <p>© 2024-present OneLook</p>
+          <p>© 2026 OneLook</p>
         </div>
         
         <button class="about-close" @click="showAbout = false">

@@ -8,7 +8,7 @@
 - 哪怕您拔掉网线，OneLook 依然可以正常工作。
 
 ### Q: 导入 JSON 文件安全吗？
-**A:** 非常安全。OneLook 在导入时会进行严格的数据结构验证 (Schema Validation) 和嵌套深度检查，防止恶意构造的文件导致内存溢出或逻辑错误。
+**A:** 非常安全. OneLook 在导入时会进行严格的数据结构验证 (Schema Validation) 和嵌套深度检查，防止恶意构造的文件导致内存溢出或逻辑错误。
 
 ### Q: 如果我清除了浏览器缓存怎么办？
 清除浏览器缓存（特别是 "Cookies 和其他网站数据"）**会删除** OneLook 存储在本地的数据。
@@ -53,3 +53,15 @@ OneLook 的快捷键具有上下文感知能力：
 
 ### Q: 发现 Bug 或有建议？
 欢迎访问 [GitHub 仓库](https://github.com/QingJ01/onelook) 提交 Issue。
+
+### Q: 是否有交流群？
+欢迎加入 OneLook 官方 QQ 交流群：**1081533635**。
+
+[点击一键加入 QQ 群](http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=DSrAYoXsT_GwfKIyeb_X83s1ub3Q5NCg)
+
+如果您使用的是移动端，可以扫描下方二维码入群：
+
+![QQ 群二维码](/qun.jpg)
+
+> [!TIP]
+> 群内提供：快速功能反馈、使用技巧交流、最新版本资讯。
