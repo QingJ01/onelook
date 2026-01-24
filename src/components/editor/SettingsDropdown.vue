@@ -72,7 +72,7 @@
           <a href="https://github.com/QingJ01/onelook" target="_blank" rel="noopener noreferrer">
             <Github :size="18" /> GitHub
           </a>
-          <a href="https://docs-onelook.vercel.app" target="_blank" rel="noopener noreferrer">
+          <a href="https://onelookdocs.byebug.cn" target="_blank" rel="noopener noreferrer">
             <BookOpen :size="18" /> 使用手册
           </a>
         </div>

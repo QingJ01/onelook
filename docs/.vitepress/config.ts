@@ -15,7 +15,7 @@ export default defineConfig({
             { text: '首页', link: '/' },
             { text: '指南', link: '/guide/' },
             { text: '快捷键', link: '/guide/shortcuts' },
-            { text: '进入应用', link: '/' }
+            { text: '进入应用', link: 'https://onelook.byebug.cn/' }
         ],
 
         sidebar: [
