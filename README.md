@@ -14,6 +14,14 @@
 
 <br />
 
+<div align="center">
+  <a href="https://onelook.byebug.cn"><strong>🌐 在线体验</strong></a> &nbsp;•&nbsp;
+  <a href="https://onelookdocs.byebug.cn"><strong>📖 使用文档</strong></a> &nbsp;•&nbsp;
+  <a href="https://github.com/QingJ01/onelook"><strong>⭐ GitHub</strong></a>
+</div>
+
+<br />
+
 OneLook 是一款专注于**沉浸式创作**的思维导图应用。它摒弃了繁杂的 UI 干扰，结合了 Markdown 的流畅输入与 SVG 的高性能渲染，为您提供所见即所得的思考空间。数据完全存储于本地，隐私无忧。
 
 ## ✨ 核心特性
