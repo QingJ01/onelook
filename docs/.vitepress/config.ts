@@ -35,6 +35,14 @@ export default defineConfig({
                     { text: '常见问题', link: '/guide/faq' },
                     { text: '更新日志', link: '/guide/changelog' }
                 ]
+            },
+            {
+                text: '关于我们',
+                items: [
+                    { text: '关于', link: '/about/' },
+                    { text: '发展规划', link: '/about/roadmap' },
+                    { text: '友情链接', link: '/about/links' }
+                ]
             }
         ],
 
