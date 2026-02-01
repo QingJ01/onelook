@@ -70,6 +70,9 @@
         <button class="tool-btn" title="全屏" @click="toggleFullscreen">
           <Maximize :size="18" />
         </button>
+        <button class="tool-btn pitch-btn" title="演说模式" @click="showPitchMode = true">
+          <Presentation :size="18" />
+        </button>
         <div class="divider"></div>
         <button 
           class="tool-btn" 
@@ -157,6 +160,9 @@
       <div class="loading-spinner"></div>
       <span>正在导出...</span>
     </div>
+    
+    <!-- 演说模式 -->
+    <PitchMode :is-active="showPitchMode" @exit="showPitchMode = false" />
   </div>
 </template>
 
@@ -180,7 +186,8 @@ import {
   Upload,
   PanelRight,
   Keyboard,
-  List
+  List,
+  Presentation
 } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'
 import { exportService, importService } from '@/services/export'
@@ -193,6 +200,7 @@ import CommandPalette from '@/components/editor/CommandPalette.vue'
 import ShortcutsHelp from '@/components/editor/ShortcutsHelp.vue'
 import OutlinePanel from '@/components/editor/OutlinePanel.vue'
 import TabBar from '@/components/editor/TabBar.vue'
+import PitchMode from '@/components/editor/PitchMode.vue'
 
 const mapStore = useMapStore()
 
@@ -206,6 +214,7 @@ const showExportMenu = ref(false)
 const showSidePanel = ref(false)
 const showSettingsMenu = ref(false)
 const showOutlinePanel = ref(false)
+const showPitchMode = ref(false)
 
 // Toast 提示
 const toastMessage = ref('')

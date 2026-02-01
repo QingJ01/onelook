@@ -27,6 +27,39 @@ const DEFAULT_OPTIONS: LayoutOptions = {
     direction: 'right',
 }
 
+const TEXT_WIDTH_PATTERN = /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/
+const NODE_PADDING_X = 32
+const NODE_PADDING_Y = 20
+const MIN_NODE_WIDTH = 60
+const MAX_NODE_WIDTH = 300
+const MIN_NODE_HEIGHT = 36
+const LINE_HEIGHT_RATIO = 1.4
+
+function estimateTextWidth(text: string): number {
+    let width = 0
+    for (const char of text) {
+        width += TEXT_WIDTH_PATTERN.test(char) ? 14 : 8
+    }
+    return width
+}
+
+function getFontMetrics(node: MindMapNode) {
+    const fontSize = node.style?.fontSize || 14
+    const fontScale = fontSize / 14
+    return { fontSize, fontScale }
+}
+
+function estimateWrappedLineCount(text: string, contentWidth: number, fontScale: number): number {
+    if (!text) return 1
+    const lines = text.split('\n')
+    let total = 0
+    for (const line of lines) {
+        const lineWidth = estimateTextWidth(line) * fontScale
+        total += Math.max(1, Math.ceil(lineWidth / contentWidth))
+    }
+    return Math.max(1, total)
+}
+
 /**
  * 思维导图布局算法
  * 采用经典的分层树布局
@@ -84,39 +117,23 @@ export class MindMapLayout {
      * 计算节点高度（根据字号）
      */
     private calculateNodeHeight(node: MindMapNode): number {
-        const fontSize = node.style?.fontSize || 14
-        const padding = 20  // 上下内边距
-        const minHeight = 36
-        // 高度 = 字号 + 上下内边距
-        return Math.max(minHeight, fontSize + padding)
+        const { fontSize, fontScale } = getFontMetrics(node)
+        const iconWidth = node.data?.icon ? 24 : 0
+        const width = this.calculateNodeWidth(node)
+        const contentWidth = Math.max(1, width - NODE_PADDING_X - iconWidth)
+        const lineCount = estimateWrappedLineCount(node.text, contentWidth, fontScale)
+        const lineHeight = fontSize * LINE_HEIGHT_RATIO
+        return Math.max(MIN_NODE_HEIGHT, Math.ceil(lineHeight * lineCount + NODE_PADDING_Y))
     }
 
     /**
      * 计算节点宽度（根据文本长度）
      */
     private calculateNodeWidth(node: MindMapNode): number {
-        // 计算字符宽度：中文约16px，英文约8px
-        let textWidth = 0
-        for (const char of node.text) {
-            // 中文字符范围检测
-            if (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(char)) {
-                textWidth += 14  // 中文字符
-            } else {
-                textWidth += 8   // 英文/数字
-            }
-        }
-
-        // 如果有图标，增加图标宽度
+        const { fontScale } = getFontMetrics(node)
+        const textWidth = estimateTextWidth(node.text) * fontScale
         const iconWidth = node.data?.icon ? 24 : 0
-
-        // 如果有自定义字号，按比例调整
-        const fontScale = node.style?.fontSize ? node.style.fontSize / 14 : 1
-        textWidth = textWidth * fontScale
-
-        const padding = 32
-        const minWidth = 60
-        const maxWidth = 300  // 增大最大宽度
-        return Math.max(minWidth, Math.min(maxWidth, textWidth + padding + iconWidth))
+        return Math.max(MIN_NODE_WIDTH, Math.min(MAX_NODE_WIDTH, textWidth + NODE_PADDING_X + iconWidth))
     }
 
     /**

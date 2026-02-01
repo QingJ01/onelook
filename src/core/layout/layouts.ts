@@ -9,6 +9,39 @@ const DEFAULT_OPTIONS: LayoutOptions = {
     direction: 'right',
 }
 
+const TEXT_WIDTH_PATTERN = /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/
+const NODE_PADDING_X = 32
+const NODE_PADDING_Y = 20
+const MIN_NODE_WIDTH = 60
+const MAX_NODE_WIDTH = 300
+const MIN_NODE_HEIGHT = 36
+const LINE_HEIGHT_RATIO = 1.4
+
+function estimateTextWidth(text: string): number {
+    let width = 0
+    for (const char of text) {
+        width += TEXT_WIDTH_PATTERN.test(char) ? 14 : 8
+    }
+    return width
+}
+
+function getFontMetrics(node: MindMapNode) {
+    const fontSize = node.style?.fontSize || 14
+    const fontScale = fontSize / 14
+    return { fontSize, fontScale }
+}
+
+function estimateWrappedLineCount(text: string, contentWidth: number, fontScale: number): number {
+    if (!text) return 1
+    const lines = text.split('\n')
+    let total = 0
+    for (const line of lines) {
+        const lineWidth = estimateTextWidth(line) * fontScale
+        total += Math.max(1, Math.ceil(lineWidth / contentWidth))
+    }
+    return Math.max(1, total)
+}
+
 /**
  * 树形布局算法
  * 垂直方向展开，类似文件树
@@ -53,25 +86,20 @@ export class TreeLayout {
     }
 
     private calculateNodeHeight(node: MindMapNode): number {
-        const fontSize = node.style?.fontSize || 14
-        const padding = 20
-        return Math.max(36, fontSize + padding)
+        const { fontSize, fontScale } = getFontMetrics(node)
+        const iconWidth = node.data?.icon ? 24 : 0
+        const width = this.calculateNodeWidth(node)
+        const contentWidth = Math.max(1, width - NODE_PADDING_X - iconWidth)
+        const lineCount = estimateWrappedLineCount(node.text, contentWidth, fontScale)
+        const lineHeight = fontSize * LINE_HEIGHT_RATIO
+        return Math.max(MIN_NODE_HEIGHT, Math.ceil(lineHeight * lineCount + NODE_PADDING_Y))
     }
 
     private calculateNodeWidth(node: MindMapNode): number {
-        let textWidth = 0
-        for (const char of node.text) {
-            if (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(char)) {
-                textWidth += 14
-            } else {
-                textWidth += 8
-            }
-        }
+        const { fontScale } = getFontMetrics(node)
+        const textWidth = estimateTextWidth(node.text) * fontScale
         const iconWidth = node.data?.icon ? 24 : 0
-        const fontScale = node.style?.fontSize ? node.style.fontSize / 14 : 1
-        textWidth = textWidth * fontScale
-        const padding = 32
-        return Math.max(60, Math.min(300, textWidth + padding + iconWidth))
+        return Math.max(MIN_NODE_WIDTH, Math.min(MAX_NODE_WIDTH, textWidth + NODE_PADDING_X + iconWidth))
     }
 
     private calculateSubtreeWidth(node: LayoutNode): number {
@@ -162,25 +190,20 @@ export class OrgLayout {
     }
 
     private calculateNodeHeight(node: MindMapNode): number {
-        const fontSize = node.style?.fontSize || 14
-        const padding = 20
-        return Math.max(36, fontSize + padding)
+        const { fontSize, fontScale } = getFontMetrics(node)
+        const iconWidth = node.data?.icon ? 24 : 0
+        const width = this.calculateNodeWidth(node)
+        const contentWidth = Math.max(1, width - NODE_PADDING_X - iconWidth)
+        const lineCount = estimateWrappedLineCount(node.text, contentWidth, fontScale)
+        const lineHeight = fontSize * LINE_HEIGHT_RATIO
+        return Math.max(MIN_NODE_HEIGHT, Math.ceil(lineHeight * lineCount + NODE_PADDING_Y))
     }
 
     private calculateNodeWidth(node: MindMapNode): number {
-        let textWidth = 0
-        for (const char of node.text) {
-            if (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(char)) {
-                textWidth += 14
-            } else {
-                textWidth += 8
-            }
-        }
+        const { fontScale } = getFontMetrics(node)
+        const textWidth = estimateTextWidth(node.text) * fontScale
         const iconWidth = node.data?.icon ? 24 : 0
-        const fontScale = node.style?.fontSize ? node.style.fontSize / 14 : 1
-        textWidth = textWidth * fontScale
-        const padding = 32
-        return Math.max(60, Math.min(300, textWidth + padding + iconWidth))
+        return Math.max(MIN_NODE_WIDTH, Math.min(MAX_NODE_WIDTH, textWidth + NODE_PADDING_X + iconWidth))
     }
 
     private calculateSubtreeWidth(node: LayoutNode): number {
@@ -270,25 +293,20 @@ export class FishboneLayout {
     }
 
     private calculateNodeHeight(node: MindMapNode): number {
-        const fontSize = node.style?.fontSize || 14
-        const padding = 20
-        return Math.max(36, fontSize + padding)
+        const { fontSize, fontScale } = getFontMetrics(node)
+        const iconWidth = node.data?.icon ? 24 : 0
+        const width = this.calculateNodeWidth(node)
+        const contentWidth = Math.max(1, width - NODE_PADDING_X - iconWidth)
+        const lineCount = estimateWrappedLineCount(node.text, contentWidth, fontScale)
+        const lineHeight = fontSize * LINE_HEIGHT_RATIO
+        return Math.max(MIN_NODE_HEIGHT, Math.ceil(lineHeight * lineCount + NODE_PADDING_Y))
     }
 
     private calculateNodeWidth(node: MindMapNode): number {
-        let textWidth = 0
-        for (const char of node.text) {
-            if (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(char)) {
-                textWidth += 14
-            } else {
-                textWidth += 8
-            }
-        }
+        const { fontScale } = getFontMetrics(node)
+        const textWidth = estimateTextWidth(node.text) * fontScale
         const iconWidth = node.data?.icon ? 24 : 0
-        const fontScale = node.style?.fontSize ? node.style.fontSize / 14 : 1
-        textWidth = textWidth * fontScale
-        const padding = 32
-        return Math.max(60, Math.min(300, textWidth + padding + iconWidth))
+        return Math.max(MIN_NODE_WIDTH, Math.min(MAX_NODE_WIDTH, textWidth + NODE_PADDING_X + iconWidth))
     }
 
     private assignPositions(node: LayoutNode): void {
