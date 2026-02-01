@@ -56,11 +56,18 @@
             <Download :size="18" />
           </button>
           <div v-if="showExportMenu" class="dropdown-menu">
+            <div class="menu-section-title">OneLook 格式</div>
             <button @click="handleExportOLook">导出 OneLook (.olook)</button>
+            <div class="menu-section-title">通用格式</div>
             <button @click="handleExportJSON">导出 JSON</button>
             <button @click="handleExportMarkdown">导出 Markdown</button>
+            <div class="menu-section-title">图片格式</div>
             <button @click="handleExportPNG">导出 PNG</button>
             <button @click="handleExportSVG">导出 SVG</button>
+            <div class="menu-section-title">第三方格式</div>
+            <button @click="handleExportXMind">导出 XMind (.xmind)</button>
+            <button @click="handleExportFreeMind">导出 FreeMind (.mm)</button>
+            <button @click="handleExportOPML">导出 OPML (.opml)</button>
           </div>
         </div>
         <div class="divider"></div>
@@ -336,26 +343,52 @@ function handleExportOLook() {
   showExportMenu.value = false
 }
 
+async function handleExportXMind() {
+  try {
+    await exportService.exportXMind(mapStore.document)
+    showNotification('已导出为 XMind 格式', 'success')
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : '未知错误'
+    showNotification(`导出失败：${errorMessage}`, 'error')
+  }
+  showExportMenu.value = false
+}
+
+async function handleExportFreeMind() {
+  try {
+    await exportService.exportFreeMind(mapStore.document)
+    showNotification('已导出为 FreeMind 格式', 'success')
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : '未知错误'
+    showNotification(`导出失败：${errorMessage}`, 'error')
+  }
+  showExportMenu.value = false
+}
+
+async function handleExportOPML() {
+  try {
+    await exportService.exportOPML(mapStore.document)
+    showNotification('已导出为 OPML 格式', 'success')
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : '未知错误'
+    showNotification(`导出失败：${errorMessage}`, 'error')
+  }
+  showExportMenu.value = false
+}
+
 function handleImport() {
   const input = document.createElement('input')
   input.type = 'file'
-  input.accept = '.json,.md,.olook'
+  input.accept = '.json,.md,.olook,.xmind,.mm,.opml'
   input.onchange = async (e) => {
     const file = (e.target as HTMLInputElement).files?.[0]
     if (!file) return
-    
+
     try {
-      if (file.name.endsWith('.olook')) {
-        const doc = await importService.importOLook(file)
-        mapStore.loadDocument(doc)
-      } else if (file.name.endsWith('.json')) {
-        const doc = await importService.importJSON(file)
-        mapStore.loadDocument(doc)
-      } else if (file.name.endsWith('.md')) {
-        const root = await importService.importMarkdown(file)
-        mapStore.document.root = root
-        mapStore.document.name = file.name.replace('.md', '')
-      }
+      // 使用自动导入方法，根据文件扩展名选择合适的导入器
+      const doc = await importService.importAuto(file)
+      mapStore.loadDocument(doc)
+      showNotification(`成功导入: ${doc.name}`, 'success')
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '未知错误'
       showNotification(`导入失败：${errorMessage}`, 'error')
@@ -666,6 +699,21 @@ onUnmounted(() => {
 
 .dropdown-menu button:hover {
   background: var(--color-bg-secondary);
+}
+
+.menu-section-title {
+  padding: 6px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.menu-section-title:not(:first-child) {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
 }
 
 /* 设置菜单 */

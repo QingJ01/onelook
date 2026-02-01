@@ -1,4 +1,7 @@
 import type { MindMapDocument, MindMapNode } from '@/types'
+import { xmindConverter } from './converters/xmind'
+import { freemindConverter } from './converters/freemind'
+import { opmlConverter } from './converters/opml'
 
 /**
  * 导出服务
@@ -106,6 +109,30 @@ export const exportService = {
         const json = JSON.stringify(oneLookFile, null, 2)
         const blob = new Blob([json], { type: 'application/json' })
         downloadBlob(blob, `${doc.name}.olook`)
+    },
+
+    /**
+     * 导出为 XMind 格式 (.xmind)
+     */
+    async exportXMind(doc: MindMapDocument): Promise<void> {
+        const blob = await xmindConverter.export(doc)
+        downloadBlob(blob, `${doc.name}.xmind`)
+    },
+
+    /**
+     * 导出为 FreeMind 格式 (.mm)
+     */
+    async exportFreeMind(doc: MindMapDocument): Promise<void> {
+        const blob = await freemindConverter.export(doc)
+        downloadBlob(blob, `${doc.name}.mm`)
+    },
+
+    /**
+     * 导出为 OPML 格式 (.opml)
+     */
+    async exportOPML(doc: MindMapDocument): Promise<void> {
+        const blob = await opmlConverter.export(doc)
+        downloadBlob(blob, `${doc.name}.opml`)
     },
 }
 
@@ -235,6 +262,63 @@ export const importService = {
         validateDocument(data.document)
 
         return data.document
+    },
+
+    /**
+     * 从 XMind 格式导入 (.xmind)
+     */
+    async importXMind(file: File): Promise<MindMapDocument> {
+        return await xmindConverter.import(file)
+    },
+
+    /**
+     * 从 FreeMind 格式导入 (.mm)
+     */
+    async importFreeMind(file: File): Promise<MindMapDocument> {
+        return await freemindConverter.import(file)
+    },
+
+    /**
+     * 从 OPML 格式导入 (.opml)
+     */
+    async importOPML(file: File): Promise<MindMapDocument> {
+        return await opmlConverter.import(file)
+    },
+
+    /**
+     * 根据文件扩展名自动选择导入方法
+     */
+    async importAuto(file: File): Promise<MindMapDocument> {
+        const ext = file.name.toLowerCase().split('.').pop()
+
+        switch (ext) {
+            case 'xmind':
+                return await this.importXMind(file)
+            case 'mm':
+                return await this.importFreeMind(file)
+            case 'opml':
+                return await this.importOPML(file)
+            case 'olook':
+                return await this.importOLook(file)
+            case 'json':
+                return await this.importJSON(file)
+            case 'md':
+            case 'markdown': {
+                const root = await this.importMarkdown(file)
+                return {
+                    id: crypto.randomUUID(),
+                    name: file.name.replace(/\.(md|markdown)$/i, ''),
+                    root,
+                    layout: 'mind',
+                    theme: 'light',
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    version: '0.1.0'
+                }
+            }
+            default:
+                throw new Error(`不支持的文件格式: .${ext}`)
+        }
     },
 }
 

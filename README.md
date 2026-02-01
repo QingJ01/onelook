@@ -33,6 +33,7 @@ OneLook 是一款专注于**沉浸式创作**的思维导图应用。它摒弃�
 - 🚀 **无限画布**：基于 D3.js 的智能布局算法，支持无限缩放、拖拽与平滑自动居中。
 - ⚡ **高效交互**：全键盘快捷键驱动，支持多选 (Ctrl+Click)、框选 (Shift+Drag) 与批量操作。
 - 📂 **本地优先**：基于 IndexedDB 的本地持久化存储，无需联网；支持多标签页管理。
+- 🔄 **格式兼容**：支持 XMind (.xmind)、FreeMind (.mm)、OPML (.opml) 等主流格式导入导出。
 - 📤 **多格式导出**：支持导出为高清 PNG、矢量 SVG、Markdown 列表及专属 `.olook` 格式。
 
 
@@ -57,7 +58,10 @@ src/
 ├── composables/    # 组合式函数 (useHistory, useSelection...)
 ├── core/           # 核心逻辑
 │   └── layout/     # 布局算法 (MindLayouter)
-├── services/       # 服务层 (Dexie DB, Export)
+├── services/       # 服务层
+│   ├── converters/ # 格式转换器 (XMind, FreeMind, OPML)
+│   ├── db.ts       # IndexedDB 数据库
+│   └── export.ts   # 导入导出服务
 ├── stores/         # Pinia 状态仓库 (mapStore)
 ├── types/          # TS 类型定义
 └── utils/          # 工具函数
@@ -72,7 +76,7 @@ src/
 - [x] **Quality**: 导入数据验证、导出 Loading 提示、IME 兼容优化
 - [x] **彩虹分支**: 一键开启，主分支自动着色
 - [x] **Pitch Mode**: 演说模式，智能运镜、视觉聚焦、激光笔
-- [ ] **Import+**: XMind、OPML 等更多专业格式导入支持
+- [x] **Import+**: XMind、FreeMind、OPML 等专业格式导入导出支持
 - [ ] **AI Assistant**: 接入 LLM，支持自然语言一键生成导图、节点扩写与总结
 - [ ] **PWA**: 深度支持离线使用与桌面安装
 

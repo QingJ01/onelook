@@ -1,6 +1,6 @@
 {
   "name": "onelook",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "OneLook（一目）- 现代化开源思维导图工具",
   "type": "module",
   "scripts": {
@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "dexie": "^4.0.10",
+    "jszip": "^3.10.1",
     "katex": "^0.16.27",
     "lucide-vue-next": "^0.468.0",
     "marked": "^17.0.1",
