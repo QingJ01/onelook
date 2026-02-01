@@ -73,7 +73,7 @@
         <div class="about-header">
           <img src="/logo.svg" alt="OneLook" class="about-logo" />
           <h2>OneLook 一目</h2>
-          <span class="about-version">v0.1.0</span>
+          <span class="about-version">v0.2.0</span>
         </div>
         
         <p class="about-tagline">一目了然，思维如流</p>
