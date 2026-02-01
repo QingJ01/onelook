@@ -47,6 +47,17 @@
       </div>
     </div>
     
+    <div class="settings-section">
+      <label class="switch-row">
+        <span>彩虹分支</span>
+        <input 
+          type="checkbox" 
+          :checked="rainbowBranch" 
+          @change="toggleRainbowBranch"
+        />
+      </label>
+    </div>
+    
     <div class="settings-divider"></div>
     
     <button class="about-btn" @click="showAbout = true">
@@ -142,6 +153,13 @@ function setLayout(layout: LayoutType) {
 
 function setConnectionStyle(style: ConnectionStyle) {
   mapStore.document.connectionStyle = style
+  mapStore.document.updatedAt = Date.now()
+}
+
+const rainbowBranch = computed(() => mapStore.document.rainbowBranch ?? false)
+
+function toggleRainbowBranch() {
+  mapStore.document.rainbowBranch = !mapStore.document.rainbowBranch
   mapStore.document.updatedAt = Date.now()
 }
 
@@ -249,6 +267,47 @@ watch(() => mapStore.theme, (theme) => {
 .layout-btn.active {
   background: rgba(59, 130, 246, 0.1);
   color: var(--color-primary);
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.switch-row input[type="checkbox"] {
+  width: 36px;
+  height: 20px;
+  appearance: none;
+  background: var(--color-bg-secondary);
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.switch-row input[type="checkbox"]::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.switch-row input[type="checkbox"]:checked {
+  background: var(--color-primary);
+}
+
+.switch-row input[type="checkbox"]:checked::before {
+  transform: translateX(16px);
 }
 
 .settings-divider {

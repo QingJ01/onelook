@@ -71,6 +71,7 @@ export interface MindMapDocument {
     layout: LayoutType
     theme: ThemeType
     connectionStyle?: ConnectionStyle  // 连线样式
+    rainbowBranch?: boolean  // 彩虹分支
     createdAt: number
     updatedAt: number
     version: string

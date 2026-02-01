@@ -22,6 +22,7 @@
             v-for="conn in connections"
             :key="conn.id"
             :d="conn.path"
+            :stroke="conn.color"
             class="connection"
           />
         </g>
@@ -283,13 +284,35 @@ const editingNode = computed(() => {
   return layoutNodes.value.find(n => n.id === editingNodeId.value)
 })
 
-// 连接线数据
+// 彩虹色板
+const RAINBOW_COLORS = [
+  '#3b82f6', // 蓝
+  '#10b981', // 绿
+  '#f59e0b', // 橙
+  '#ef4444', // 红
+  '#8b5cf6', // 紫
+  '#ec4899', // 粉
+  '#06b6d4', // 青
+]
+
+// 连接线数据 + 节点分支颜色映射
+const nodeBranchColors = ref<Map<string, string>>(new Map())
+
 const connections = computed(() => {
-  const result: { id: string; path: string }[] = []
+  const result: { id: string; path: string; color: string }[] = []
+  const colorMap = new Map<string, string>()
   const connectionStyle = mapStore.document.connectionStyle || 'curve'
+  const useRainbow = mapStore.document.rainbowBranch ?? false
+  const defaultColor = 'var(--color-border)'
   
-  const traverse = (node: LayoutNode) => {
-    for (const child of node.children) {
+  const traverse = (node: LayoutNode, branchColor: string) => {
+    for (let i = 0; i < node.children.length; i++) {
+      const child = node.children[i]
+      // 一级子节点时分配彩虹色，深层节点继承
+      const color = useRainbow
+        ? (!node.node.parentId ? RAINBOW_COLORS[i % RAINBOW_COLORS.length] : branchColor)
+        : defaultColor
+      colorMap.set(child.id, color)
       result.push({
         id: `${node.id}-${child.id}`,
         path: generateConnectionPath(
@@ -297,15 +320,17 @@ const connections = computed(() => {
           { x: child.x, y: child.y, width: child.width },
           connectionStyle
         ),
+        color,
       })
-      traverse(child)
+      traverse(child, color)
     }
   }
   
   if (layoutRoot.value) {
-    traverse(layoutRoot.value)
+    traverse(layoutRoot.value, RAINBOW_COLORS[0])
   }
   
+  nodeBranchColors.value = colorMap
   return result
 })
 
@@ -491,8 +516,11 @@ function getNodeStyle(node: LayoutNode): Record<string, string> {
   if (node.node.style?.background) {
     style.fill = node.node.style.background
   }
+  // 优先使用用户自定义边框色，其次使用彩虹分支色
   if (node.node.style?.borderColor) {
     style.stroke = node.node.style.borderColor
+  } else if (mapStore.document.rainbowBranch && nodeBranchColors.value.has(node.id)) {
+    style.stroke = nodeBranchColors.value.get(node.id)!
   }
   return style
 }
@@ -971,7 +999,6 @@ onUnmounted(() => {
 /* 连接线 */
 .connection {
   fill: none;
-  stroke: var(--color-border);
   stroke-width: 2;
   stroke-linecap: round;
 }
