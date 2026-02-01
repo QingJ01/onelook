@@ -9,7 +9,7 @@
 | [VitePress](https://vitepress.dev/) | Vue 驱动的静态站点生成器 |
 | [Pinia](https://pinia.vuejs.org/) | Vue 状态管理库 |
 
-## � 友链
+## 友链
 
 | 名称 | 描述 |
 |------|------|
@@ -18,5 +18,5 @@
 ---
 
 ::: tip 交换友链
-如果您想与 OneLook 交换友链，欢迎在 [GitHub](https://github.com/QingJ01/onelook) 提交 Issue 或 PR。
+如果您想与 OneLook 交换友链，欢迎在 [GitHub](https://github.com/QingJ01/onelook) 提交 Issue
 :::
