@@ -1,6 +1,6 @@
 {
   "name": "onelook",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "OneLook（一目）- 现代化开源思维导图工具",
   "type": "module",
   "scripts": {
