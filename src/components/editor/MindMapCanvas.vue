@@ -92,7 +92,7 @@
             
             <!-- Markdown/LaTeX 渲染内容 -->
             <foreignObject
-              v-if="hasMarkdownFormat(node.node.text) && editingNodeId !== node.id"
+              v-if="shouldRenderRichContent(node) && editingNodeId !== node.id"
               :x="-node.width / 2"
               :y="-node.height / 2"
               :width="node.width"
@@ -101,9 +101,29 @@
               <div
                 xmlns="http://www.w3.org/1999/xhtml"
                 class="md-content"
-                :style="getTextStyle(node)"
-                v-html="getRenderedMarkdown(node.node.text)"
-              ></div>
+                :class="{ 'md-content-image': hasNodePhoto(node) || hasMarkdownImage(node.node.text) }"
+                :style="getRichContentStyle(node)"
+              >
+                <img
+                  v-if="hasNodePhoto(node)"
+                  :src="node.node.data?.image"
+                  :style="getNodeImageStyle(node)"
+                  class="node-data-image"
+                  alt="node image"
+                />
+                <div
+                  v-if="hasMarkdownFormat(node.node.text)"
+                  class="node-rich-text-body"
+                  :class="{ 'with-image': hasNodePhoto(node) }"
+                  v-html="getRenderedMarkdown(node.node.text)"
+                ></div>
+                <div
+                  v-else-if="hasNodePhoto(node) && hasNodeText(node)"
+                  class="node-rich-text-body with-image node-photo-text"
+                >
+                  {{ node.node.text }}
+                </div>
+              </div>
             </foreignObject>
             
             <!-- 纯文本 -->
@@ -127,7 +147,7 @@
             >
               <circle r="10" class="expand-btn-bg"/>
               <text text-anchor="middle" dominant-baseline="middle" class="expand-btn-text">
-                {{ node.node.isExpanded ? '−' : '+' }}
+                {{ node.node.isExpanded ? '-' : '+' }}
               </text>
             </g>
           </g>
@@ -177,6 +197,7 @@ import { TreeLayout, OrgLayout, FishboneLayout } from '@/core/layout/layouts'
 import { documentService } from '@/services/db'
 
 import { renderMarkdown } from '@/utils/markdown'
+import { estimateNodeImageHeight, getNodeContentSpacing, hasMarkdownImage, normalizeNodeImageWidth } from '@/utils/nodeContentMetrics'
 import NodeEditor from './NodeEditor.vue'
 import ContextMenu from './ContextMenu.vue'
 
@@ -286,13 +307,13 @@ const editingNode = computed(() => {
 
 // 彩虹色板
 const RAINBOW_COLORS = [
-  '#3b82f6', // 蓝
-  '#10b981', // 绿
-  '#f59e0b', // 橙
-  '#ef4444', // 红
-  '#8b5cf6', // 紫
-  '#ec4899', // 粉
-  '#06b6d4', // 青
+  '#3b82f6', // 钃?
+  '#10b981', // 缁?
+  '#f59e0b', // 姗?
+  '#ef4444', // 绾?
+  '#8b5cf6', // 绱?
+  '#ec4899', // 绮?
+  '#06b6d4', // 闈?
 ]
 
 // 连接线数据 + 节点分支颜色映射
@@ -482,18 +503,35 @@ function handleNodeContextMenu(node: LayoutNode, event: MouseEvent) {
 // 图标映射
 // 图标映射
 const iconEmojiMap: Record<string, string> = {
-  // 进度/状态
-  'priority-1': '🔴', 'priority-2': '🟠', 'priority-3': '🟡',
-  check: '✅', cross: '❌', warning: '⚠️',
-  
-  // 标记
-  star: '⭐', flag: '🚩', fire: '🔥', idea: '💡',
-  question: '❓', heart: '❤️',
+  // progress / status
+  'priority-1': '🔴',
+  'priority-2': '🟠',
+  'priority-3': '🟡',
+  check: '✅',
+  cross: '❌',
+  warning: '⚠️',
 
-  // 办公/其它
-  calendar: '📅', time: '⏰', person: '👤', group: '👥',
-  link: '🔗', attach: '📎', chart: '📊', money: '💰',
-  search: '🔍', lock: '🔒', tool: '🛠️', bug: '🐛',
+  // marks
+  star: '⭐',
+  flag: '🚩',
+  fire: '🔥',
+  idea: '💡',
+  question: '❓',
+  heart: '❤️',
+
+  // office / others
+  calendar: '📅',
+  time: '⏰',
+  person: '👤',
+  group: '👥',
+  link: '🔗',
+  attach: '📎',
+  chart: '📊',
+  money: '💰',
+  search: '🔍',
+  lock: '🔒',
+  tool: '🛠️',
+  bug: '🐛',
 }
 
 function getIconEmoji(icon: string): string {
@@ -529,6 +567,7 @@ function getTextStyle(node: LayoutNode): Record<string, string> {
   const style: Record<string, string> = {}
   if (node.node.style?.color) {
     style.fill = node.node.style.color
+    style.color = node.node.style.color
   }
   if (node.node.style?.fontSize) {
     style.fontSize = `${node.node.style.fontSize}px`
@@ -536,6 +575,15 @@ function getTextStyle(node: LayoutNode): Record<string, string> {
   if (node.node.style?.fontWeight === 'bold') {
     style.fontWeight = 'bold'
   }
+  return style
+}
+
+function getRichContentStyle(node: LayoutNode): Record<string, string> {
+  const style = getTextStyle(node)
+  const { paddingX, paddingY, imageTextGap } = getNodeContentSpacing(node.node.style?.fontSize)
+  style['--node-content-pad-x'] = `${paddingX}px`
+  style['--node-content-pad-y'] = `${paddingY}px`
+  style['--node-content-gap'] = `${imageTextGap}px`
   return style
 }
 
@@ -547,6 +595,29 @@ function hasMarkdownFormat(text: string): boolean {
 }
 
 // 渲染 Markdown + LaTeX
+function hasNodePhoto(node: LayoutNode): boolean {
+  const image = node.node.data?.image
+  return typeof image === 'string' && image.trim().length > 0
+}
+
+function hasNodeText(node: LayoutNode): boolean {
+  return typeof node.node.text === 'string' && node.node.text.trim().length > 0
+}
+
+function getNodeImageStyle(node: LayoutNode): Record<string, string> {
+  const imageWidth = normalizeNodeImageWidth(node.node.data?.imageWidth)
+  const imageHeight = estimateNodeImageHeight(imageWidth, node.node.data?.imageAspectRatio)
+  return {
+    width: `${imageWidth}px`,
+    maxWidth: '100%',
+    maxHeight: `${imageHeight}px`,
+  }
+}
+
+function shouldRenderRichContent(node: LayoutNode): boolean {
+  return hasMarkdownFormat(node.node.text) || hasNodePhoto(node)
+}
+
 function getRenderedMarkdown(text: string): string {
   return renderMarkdown(text)
 }
@@ -1048,17 +1119,31 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: var(--node-content-gap, 8px);
   text-align: center;
-  padding: 4px 8px;
+  padding: var(--node-content-pad-y, 8px) var(--node-content-pad-x, 12px);
   box-sizing: border-box;
   font-family: 'Inter', system-ui, sans-serif;
   overflow: hidden;
   font-size: 13px;
   line-height: 1.4;
+  color: var(--color-text);
+}
+
+.md-content.md-content-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .md-content p {
   margin: 0;
+}
+
+.md-content.md-content-image p {
+  margin-bottom: 0;
 }
 
 .md-content strong {
@@ -1086,6 +1171,42 @@ onUnmounted(() => {
   text-decoration: underline;
 }
 
+.node-data-image {
+  display: block;
+  max-width: 100%;
+  max-height: 180px;
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.node-rich-text-body.with-image {
+  margin: 0;
+  color: inherit;
+}
+
+.node-photo-text {
+  margin-top: 0;
+  text-align: center;
+  line-height: 1.4;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.node-rich-text {
+  margin: 0;
+  text-align: center;
+  line-height: 1.4;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.node.root .md-content {
+  color: white;
+}
+
 /* 概要样式 */
 .summary-bracket {
   transition: stroke 0.2s;
@@ -1097,3 +1218,4 @@ onUnmounted(() => {
   font-family: 'Inter', system-ui, sans-serif;
 }
 </style>
+

@@ -21,6 +21,8 @@ export interface NodeData {
     note?: string
     hyperlink?: string
     image?: string
+    imageWidth?: number
+    imageAspectRatio?: number
     icon?: string     // 图标标识
     priority?: number  // 1-9
     progress?: number  // 0-100

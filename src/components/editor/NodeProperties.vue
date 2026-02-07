@@ -121,11 +121,26 @@
         <div v-if="node.data?.image" class="image-preview">
           <img 
             v-if="!imageLoadError"
-            :src="node.data.image" 
+            :src="node.data.image"
+            :style="imagePreviewStyle"
             @error="handleImageError" 
-            @load="handleImageLoad"
+            @load="handleImageLoad($event)"
           />
           <div v-else class="image-error">图片加载失败</div>
+        </div>
+        <div v-if="node.data?.image" class="image-size-control">
+          <div class="size-header">
+            <span class="style-label">Width</span>
+            <span class="size-value">{{ nodeImageWidth }}px</span>
+          </div>
+          <input
+            type="range"
+            :min="imageWidthMin"
+            :max="imageWidthMax"
+            step="10"
+            :value="nodeImageWidth"
+            @input="handleImageWidthChange"
+          />
         </div>
       </div>
       
@@ -273,6 +288,12 @@
 import { ref, computed, watch } from 'vue'
 import { X, ExternalLink, Type, RotateCcw } from 'lucide-vue-next'
 import { renderMarkdown } from '@/utils/markdown'
+import {
+  NODE_IMAGE_WIDTH_MAX,
+  NODE_IMAGE_WIDTH_MIN,
+  normalizeNodeImageAspectRatio,
+  normalizeNodeImageWidth,
+} from '@/utils/nodeContentMetrics'
 import type { MindMapNode, NodeStyle } from '@/types'
 import { useMapStore } from '@/stores/mapStore'
 
@@ -304,6 +325,15 @@ const notePreviewHtml = computed(() => {
 })
 
 // 图标列表
+const nodeImageWidth = computed(() => normalizeNodeImageWidth(props.node?.data?.imageWidth))
+const imagePreviewStyle = computed(() => ({
+  width: `${nodeImageWidth.value}px`,
+  maxWidth: '100%',
+  objectFit: 'contain' as const,
+}))
+const imageWidthMin = NODE_IMAGE_WIDTH_MIN
+const imageWidthMax = NODE_IMAGE_WIDTH_MAX
+
 const iconList = [
   // 进度/状态
   { value: 'priority-1', emoji: '🔴', label: '最高优先级' },
@@ -369,14 +399,22 @@ function resetStyle() {
 
 function handleImageChange(event: Event) {
   const target = event.target as HTMLInputElement
+  const nextImage = target.value || undefined
   if (props.node) {
-    mapStore.updateNodeData(props.node.id, { image: target.value || undefined })
+    mapStore.updateNodeData(props.node.id, {
+      image: nextImage,
+      imageAspectRatio: undefined,
+    })
   }
 }
 
 function clearImage() {
   if (props.node) {
-    mapStore.updateNodeData(props.node.id, { image: undefined })
+    mapStore.updateNodeData(props.node.id, {
+      image: undefined,
+      imageWidth: undefined,
+      imageAspectRatio: undefined,
+    })
   }
 }
 
@@ -384,8 +422,28 @@ function handleImageError() {
   imageLoadError.value = true
 }
 
-function handleImageLoad() {
+function handleImageLoad(event: Event) {
   imageLoadError.value = false
+  if (!props.node) return
+
+  const target = event.target as HTMLImageElement | null
+  if (!target || target.naturalWidth <= 0 || target.naturalHeight <= 0) return
+
+  const ratio = Number(
+    normalizeNodeImageAspectRatio(target.naturalHeight / target.naturalWidth).toFixed(3)
+  )
+
+  if (props.node.data?.imageAspectRatio !== ratio) {
+    mapStore.updateNodeData(props.node.id, { imageAspectRatio: ratio })
+  }
+}
+
+function handleImageWidthChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  const width = normalizeNodeImageWidth(parseInt(target.value, 10))
+  if (props.node) {
+    mapStore.updateNodeData(props.node.id, { imageWidth: width })
+  }
 }
 
 function setIcon(icon: string | undefined) {
@@ -631,9 +689,10 @@ function handleSummaryTextChange(event: Event) {
 }
 
 .image-preview img {
-  width: 100%;
-  max-height: 120px;
-  object-fit: cover;
+  display: block;
+  max-height: 180px;
+  margin: 0 auto;
+  object-fit: contain;
 }
 
 .image-error {
@@ -641,6 +700,40 @@ function handleSummaryTextChange(event: Event) {
   text-align: center;
   font-size: 12px;
   color: var(--color-text-secondary);
+}
+
+.image-size-control {
+  margin-top: 8px;
+}
+
+.size-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.size-value {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.image-size-control input[type="range"] {
+  width: 100%;
+  height: 4px;
+  appearance: none;
+  background: var(--color-border);
+  border-radius: 2px;
+  outline: none;
+}
+
+.image-size-control input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  cursor: pointer;
 }
 
 /* 图标选择器 */

@@ -1,5 +1,6 @@
 import type { MindMapNode } from '@/types'
 import type { LayoutNode, LayoutOptions } from './mindLayout'
+import { calculateNodeSize } from '@/utils/nodeContentMetrics'
 
 const DEFAULT_OPTIONS: LayoutOptions = {
     horizontalGap: 60,
@@ -9,43 +10,6 @@ const DEFAULT_OPTIONS: LayoutOptions = {
     direction: 'right',
 }
 
-const TEXT_WIDTH_PATTERN = /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/
-const NODE_PADDING_X = 32
-const NODE_PADDING_Y = 20
-const MIN_NODE_WIDTH = 60
-const MAX_NODE_WIDTH = 300
-const MIN_NODE_HEIGHT = 36
-const LINE_HEIGHT_RATIO = 1.4
-
-function estimateTextWidth(text: string): number {
-    let width = 0
-    for (const char of text) {
-        width += TEXT_WIDTH_PATTERN.test(char) ? 14 : 8
-    }
-    return width
-}
-
-function getFontMetrics(node: MindMapNode) {
-    const fontSize = node.style?.fontSize || 14
-    const fontScale = fontSize / 14
-    return { fontSize, fontScale }
-}
-
-function estimateWrappedLineCount(text: string, contentWidth: number, fontScale: number): number {
-    if (!text) return 1
-    const lines = text.split('\n')
-    let total = 0
-    for (const line of lines) {
-        const lineWidth = estimateTextWidth(line) * fontScale
-        total += Math.max(1, Math.ceil(lineWidth / contentWidth))
-    }
-    return Math.max(1, total)
-}
-
-/**
- * 树形布局算法
- * 垂直方向展开，类似文件树
- */
 export class TreeLayout {
     private options: LayoutOptions
 
@@ -65,41 +29,23 @@ export class TreeLayout {
     }
 
     private buildLayoutTree(node: MindMapNode, parent?: LayoutNode): LayoutNode {
+        const size = calculateNodeSize(node)
         const layoutNode: LayoutNode = {
             id: node.id,
             x: 0,
             y: 0,
-            width: this.calculateNodeWidth(node),
-            height: this.calculateNodeHeight(node),
+            width: size.width,
+            height: size.height,
             node,
             children: [],
             parent,
         }
 
         if (node.isExpanded && node.children.length > 0) {
-            layoutNode.children = node.children.map(child =>
-                this.buildLayoutTree(child, layoutNode)
-            )
+            layoutNode.children = node.children.map(child => this.buildLayoutTree(child, layoutNode))
         }
 
         return layoutNode
-    }
-
-    private calculateNodeHeight(node: MindMapNode): number {
-        const { fontSize, fontScale } = getFontMetrics(node)
-        const iconWidth = node.data?.icon ? 24 : 0
-        const width = this.calculateNodeWidth(node)
-        const contentWidth = Math.max(1, width - NODE_PADDING_X - iconWidth)
-        const lineCount = estimateWrappedLineCount(node.text, contentWidth, fontScale)
-        const lineHeight = fontSize * LINE_HEIGHT_RATIO
-        return Math.max(MIN_NODE_HEIGHT, Math.ceil(lineHeight * lineCount + NODE_PADDING_Y))
-    }
-
-    private calculateNodeWidth(node: MindMapNode): number {
-        const { fontScale } = getFontMetrics(node)
-        const textWidth = estimateTextWidth(node.text) * fontScale
-        const iconWidth = node.data?.icon ? 24 : 0
-        return Math.max(MIN_NODE_WIDTH, Math.min(MAX_NODE_WIDTH, textWidth + NODE_PADDING_X + iconWidth))
     }
 
     private calculateSubtreeWidth(node: LayoutNode): number {
@@ -113,7 +59,7 @@ export class TreeLayout {
         }
         totalWidth += (node.children.length - 1) * this.options.horizontalGap
 
-            ; (node as any)._subtreeWidth = Math.max(node.width, totalWidth)
+        ;(node as any)._subtreeWidth = Math.max(node.width, totalWidth)
         return (node as any)._subtreeWidth
     }
 
@@ -146,10 +92,6 @@ export class TreeLayout {
     }
 }
 
-/**
- * 组织架构图布局
- * 自上而下展开
- */
 export class OrgLayout {
     private options: LayoutOptions
 
@@ -169,41 +111,23 @@ export class OrgLayout {
     }
 
     private buildLayoutTree(node: MindMapNode, parent?: LayoutNode): LayoutNode {
+        const size = calculateNodeSize(node)
         const layoutNode: LayoutNode = {
             id: node.id,
             x: 0,
             y: 0,
-            width: this.calculateNodeWidth(node),
-            height: this.calculateNodeHeight(node),
+            width: size.width,
+            height: size.height,
             node,
             children: [],
             parent,
         }
 
         if (node.isExpanded && node.children.length > 0) {
-            layoutNode.children = node.children.map(child =>
-                this.buildLayoutTree(child, layoutNode)
-            )
+            layoutNode.children = node.children.map(child => this.buildLayoutTree(child, layoutNode))
         }
 
         return layoutNode
-    }
-
-    private calculateNodeHeight(node: MindMapNode): number {
-        const { fontSize, fontScale } = getFontMetrics(node)
-        const iconWidth = node.data?.icon ? 24 : 0
-        const width = this.calculateNodeWidth(node)
-        const contentWidth = Math.max(1, width - NODE_PADDING_X - iconWidth)
-        const lineCount = estimateWrappedLineCount(node.text, contentWidth, fontScale)
-        const lineHeight = fontSize * LINE_HEIGHT_RATIO
-        return Math.max(MIN_NODE_HEIGHT, Math.ceil(lineHeight * lineCount + NODE_PADDING_Y))
-    }
-
-    private calculateNodeWidth(node: MindMapNode): number {
-        const { fontScale } = getFontMetrics(node)
-        const textWidth = estimateTextWidth(node.text) * fontScale
-        const iconWidth = node.data?.icon ? 24 : 0
-        return Math.max(MIN_NODE_WIDTH, Math.min(MAX_NODE_WIDTH, textWidth + NODE_PADDING_X + iconWidth))
     }
 
     private calculateSubtreeWidth(node: LayoutNode): number {
@@ -217,7 +141,7 @@ export class OrgLayout {
         }
         totalWidth += (node.children.length - 1) * this.options.horizontalGap
 
-            ; (node as any)._subtreeWidth = Math.max(node.width, totalWidth)
+        ;(node as any)._subtreeWidth = Math.max(node.width, totalWidth)
         return (node as any)._subtreeWidth
     }
 
@@ -250,10 +174,6 @@ export class OrgLayout {
     }
 }
 
-/**
- * 鱼骨图布局
- * 左右交替展开
- */
 export class FishboneLayout {
     private options: LayoutOptions
 
@@ -272,41 +192,23 @@ export class FishboneLayout {
     }
 
     private buildLayoutTree(node: MindMapNode, parent?: LayoutNode): LayoutNode {
+        const size = calculateNodeSize(node)
         const layoutNode: LayoutNode = {
             id: node.id,
             x: 0,
             y: 0,
-            width: this.calculateNodeWidth(node),
-            height: this.calculateNodeHeight(node),
+            width: size.width,
+            height: size.height,
             node,
             children: [],
             parent,
         }
 
         if (node.isExpanded && node.children.length > 0) {
-            layoutNode.children = node.children.map(child =>
-                this.buildLayoutTree(child, layoutNode)
-            )
+            layoutNode.children = node.children.map(child => this.buildLayoutTree(child, layoutNode))
         }
 
         return layoutNode
-    }
-
-    private calculateNodeHeight(node: MindMapNode): number {
-        const { fontSize, fontScale } = getFontMetrics(node)
-        const iconWidth = node.data?.icon ? 24 : 0
-        const width = this.calculateNodeWidth(node)
-        const contentWidth = Math.max(1, width - NODE_PADDING_X - iconWidth)
-        const lineCount = estimateWrappedLineCount(node.text, contentWidth, fontScale)
-        const lineHeight = fontSize * LINE_HEIGHT_RATIO
-        return Math.max(MIN_NODE_HEIGHT, Math.ceil(lineHeight * lineCount + NODE_PADDING_Y))
-    }
-
-    private calculateNodeWidth(node: MindMapNode): number {
-        const { fontScale } = getFontMetrics(node)
-        const textWidth = estimateTextWidth(node.text) * fontScale
-        const iconWidth = node.data?.icon ? 24 : 0
-        return Math.max(MIN_NODE_WIDTH, Math.min(MAX_NODE_WIDTH, textWidth + NODE_PADDING_X + iconWidth))
     }
 
     private assignPositions(node: LayoutNode): void {
@@ -315,7 +217,6 @@ export class FishboneLayout {
         const isRoot = !node.parent
 
         if (isRoot) {
-            // 根节点的子节点交替上下排列
             let topY = node.y - this.options.verticalGap - this.options.nodeHeight / 2
             let bottomY = node.y + this.options.verticalGap + this.options.nodeHeight / 2
             let currentX = node.x + node.width / 2 + this.options.horizontalGap
@@ -328,9 +229,9 @@ export class FishboneLayout {
                 child.y = isTop ? topY : bottomY
 
                 if (isTop) {
-                    topY -= this.options.verticalGap + this.options.nodeHeight
+                    topY -= this.options.verticalGap + child.height
                 } else {
-                    bottomY += this.options.verticalGap + this.options.nodeHeight
+                    bottomY += this.options.verticalGap + child.height
                     currentX += this.options.horizontalGap * 2 + child.width
                 }
 
@@ -343,7 +244,7 @@ export class FishboneLayout {
         if (node.children.length === 0) return
 
         const direction = isAbove ? -1 : 1
-        let currentY = node.y + direction * (this.options.verticalGap / 2 + this.options.nodeHeight / 2)
+        let currentY = node.y + direction * (this.options.verticalGap / 2 + node.height / 2)
 
         for (const child of node.children) {
             child.x = node.x + node.width / 2 + this.options.horizontalGap / 2 + child.width / 2
@@ -366,9 +267,6 @@ export class FishboneLayout {
     }
 }
 
-/**
- * 为不同布局生成连接线路径
- */
 export function generateTreeConnectionPath(
     from: { x: number; y: number; height: number },
     to: { x: number; y: number; height: number }
