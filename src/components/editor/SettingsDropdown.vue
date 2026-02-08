@@ -181,7 +181,7 @@ watch(() => mapStore.theme, (theme) => {
   box-shadow: var(--shadow-soft);
   padding: 12px;
   min-width: 200px;
-  z-index: 100;
+  z-index: 2000;
 }
 
 .settings-section {

@@ -584,7 +584,9 @@ onUnmounted(() => {
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
-  overflow: hidden;
+  position: relative;
+  z-index: 30;
+  overflow: visible;
   max-height: 52px;
   transition: max-height 0.3s ease, opacity 0.25s ease, transform 0.25s ease, border-width 0.25s ease;
 }
@@ -802,6 +804,7 @@ onUnmounted(() => {
   opacity: 0;
   pointer-events: none;
   max-height: 0;
+  overflow: hidden;
   transform: translateY(-8px);
   border-width: 0;
 }
@@ -926,7 +929,7 @@ onUnmounted(() => {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   padding: 4px;
   min-width: 140px;
-  z-index: 100;
+  z-index: 2000;
 }
 
 .dropdown-menu button {
