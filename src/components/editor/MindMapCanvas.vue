@@ -16,7 +16,7 @@
       </defs>
       
       <g :transform="`translate(${panX}, ${panY}) scale(${scale})`">
-        <!-- 连接线层 -->
+        
         <g class="connections-layer">
           <path
             v-for="conn in connections"
@@ -24,10 +24,14 @@
             :d="conn.path"
             :stroke="conn.color"
             class="connection"
+            :class="{
+              dimmed: isConnectionDimmed(conn),
+              'focus-highlight': isConnectionHighlight(conn)
+            }"
           />
         </g>
         
-        <!-- 概要层 -->
+        
         <g class="summaries-layer">
           <g
             v-for="summary in summaries"
@@ -52,7 +56,7 @@
           </g>
         </g>
         
-        <!-- 节点层 -->
+        
         <g class="nodes-layer">
           <g
             v-for="node in layoutNodes"
@@ -63,7 +67,9 @@
               'root': !node.node.parentId,
               'editing': editingNodeId === node.id,
               'dragging': draggingNodeId === node.id,
-              'drop-target': dropTargetId === node.id
+              'drop-target': dropTargetId === node.id,
+              'dimmed': shouldDimOtherNodes && !activeBranchIds.includes(node.id),
+              'focus-highlight': isHighlightMode && highlightBranchIds.includes(node.id)
             }"
             :transform="`translate(${node.x}, ${node.y})`"
             @click.stop="handleNodeClick(node, $event)"
@@ -81,7 +87,7 @@
               :style="getNodeStyle(node)"
               filter="url(#node-shadow)"
             />
-            <!-- 图标 -->
+            
             <text 
               v-if="node.node.data?.icon"
               :x="-node.width / 2 + 12"
@@ -90,7 +96,7 @@
               dominant-baseline="middle"
             >{{ getIconEmoji(node.node.data.icon) }}</text>
             
-            <!-- Markdown/LaTeX 渲染内容 -->
+            
             <foreignObject
               v-if="shouldRenderRichContent(node) && editingNodeId !== node.id"
               :x="-node.width / 2"
@@ -126,7 +132,7 @@
               </div>
             </foreignObject>
             
-            <!-- 纯文本 -->
+            
             <text 
               v-else-if="editingNodeId !== node.id"
               class="node-text" 
@@ -138,7 +144,7 @@
               {{ node.node.text }}
             </text>
             
-            <!-- 展开/收起按钮 -->
+            
             <g 
               v-if="node.node.children.length > 0"
               class="expand-btn"
@@ -153,7 +159,7 @@
           </g>
         </g>
         
-        <!-- 框选矩形 -->
+        
         <rect
           v-if="isBoxSelecting"
           :x="Math.min(boxSelectStart.x, boxSelectEnd.x)"
@@ -169,7 +175,7 @@
       </g>
     </svg>
     
-    <!-- 节点编辑器 -->
+    
     <NodeEditor
       :is-editing="editingNodeId !== null"
       :text="editingNode?.node.text || ''"
@@ -184,7 +190,7 @@
       @cancel="handleEditCancel"
     />
     
-    <!-- 右键菜单 -->
+    
     <ContextMenu ref="contextMenuRef" @edit="handleContextEdit" />
   </div>
 </template>
@@ -203,29 +209,23 @@ import ContextMenu from './ContextMenu.vue'
 
 const mapStore = useMapStore()
 
-// 组件引用
 const contextMenuRef = ref<InstanceType<typeof ContextMenu> | null>(null)
 
-// SVG 引用
 const svgRef = ref<SVGSVGElement | null>(null)
 
-// 视图状态
 const panX = ref(400)
 const panY = ref(300)
 const scale = computed(() => mapStore.zoom / 100)
 const viewBox = ref('0 0 800 600')
 
-// 拖拽状态
 const isDragging = ref(false)
 const dragStartX = ref(0)
 const dragStartY = ref(0)
 const panStartX = ref(0)
 const panStartY = ref(0)
 
-// 编辑状态
 const editingNodeId = ref<string | null>(null)
 
-// 节点拖拽状态
 const isDraggingNode = ref(false)
 const draggingNodeId = ref<string | null>(null)
 const dragNodeStartX = ref(0)
@@ -236,23 +236,19 @@ const dropTargetId = ref<string | null>(null)
 const dropInsertIndex = ref<number>(-1)
 const dropInsertMode = ref<'child' | 'before' | 'after'>('child')
 
-// 框选状态
 const isBoxSelecting = ref(false)
 const boxSelectStart = ref({ x: 0, y: 0 })
 const boxSelectEnd = ref({ x: 0, y: 0 })
 
-// 监听选中节点变化，自动居中视图
 watch(() => mapStore.focusedId, (nodeId) => {
   if (nodeId) {
     const node = layoutNodes.value.find(n => n.id === nodeId)
     if (node) {
-      // 计算居中位置
       const canvasWidth = svgRef.value?.clientWidth || 800
       const canvasHeight = svgRef.value?.clientHeight || 600
       const targetX = canvasWidth / 2 - node.x * scale.value
       const targetY = canvasHeight / 2 - node.y * scale.value
       
-      // 平滑动画
       const startX = panX.value
       const startY = panY.value
       const duration = 300
@@ -261,7 +257,7 @@ watch(() => mapStore.focusedId, (nodeId) => {
       function animate() {
         const elapsed = Date.now() - startTime
         const progress = Math.min(elapsed / duration, 1)
-        const eased = 1 - Math.pow(1 - progress, 3) // ease-out cubic
+        const eased = 1 - Math.pow(1 - progress, 3)
         
         panX.value = startX + (targetX - startX) * eased
         panY.value = startY + (targetY - startY) * eased
@@ -275,7 +271,6 @@ watch(() => mapStore.focusedId, (nodeId) => {
   }
 })
 
-// 布局实例（根据布局类型动态创建）
 const layoutOptions = { horizontalGap: 80, verticalGap: 24 }
 
 function getLayoutInstance() {
@@ -292,35 +287,105 @@ function getLayoutInstance() {
   }
 }
 
-// 布局节点
 const layoutRoot = ref<LayoutNode | null>(null)
 const layoutNodes = ref<LayoutNode[]>([])
 
-// 选中状态
 const selectedIds = computed(() => mapStore.selectedIds)
+const isTemporarilyRevealing = ref(false)
 
-// 当前编辑的节点
+const focusedTreeNode = computed(() => {
+  if (!mapStore.focusedId) return null
+  return mapStore.findNode(mapStore.focusedId)
+})
+
+const ancestorPathIds = computed<string[]>(() => {
+  const focusedNode = focusedTreeNode.value
+  if (!focusedNode) return []
+
+  const ids = new Set<string>()
+  let currentNode: typeof focusedNode | null = focusedNode
+  while (currentNode) {
+    ids.add(currentNode.id)
+    if (!currentNode.parentId) break
+    currentNode = mapStore.findNode(currentNode.parentId)
+  }
+
+  return Array.from(ids)
+})
+
+const branchIds = computed<string[]>(() => {
+  const focusedNode = focusedTreeNode.value
+  if (!focusedNode) return []
+
+  const ids = new Set<string>(ancestorPathIds.value)
+  const collectDescendants = (node: typeof focusedNode) => {
+    ids.add(node.id)
+    for (const child of node.children) {
+      collectDescendants(child)
+    }
+  }
+
+  collectDescendants(focusedNode)
+  return Array.from(ids)
+})
+
+const isHighlightMode = computed(() => mapStore.zenMode && mapStore.zenFocusMode === 'highlight')
+const shouldDimOtherNodes = computed(() =>
+  mapStore.zenMode &&
+  mapStore.zenFocusMode !== 'highlight' &&
+  !isTemporarilyRevealing.value
+)
+
+const highlightBranchIds = computed<string[]>(() => {
+  if (!mapStore.zenMode) return []
+  return branchIds.value
+})
+
+const activeBranchIds = computed<string[]>(() => {
+  if (!mapStore.zenMode) return []
+
+  if (!mapStore.focusedId || !focusedTreeNode.value) {
+    return layoutNodes.value.map(node => node.id)
+  }
+
+  if (mapStore.zenFocusMode === 'path') {
+    return ancestorPathIds.value
+  }
+
+  if (mapStore.zenFocusMode === 'highlight') {
+    return layoutNodes.value.map(node => node.id)
+  }
+
+  return branchIds.value
+})
+
 const editingNode = computed(() => {
   if (!editingNodeId.value) return null
   return layoutNodes.value.find(n => n.id === editingNodeId.value)
 })
 
-// 彩虹色板
 const RAINBOW_COLORS = [
-  '#3b82f6', // 钃?
-  '#10b981', // 缁?
-  '#f59e0b', // 姗?
-  '#ef4444', // 绾?
-  '#8b5cf6', // 绱?
-  '#ec4899', // 绮?
-  '#06b6d4', // 闈?
+  '#3b82f6',
+  '#10b981',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#ec4899',
+  '#06b6d4',
 ]
 
-// 连接线数据 + 节点分支颜色映射
 const nodeBranchColors = ref<Map<string, string>>(new Map())
 
-const connections = computed(() => {
-  const result: { id: string; path: string; color: string }[] = []
+interface ConnectionData {
+  id: string
+  fromId: string
+  toId: string
+  path: string
+  color: string
+}
+
+const connections = computed<ConnectionData[]>(() => {
+  const result: ConnectionData[] = []
   const colorMap = new Map<string, string>()
   const connectionStyle = mapStore.document.connectionStyle || 'curve'
   const useRainbow = mapStore.document.rainbowBranch ?? false
@@ -329,13 +394,14 @@ const connections = computed(() => {
   const traverse = (node: LayoutNode, branchColor: string) => {
     for (let i = 0; i < node.children.length; i++) {
       const child = node.children[i]
-      // 一级子节点时分配彩虹色，深层节点继承
       const color = useRainbow
         ? (!node.node.parentId ? RAINBOW_COLORS[i % RAINBOW_COLORS.length] : branchColor)
         : defaultColor
       colorMap.set(child.id, color)
       result.push({
         id: `${node.id}-${child.id}`,
+        fromId: node.id,
+        toId: child.id,
         path: generateConnectionPath(
           { x: node.x, y: node.y, width: node.width },
           { x: child.x, y: child.y, width: child.width },
@@ -355,7 +421,26 @@ const connections = computed(() => {
   return result
 })
 
-// 概要括号数据
+function isConnectionDimmed(conn: ConnectionData): boolean {
+  if (!shouldDimOtherNodes.value) return false
+  if (activeBranchIds.value.length === 0) return false
+
+  return !(
+    activeBranchIds.value.includes(conn.fromId) &&
+    activeBranchIds.value.includes(conn.toId)
+  )
+}
+
+function isConnectionHighlight(conn: ConnectionData): boolean {
+  if (!isHighlightMode.value) return false
+  if (highlightBranchIds.value.length === 0) return false
+
+  return (
+    highlightBranchIds.value.includes(conn.fromId) &&
+    highlightBranchIds.value.includes(conn.toId)
+  )
+}
+
 interface SummaryData {
   id: string
   text: string
@@ -368,19 +453,15 @@ const summaries = computed<SummaryData[]>(() => {
   const result: SummaryData[] = []
   
   for (const node of layoutNodes.value) {
-    // 只要有概要且有子节点就显示，自动覆盖所有子节点
     if (node.node.summary && node.children.length > 0) {
       const summary = node.node.summary
       
-      // 始终使用第一个和最后一个子节点（自动适应）
       const startChild = node.children[0]
       const endChild = node.children[node.children.length - 1]
         
-        // 判断方向
         const rootNode = layoutNodes.value.find(n => !n.node.parentId)
         const isOnLeft = rootNode && node.x < rootNode.x
         
-        // 计算括号位置
         const topY = startChild.y - startChild.height / 2
         const bottomY = endChild.y + endChild.height / 2
         const midY = (topY + bottomY) / 2
@@ -389,16 +470,13 @@ const summaries = computed<SummaryData[]>(() => {
         let textX: number
         
         if (isOnLeft) {
-          // 左侧节点，括号在左边
           bracketX = Math.min(startChild.x, endChild.x) - Math.max(startChild.width, endChild.width) / 2 - 20
           textX = bracketX - 10
         } else {
-          // 右侧节点，括号在右边
           bracketX = Math.max(startChild.x, endChild.x) + Math.max(startChild.width, endChild.width) / 2 + 20
           textX = bracketX + 10
         }
         
-        // 生成括号路径 (花括号形状)
         const curveSize = 10
         const bracketPath = isOnLeft
           ? `M ${bracketX + curveSize} ${topY} 
@@ -429,7 +507,6 @@ const summaries = computed<SummaryData[]>(() => {
   return result
 })
 
-// 更新布局
 function updateLayout() {
   const root = mapStore.document.root
   const layoutInstance = getLayoutInstance()
@@ -437,21 +514,18 @@ function updateLayout() {
   layoutNodes.value = layoutInstance.flatten(layoutRoot.value)
 }
 
-// 自动保存（防抖）
 let saveTimer: number | null = null
 function scheduleAutoSave() {
   if (saveTimer) {
     clearTimeout(saveTimer)
   }
   saveTimer = window.setTimeout(async () => {
-    // 将 Proxy 对象转换为纯 JavaScript 对象
     const docToSave = JSON.parse(JSON.stringify(mapStore.document))
     await documentService.save(docToSave)
     console.log('Auto-saved')
   }, 2000)
 }
 
-// 监听文档变化
 watch(
   () => mapStore.document,
   () => {
@@ -461,49 +535,39 @@ watch(
   { deep: true, immediate: true }
 )
 
-// 节点点击
 function handleNodeClick(node: LayoutNode, event: MouseEvent) {
   if (editingNodeId.value) return
   mapStore.selectNode(node.id, event.ctrlKey || event.metaKey)
 }
 
-// 节点双击（编辑）
 function handleNodeDblClick(node: LayoutNode) {
   editingNodeId.value = node.id
   mapStore.selectNode(node.id)
 }
 
-// 展开/收起
 function handleToggleExpand(node: LayoutNode) {
   mapStore.toggleExpand(node.id)
 }
 
-// 节点拖拽开始
 function handleNodeMouseDown(node: LayoutNode, event: MouseEvent) {
-  // 如果在编辑模式下不启动拖拽
   if (editingNodeId.value) return
   
   isDraggingNode.value = true
   draggingNodeId.value = node.id
   dragNodeStartX.value = event.clientX
   dragNodeStartY.value = event.clientY
-  // 保存节点的初始布局位置
   dragNodeInitialX.value = node.x
   dragNodeInitialY.value = node.y
   
   mapStore.selectNode(node.id)
 }
 
-// 节点右键菜单
 function handleNodeContextMenu(node: LayoutNode, event: MouseEvent) {
   mapStore.selectNode(node.id)
   contextMenuRef.value?.open(event.clientX, event.clientY, node.id)
 }
 
-// 图标映射
-// 图标映射
 const iconEmojiMap: Record<string, string> = {
-  // progress / status
   'priority-1': '🔴',
   'priority-2': '🟠',
   'priority-3': '🟡',
@@ -511,7 +575,6 @@ const iconEmojiMap: Record<string, string> = {
   cross: '❌',
   warning: '⚠️',
 
-  // marks
   star: '⭐',
   flag: '🚩',
   fire: '🔥',
@@ -519,7 +582,6 @@ const iconEmojiMap: Record<string, string> = {
   question: '❓',
   heart: '❤️',
 
-  // office / others
   calendar: '📅',
   time: '⏰',
   person: '👤',
@@ -538,7 +600,6 @@ function getIconEmoji(icon: string): string {
   return iconEmojiMap[icon] || ''
 }
 
-// 节点样式辅助函数
 function getNodeRadius(node: LayoutNode): number {
   const shape = node.node.style?.shape || 'rect'
   switch (shape) {
@@ -554,7 +615,6 @@ function getNodeStyle(node: LayoutNode): Record<string, string> {
   if (node.node.style?.background) {
     style.fill = node.node.style.background
   }
-  // 优先使用用户自定义边框色，其次使用彩虹分支色
   if (node.node.style?.borderColor) {
     style.stroke = node.node.style.borderColor
   } else if (mapStore.document.rainbowBranch && nodeBranchColors.value.has(node.id)) {
@@ -587,14 +647,11 @@ function getRichContentStyle(node: LayoutNode): Record<string, string> {
   return style
 }
 
-// 检查文本是否包含 Markdown/LaTeX 格式
 function hasMarkdownFormat(text: string): boolean {
   if (!text) return false
-  // 检查 Markdown 语法和 LaTeX
   return /\*|`|\$|~~|\[.*\]\(|^#|\n-|\n\d+\./.test(text)
 }
 
-// 渲染 Markdown + LaTeX
 function hasNodePhoto(node: LayoutNode): boolean {
   const image = node.node.data?.image
   return typeof image === 'string' && image.trim().length > 0
@@ -622,28 +679,21 @@ function getRenderedMarkdown(text: string): string {
   return renderMarkdown(text)
 }
 
-// 获取展开按钮的 X 坐标（根据节点位置决定在左边还是右边）
 function getExpandBtnX(node: LayoutNode): number {
-  // 根节点的按钮在右边
   if (!node.node.parentId) {
     return node.width / 2 + 8
   }
-  // 查找根节点位置
   const rootNode = layoutNodes.value.find(n => !n.node.parentId)
   if (rootNode && node.x < rootNode.x) {
-    // 节点在根节点左边，按钮放左边
     return -node.width / 2 - 8
   }
-  // 节点在根节点右边，按钮放右边
   return node.width / 2 + 8
 }
 
-// 从右键菜单编辑
 function handleContextEdit(nodeId: string) {
   editingNodeId.value = nodeId
 }
 
-// 编辑保存
 function handleEditSave(text: string) {
   if (editingNodeId.value) {
     mapStore.updateNodeText(editingNodeId.value, text)
@@ -651,14 +701,11 @@ function handleEditSave(text: string) {
   editingNodeId.value = null
 }
 
-// 编辑取消
 function handleEditCancel() {
   editingNodeId.value = null
 }
 
-// 概要点击编辑
 function handleSummaryClick(summary: SummaryData) {
-  // 从 summary.id 提取节点 ID
   const nodeId = summary.id.replace('summary-', '')
   const node = mapStore.findNode(nodeId)
   if (node) {
@@ -669,7 +716,6 @@ function handleSummaryClick(summary: SummaryData) {
   }
 }
 
-// 画布拖拽或框选
 function handleMouseDown(event: MouseEvent) {
   if (editingNodeId.value) return
   const target = event.target as Element
@@ -679,7 +725,6 @@ function handleMouseDown(event: MouseEvent) {
     const rect = svgRef.value?.getBoundingClientRect()
     if (!rect) return
     
-    // Shift+拖拽 = 框选模式
     if (event.shiftKey) {
       isBoxSelecting.value = true
       const x = (event.clientX - rect.left - panX.value) / scale.value
@@ -688,7 +733,6 @@ function handleMouseDown(event: MouseEvent) {
       boxSelectEnd.value = { x, y }
       mapStore.clearSelection()
     } else {
-      // 普通拖拽
       isDragging.value = true
       dragStartX.value = event.clientX
       dragStartY.value = event.clientY
@@ -700,7 +744,6 @@ function handleMouseDown(event: MouseEvent) {
 }
 
 function handleMouseMove(event: MouseEvent) {
-  // 画布拖拽
   if (isDragging.value) {
     const dx = event.clientX - dragStartX.value
     const dy = event.clientY - dragStartY.value
@@ -709,7 +752,6 @@ function handleMouseMove(event: MouseEvent) {
     return
   }
   
-  // 框选
   if (isBoxSelecting.value) {
     const rect = svgRef.value?.getBoundingClientRect()
     if (rect) {
@@ -720,20 +762,16 @@ function handleMouseMove(event: MouseEvent) {
     return
   }
   
-  // 节点拖拽
   if (isDraggingNode.value && draggingNodeId.value) {
     const dx = event.clientX - dragNodeStartX.value
     const dy = event.clientY - dragNodeStartY.value
     
-    // 只有移动超过5px才开始计算拖放目标
     if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-      // 查找拖放目标
       const rect = svgRef.value?.getBoundingClientRect()
       if (rect) {
         const mouseX = (event.clientX - rect.left - panX.value) / scale.value
         const mouseY = (event.clientY - rect.top - panY.value) / scale.value
         
-        // 查找最近的节点和插入位置
         let closestNode: LayoutNode | null = null
         let minDistance = Infinity
         let insertPosition: 'child' | 'before' | 'after' = 'child'
@@ -741,7 +779,6 @@ function handleMouseMove(event: MouseEvent) {
         for (const node of layoutNodes.value) {
           if (node.id === draggingNodeId.value) continue
           
-          // 检查是否被拖拽节点的后代
           const dragNode = mapStore.findNode(draggingNodeId.value)
           if (dragNode) {
             let isDescendant = false
@@ -764,22 +801,16 @@ function handleMouseMove(event: MouseEvent) {
             minDistance = distance
             closestNode = node
             
-            // 根据鼠标相对位置判断插入方式
             const nodeHalfHeight = node.height / 2
             if (horizontalDist < node.width / 2 + 30) {
-              // 鼠标在节点水平范围内
               if (verticalOffset < -nodeHalfHeight * 0.6) {
-                // 鼠标在节点上方 - 插入为上方兄弟
                 insertPosition = 'before'
               } else if (verticalOffset > nodeHalfHeight * 0.6) {
-                // 鼠标在节点下方 - 插入为下方兄弟
                 insertPosition = 'after'
               } else {
-                // 鼠标在节点中间 - 成为子节点
                 insertPosition = 'child'
               }
             } else {
-              // 鼠标在节点右侧 - 成为子节点
               insertPosition = 'child'
             }
           }
@@ -787,7 +818,6 @@ function handleMouseMove(event: MouseEvent) {
         
         dropTargetId.value = closestNode?.id || null
         
-        // 计算插入索引
         if (closestNode && insertPosition !== 'child') {
           const targetNode = mapStore.findNode(closestNode.id)
           if (targetNode && targetNode.parentId) {
@@ -808,42 +838,35 @@ function handleMouseMove(event: MouseEvent) {
 }
 
 function handleMouseUp(event: MouseEvent) {
-  // 处理节点自由拖拽（没有放到其他节点上）
   if (isDraggingNode.value && draggingNodeId.value) {
     const dx = event.clientX - dragNodeStartX.value
     const dy = event.clientY - dragNodeStartY.value
     
     if (dropTargetId.value && draggingNodeId.value !== dropTargetId.value) {
-      // 移动到目标节点
       const targetNode = mapStore.findNode(dropTargetId.value)
       
       if (dropInsertMode.value === 'child') {
-        // 作为子节点
         mapStore.moveNode(draggingNodeId.value, dropTargetId.value)
       } else if (targetNode && targetNode.parentId) {
-        // 作为兄弟节点插入
         mapStore.moveNode(draggingNodeId.value, targetNode.parentId, dropInsertIndex.value)
       }
     } else if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-      // 自由拖拽 - 计算新的绝对位置
       const newX = dragNodeInitialX.value + dx / scale.value
       const newY = dragNodeInitialY.value + dy / scale.value
       mapStore.updateNodePosition(draggingNodeId.value, newX, newY)
     }
   }
   
-  // 框选完成 - 选中区域内的节点
   if (isBoxSelecting.value) {
     const minX = Math.min(boxSelectStart.value.x, boxSelectEnd.value.x)
     const maxX = Math.max(boxSelectStart.value.x, boxSelectEnd.value.x)
     const minY = Math.min(boxSelectStart.value.y, boxSelectEnd.value.y)
     const maxY = Math.max(boxSelectStart.value.y, boxSelectEnd.value.y)
     
-    // 只有框选范围足够大才选中节点
     if (maxX - minX > 10 && maxY - minY > 10) {
       for (const node of layoutNodes.value) {
         if (node.x >= minX && node.x <= maxX && node.y >= minY && node.y <= maxY) {
-          mapStore.selectNode(node.id, true) // append = true
+          mapStore.selectNode(node.id, true)
         }
       }
     }
@@ -859,29 +882,28 @@ function handleMouseUp(event: MouseEvent) {
   dropInsertMode.value = 'child'
 }
 
-// 滚轮缩放
 function handleWheel(event: WheelEvent) {
   event.preventDefault()
   const delta = event.deltaY > 0 ? -10 : 10
   mapStore.setZoom(mapStore.zoom + delta)
 }
 
-// 键盘事件
 function handleKeyDown(event: KeyboardEvent) {
-  // 编辑模式下不处理
   if (editingNodeId.value) return
   
-  // 输入法组合状态（如中文输入）不处理
   if (event.isComposing) return
+
+  if (mapStore.zenMode && event.key === 'Alt') {
+    isTemporarilyRevealing.value = true
+    return
+  }
   
-  // 如果焦点在输入框或文本域内，不拦截快捷键
   const activeElement = document.activeElement
   const isInputFocused = activeElement instanceof HTMLInputElement || 
                          activeElement instanceof HTMLTextAreaElement ||
                          activeElement instanceof HTMLSelectElement ||
                          activeElement?.hasAttribute('contenteditable')
   
-  // 输入框内只拦截 Escape 用于退出
   if (isInputFocused) {
     if (event.key === 'Escape') {
       (activeElement as HTMLElement)?.blur()
@@ -891,42 +913,36 @@ function handleKeyDown(event: KeyboardEvent) {
   
   const focusedId = mapStore.focusedId
   
-  // F2 进入编辑
   if (event.key === 'F2' && focusedId) {
     event.preventDefault()
     editingNodeId.value = focusedId
     return
   }
   
-  // 空格进入编辑
   if (event.key === ' ' && focusedId) {
     event.preventDefault()
     editingNodeId.value = focusedId
     return
   }
   
-  // Ctrl+Z 撤销
   if (event.ctrlKey && event.key === 'z' && !event.shiftKey) {
     event.preventDefault()
     mapStore.undo()
     return
   }
   
-  // Ctrl+Y 或 Ctrl+Shift+Z 重做
   if ((event.ctrlKey && event.key === 'y') || (event.ctrlKey && event.shiftKey && event.key === 'z')) {
     event.preventDefault()
     mapStore.redo()
     return
   }
   
-  // Ctrl+C 复制
   if (event.ctrlKey && event.key === 'c' && focusedId) {
     event.preventDefault()
     mapStore.copyNode(focusedId)
     return
   }
   
-  // Ctrl+V 粘贴
   if (event.ctrlKey && event.key === 'v' && focusedId) {
     event.preventDefault()
     mapStore.pasteNode(focusedId)
@@ -952,9 +968,7 @@ function handleKeyDown(event: KeyboardEvent) {
       mapStore.deleteNode(focusedId)
       break
     case 'Escape':
-      mapStore.clearSelection()
       break
-    // 方向键导航
     case 'ArrowLeft':
       event.preventDefault()
       mapStore.navigateToParent()
@@ -974,7 +988,12 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 }
 
-// 更新 viewBox
+function handleKeyUp(event: KeyboardEvent) {
+  if (event.key === 'Alt') {
+    isTemporarilyRevealing.value = false
+  }
+}
+
 function updateViewBox() {
   if (svgRef.value) {
     const rect = svgRef.value.getBoundingClientRect()
@@ -982,7 +1001,6 @@ function updateViewBox() {
   }
 }
 
-// 加载已保存的文档
 async function loadSavedDocument() {
   const docs = await documentService.getRecent(1)
   if (docs.length > 0) {
@@ -995,12 +1013,14 @@ onMounted(() => {
   loadSavedDocument()
   window.addEventListener('resize', updateViewBox)
   window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('keyup', handleKeyUp)
 })
 
 onUnmounted(() => {
   if (saveTimer) clearTimeout(saveTimer)
   window.removeEventListener('resize', updateViewBox)
   window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('keyup', handleKeyUp)
 })
 </script>
 
@@ -1022,9 +1042,18 @@ onUnmounted(() => {
   cursor: grabbing;
 }
 
-/* 节点样式 */
 .node {
   cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.node.dimmed {
+  opacity: 0.35;
+}
+
+.node.focus-highlight .node-bg {
+  stroke: var(--color-primary);
+  stroke-width: 2.6;
 }
 
 .node.editing .node-bg {
@@ -1067,14 +1096,22 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-/* 连接线 */
 .connection {
   fill: none;
   stroke-width: 2;
   stroke-linecap: round;
+  transition: opacity 0.3s ease;
 }
 
-/* 展开/收起按钮 */
+.connection.dimmed {
+  opacity: 0.25;
+}
+
+.connection.focus-highlight {
+  stroke-width: 2.8;
+  opacity: 1;
+}
+
 .expand-btn {
   cursor: pointer;
 }
@@ -1101,7 +1138,6 @@ onUnmounted(() => {
   fill: white;
 }
 
-/* 拖拽样式 */
 .node.dragging {
   opacity: 0.5;
 }
@@ -1112,7 +1148,6 @@ onUnmounted(() => {
   stroke-dasharray: 5;
 }
 
-/* Markdown 渲染内容 */
 .md-content {
   width: 100%;
   height: 100%;
@@ -1207,7 +1242,6 @@ onUnmounted(() => {
   color: white;
 }
 
-/* 概要样式 */
 .summary-bracket {
   transition: stroke 0.2s;
 }

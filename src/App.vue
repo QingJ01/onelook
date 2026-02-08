@@ -1,20 +1,30 @@
 <template>
-  <div class="app-container">
-    <!-- 多选项卡 -->
-    <TabBar />
+  <div
+    class="app-container"
+    :class="{
+      'zen-active': mapStore.zenMode,
+      'zen-lite': isZenLite,
+      'zen-deep': isZenDeep
+    }"
+  >
     
-    <!-- 顶部工具栏 -->
+    <div class="tab-bar">
+      <TabBar />
+    </div>
+    
+    
     <header class="toolbar">
       <div class="toolbar-left">
-        <div class="logo">
+        <div class="logo" v-if="!isZenLite">
           <img src="/logo.svg" alt="Logo" width="28" height="28" class="logo-img" />
           <span class="logo-text">OneLook</span>
         </div>
-        <div class="divider"></div>
-        <FileManager />
+        <div class="divider" v-if="!isZenLite"></div>
+        <FileManager v-if="!isZenLite" />
       </div>
       
       <div class="toolbar-center">
+        <template v-if="!isZenLite">
         <button class="tool-btn" :class="{ disabled: !mapStore.canUndo }" title="撤销 (Ctrl+Z)" @click="handleUndo" :disabled="!mapStore.canUndo">
           <Undo2 :size="18" />
         </button>
@@ -32,6 +42,7 @@
           <Trash2 :size="18" />
         </button>
         <div class="divider"></div>
+        </template>
         <button class="tool-btn" title="缩小" @click="handleZoomOut">
           <ZoomOut :size="18" />
         </button>
@@ -45,6 +56,7 @@
       </div>
       
       <div class="toolbar-right">
+        <template v-if="!isZenLite">
         <button class="tool-btn" title="新建文档" @click="handleNewDocument">
           <FilePlus :size="18" />
         </button>
@@ -70,18 +82,47 @@
             <button @click="handleExportOPML">导出 OPML (.opml)</button>
           </div>
         </div>
-        <div class="divider"></div>
+        </template>
+        <div class="divider" v-if="!isZenLite"></div>
         <button class="tool-btn" title="搜索 (Ctrl+F)" @click="openSearch">
           <Search :size="18" />
         </button>
         <button class="tool-btn" title="全屏" @click="toggleFullscreen">
           <Maximize :size="18" />
         </button>
-        <button class="tool-btn pitch-btn" title="演说模式" @click="showPitchMode = true">
+        <button
+          class="tool-btn"
+          :class="{ active: mapStore.zenMode }"
+          title="禅模式 (Esc 退出)"
+          aria-label="禅模式开关"
+          @click="handleToggleZenMode"
+        >
+          <Eye :size="18" />
+        </button>
+        <button
+          v-if="mapStore.zenMode"
+          class="tool-btn"
+          :title="`切换禅模式层级（当前：${zenLevelLabel}）`"
+          aria-label="切换禅模式层级"
+          @click="cycleZenLevel"
+        >
+          <Layers :size="18" />
+        </button>
+        <button
+          v-if="mapStore.zenMode"
+          class="tool-btn"
+          :title="`切换聚焦模式（当前：${zenFocusModeLabel}）`"
+          aria-label="切换聚焦模式"
+          @click="cycleZenFocusMode"
+        >
+          <GitBranch :size="18" />
+        </button>
+        <button v-if="!isZenLite" class="tool-btn pitch-btn" title="演说模式" @click="showPitchMode = true">
           <Presentation :size="18" />
         </button>
-        <div class="divider"></div>
+        <div class="divider" v-if="!isZenLite"></div>
         <button 
+          v-if="!isZenLite"
           class="tool-btn" 
           :class="{ active: showOutlinePanel }"
           title="大纲面板"
@@ -90,6 +131,7 @@
           <List :size="18" />
         </button>
         <button 
+          v-if="!isZenLite"
           class="tool-btn" 
           :class="{ active: showSidePanel }"
           title="属性面板"
@@ -97,7 +139,7 @@
         >
           <PanelRight :size="18" />
         </button>
-        <div class="settings-menu">
+        <div v-if="!isZenLite" class="settings-menu">
           <button 
             class="tool-btn" 
             :class="{ active: showSettingsMenu }"
@@ -114,24 +156,27 @@
       </div>
     </header>
     
-    <!-- 主编辑区域 -->
+    
     <main class="editor-area">
-      <!-- 大纲面板 -->
-      <OutlinePanel v-if="showOutlinePanel" @close="showOutlinePanel = false" />
+      
+      <OutlinePanel
+        v-if="showOutlinePanel && !(mapStore.zenMode && mapStore.zenLevel === 'deep')"
+        @close="showOutlinePanel = false"
+      />
       
       <div class="canvas-container">
         <MindMapCanvas />
       </div>
       
-      <!-- 右侧面板 -->
+      
       <NodeProperties 
-        v-if="showSidePanel"
+        v-if="showSidePanel && !(mapStore.zenMode && mapStore.zenLevel === 'deep')"
         :node="selectedNode"
         @close="showSidePanel = false"
       />
     </main>
     
-    <!-- 底部状态栏 -->
+    
     <footer class="status-bar">
       <span class="status-item">节点数: {{ mapStore.nodeCount }}</span>
       <span class="status-item">布局: {{ layoutLabel }}</span>
@@ -145,30 +190,40 @@
         就绪
       </span>
     </footer>
+    <Transition name="zen-float">
+      <div v-if="mapStore.zenMode" class="zen-floating-controls">
+        <span class="zen-badge">ZEN · {{ zenLevelLabel }} · {{ zenFocusModeLabel }}</span>
+        <button class="zen-action-btn" @click="cycleZenLevel">层级</button>
+        <button class="zen-action-btn" @click="cycleZenFocusMode">聚焦</button>
+        <button class="zen-action-btn" @click="openSearch">搜索</button>
+        <button class="zen-action-btn" @click="handleZoomReset">归中</button>
+        <button class="zen-action-btn zen-exit-btn" @click="exitZenMode">退出</button>
+      </div>
+    </Transition>
     
-    <!-- 搜索对话框 -->
+    
     <SearchDialog ref="searchDialogRef" />
     
-    <!-- 命令面板 -->
+    
     <CommandPalette ref="commandPaletteRef" @new-document="handleNewDocument" />
     
-    <!-- 快捷键帮助 -->
+    
     <ShortcutsHelp ref="showShortcutsHelp" />
     
-    <!-- Toast 通知 -->
+    
     <Transition name="toast">
       <div v-if="showToast" class="toast" :class="toastType">
         {{ toastMessage }}
       </div>
     </Transition>
     
-    <!-- Loading 遮罩 -->
+    
     <div v-if="isExporting" class="loading-overlay">
       <div class="loading-spinner"></div>
       <span>正在导出...</span>
     </div>
     
-    <!-- 演说模式 -->
+    
     <PitchMode :is-active="showPitchMode" @exit="showPitchMode = false" />
   </div>
 </template>
@@ -194,7 +249,10 @@ import {
   PanelRight,
   Keyboard,
   List,
-  Presentation
+  Presentation,
+  Eye,
+  Layers,
+  GitBranch
 } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'
 import { exportService, importService } from '@/services/export'
@@ -211,19 +269,16 @@ import PitchMode from '@/components/editor/PitchMode.vue'
 
 const mapStore = useMapStore()
 
-// 组件引用
 const searchDialogRef = ref<InstanceType<typeof SearchDialog> | null>(null)
 const commandPaletteRef = ref<InstanceType<typeof CommandPalette> | null>(null)
 const showShortcutsHelp = ref<InstanceType<typeof ShortcutsHelp> | null>(null)
 
-// UI 状态
 const showExportMenu = ref(false)
 const showSidePanel = ref(false)
 const showSettingsMenu = ref(false)
 const showOutlinePanel = ref(false)
 const showPitchMode = ref(false)
 
-// Toast 提示
 const toastMessage = ref('')
 const toastType = ref<'success' | 'error' | 'info'>('info')
 const showToast = ref(false)
@@ -236,16 +291,14 @@ function showNotification(message: string, type: 'success' | 'error' | 'info' = 
   setTimeout(() => showToast.value = false, 3000)
 }
 
-// 布局标签
 const layoutLabels: Record<string, string> = {
-  mind: '思维导图',
-  tree: '树形',
-  fishbone: '鱼骨图',
-  org: '组织架构'
+  mind: 'Mind Map',
+  tree: 'Tree',
+  fishbone: 'Fishbone',
+  org: 'Org Chart'
 }
-const layoutLabel = computed(() => layoutLabels[mapStore.document.layout] || '思维导图')
+const layoutLabel = computed(() => layoutLabels[mapStore.document.layout] || 'Mind Map')
 
-// 选中的节点
 const selectedNode = computed(() => {
   if (mapStore.focusedId) {
     return mapStore.findNode(mapStore.focusedId)
@@ -253,7 +306,22 @@ const selectedNode = computed(() => {
   return null
 })
 
-// 工具栏操作
+const isZenLite = computed(() => mapStore.zenMode && mapStore.zenLevel === 'lite')
+const isZenDeep = computed(() => mapStore.zenMode && mapStore.zenLevel === 'deep')
+
+const zenLevelLabels: Record<string, string> = {
+  lite: 'Lite',
+  deep: 'Deep',
+}
+const zenFocusModeLabels: Record<string, string> = {
+  branch: 'Branch',
+  path: 'Path',
+  highlight: 'Highlight',
+}
+
+const zenLevelLabel = computed(() => zenLevelLabels[mapStore.zenLevel] || 'Lite')
+const zenFocusModeLabel = computed(() => zenFocusModeLabels[mapStore.zenFocusMode] || 'Branch')
+
 function handleUndo() {
   mapStore.undo()
 }
@@ -277,7 +345,6 @@ function handleAddSibling() {
 }
 
 function handleDelete() {
-  // 多选时批量删除，单选时删除焦点节点
   if (mapStore.selectedIds.length > 1) {
     mapStore.deleteSelectedNodes()
   } else if (mapStore.focusedId) {
@@ -297,8 +364,32 @@ function handleZoomReset() {
   mapStore.setZoom(100)
 }
 
+function handleToggleZenMode() {
+  const nextMode = !mapStore.zenMode
+  mapStore.setZenMode(nextMode)
+  if (nextMode) {
+    showNotification(`Zen mode on (${zenLevelLabel.value}) · Press Esc to exit`, 'info')
+  }
+}
+
+function exitZenMode() {
+  if (!mapStore.zenMode) return
+  mapStore.setZenMode(false)
+  showNotification('Zen mode off', 'info')
+}
+
+function cycleZenLevel() {
+  mapStore.cycleZenLevel()
+  showNotification(`Zen level: ${zenLevelLabel.value}`, 'info')
+}
+
+function cycleZenFocusMode() {
+  mapStore.cycleZenFocusMode()
+  showNotification(`Focus mode: ${zenFocusModeLabel.value}`, 'info')
+}
+
 function handleNewDocument() {
-  if (confirm('确定要新建文档吗？当前未保存的更改将丢失。')) {
+  if (confirm('Create a new document? Unsaved changes will be lost.')) {
     mapStore.newDocument()
   }
 }
@@ -349,7 +440,7 @@ async function handleExportXMind() {
     showNotification('已导出为 XMind 格式', 'success')
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : '未知错误'
-    showNotification(`导出失败：${errorMessage}`, 'error')
+    showNotification(`Export failed: ${errorMessage}`, 'error')
   }
   showExportMenu.value = false
 }
@@ -360,7 +451,7 @@ async function handleExportFreeMind() {
     showNotification('已导出为 FreeMind 格式', 'success')
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : '未知错误'
-    showNotification(`导出失败：${errorMessage}`, 'error')
+    showNotification(`Export failed: ${errorMessage}`, 'error')
   }
   showExportMenu.value = false
 }
@@ -371,7 +462,7 @@ async function handleExportOPML() {
     showNotification('已导出为 OPML 格式', 'success')
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : '未知错误'
-    showNotification(`导出失败：${errorMessage}`, 'error')
+    showNotification(`Export failed: ${errorMessage}`, 'error')
   }
   showExportMenu.value = false
 }
@@ -385,27 +476,22 @@ function handleImport() {
     if (!file) return
 
     try {
-      // 使用自动导入方法，根据文件扩展名选择合适的导入器
       const doc = await importService.importAuto(file)
       mapStore.loadDocument(doc)
       showNotification(`成功导入: ${doc.name}`, 'success')
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '未知错误'
-      showNotification(`导入失败：${errorMessage}`, 'error')
+      showNotification(`Import failed: ${errorMessage}`, 'error')
       console.error('导入错误:', err)
     }
   }
   input.click()
 }
 
-
-
-// 打开搜索
 function openSearch() {
   searchDialogRef.value?.open()
 }
 
-// 切换全屏
 function toggleFullscreen() {
   if (document.fullscreenElement) {
     document.exitFullscreen()
@@ -414,14 +500,47 @@ function toggleFullscreen() {
   }
 }
 
-// 全局点击关闭下拉菜单
+function handleGlobalKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || event.isComposing || event.defaultPrevented) return
+
+  const activeElement = document.activeElement
+  const isInputFocused = activeElement instanceof HTMLInputElement ||
+    activeElement instanceof HTMLTextAreaElement ||
+    activeElement instanceof HTMLSelectElement ||
+    activeElement?.hasAttribute('contenteditable')
+
+  if (isInputFocused) return
+
+  if (showExportMenu.value) {
+    showExportMenu.value = false
+    return
+  }
+
+  if (showSettingsMenu.value) {
+    showSettingsMenu.value = false
+    return
+  }
+
+  if (showPitchMode.value) {
+    showPitchMode.value = false
+    return
+  }
+
+  if (mapStore.selectedIds.length > 0 || mapStore.focusedId) {
+    mapStore.clearSelection()
+    return
+  }
+
+  if (mapStore.zenMode) {
+    exitZenMode()
+  }
+}
+
 function handleGlobalClick(event: MouseEvent) {
   const target = event.target as HTMLElement
-  // 点击导出菜单外部时关闭
   if (showExportMenu.value && !target.closest('.export-menu')) {
     showExportMenu.value = false
   }
-  // 点击设置菜单外部时关闭
   if (showSettingsMenu.value && !target.closest('.settings-menu')) {
     showSettingsMenu.value = false
   }
@@ -429,10 +548,12 @@ function handleGlobalClick(event: MouseEvent) {
 
 onMounted(() => {
   document.addEventListener('click', handleGlobalClick)
+  window.addEventListener('keydown', handleGlobalKeydown)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleGlobalClick)
+  window.removeEventListener('keydown', handleGlobalKeydown)
 })
 </script>
 
@@ -444,7 +565,13 @@ onUnmounted(() => {
   background: var(--color-bg);
 }
 
-/* 顶部工具栏 */
+.tab-bar {
+  flex-shrink: 0;
+  overflow: hidden;
+  max-height: 56px;
+  transition: max-height 0.3s ease, opacity 0.25s ease, transform 0.25s ease;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -454,6 +581,9 @@ onUnmounted(() => {
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
+  overflow: hidden;
+  max-height: 52px;
+  transition: max-height 0.3s ease, opacity 0.25s ease, transform 0.25s ease, border-width 0.25s ease;
 }
 
 .toolbar-left,
@@ -536,11 +666,11 @@ onUnmounted(() => {
   text-align: center;
 }
 
-/* 编辑区域 */
 .editor-area {
   flex: 1;
   display: flex;
   overflow: hidden;
+  transition: height 0.3s ease;
 }
 
 .canvas-container {
@@ -553,7 +683,6 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-/* 侧边面板 */
 .side-panel {
   width: 280px;
   background: var(--color-bg);
@@ -641,7 +770,6 @@ onUnmounted(() => {
   font-size: 13px;
 }
 
-/* 底部状态栏 */
 .status-bar {
   display: flex;
   align-items: center;
@@ -653,6 +781,121 @@ onUnmounted(() => {
   font-size: 12px;
   color: var(--color-text-secondary);
   flex-shrink: 0;
+  overflow: hidden;
+  max-height: 28px;
+  transition: max-height 0.3s ease, opacity 0.25s ease, transform 0.25s ease, border-width 0.25s ease;
+}
+
+.zen-active .tab-bar,
+.zen-active .status-bar {
+  opacity: 0;
+  pointer-events: none;
+  max-height: 0;
+  transform: translateY(-8px);
+  border-width: 0;
+}
+
+.zen-active.zen-deep .toolbar {
+  opacity: 0;
+  pointer-events: none;
+  max-height: 0;
+  transform: translateY(-8px);
+  border-width: 0;
+}
+
+.zen-active.zen-deep .editor-area {
+  height: 100vh;
+}
+
+.zen-active.zen-lite .toolbar {
+  height: 46px;
+  max-height: 46px;
+  padding: 0 10px;
+}
+
+.zen-active.zen-lite .toolbar-left,
+.zen-active.zen-lite .toolbar-center,
+.zen-active.zen-lite .toolbar-right {
+  gap: 2px;
+}
+
+.zen-floating-controls {
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(17, 24, 39, 0.78);
+  color: #e5e7eb;
+  backdrop-filter: blur(8px);
+  z-index: 1001;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+}
+
+.zen-badge {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #cbd5e1;
+}
+
+.zen-action-btn {
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(30, 41, 59, 0.6);
+  color: #e2e8f0;
+  font-size: 12px;
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.zen-action-btn:hover {
+  background: rgba(51, 65, 85, 0.9);
+  border-color: rgba(148, 163, 184, 0.7);
+}
+
+.zen-exit-btn {
+  border-color: rgba(248, 113, 113, 0.55);
+  color: #fecaca;
+}
+
+.zen-float-enter-active,
+.zen-float-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.zen-float-enter-from,
+.zen-float-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+@media (max-width: 900px) {
+  .zen-floating-controls {
+    left: 12px;
+    right: 12px;
+    top: 10px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolbar,
+  .tab-bar,
+  .status-bar,
+  .editor-area,
+  .tool-btn,
+  .zen-action-btn,
+  .zen-float-enter-active,
+  .zen-float-leave-active {
+    transition: none !important;
+  }
 }
 
 .status-item {
@@ -665,7 +908,6 @@ onUnmounted(() => {
   color: #10b981;
 }
 
-/* 导出菜单 */
 .export-menu {
   position: relative;
 }
@@ -716,12 +958,10 @@ onUnmounted(() => {
   border-top: 1px solid var(--color-border);
 }
 
-/* 设置菜单 */
 .settings-menu {
   position: relative;
 }
 
-/* 状态栏按钮 */
 .status-btn {
   display: flex;
   align-items: center;
@@ -740,7 +980,6 @@ onUnmounted(() => {
   color: var(--color-text);
 }
 
-/* Toast 通知 */
 .toast {
   position: fixed;
   bottom: 24px;
@@ -780,7 +1019,6 @@ onUnmounted(() => {
   transform: translateX(-50%) translateY(20px);
 }
 
-/* Loading 遮罩 */
 .loading-overlay {
   position: fixed;
   inset: 0;
