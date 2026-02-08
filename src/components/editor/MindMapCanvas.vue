@@ -738,7 +738,6 @@ function handleMouseDown(event: MouseEvent) {
       dragStartY.value = event.clientY
       panStartX.value = panX.value
       panStartY.value = panY.value
-      mapStore.clearSelection()
     }
   }
 }
@@ -994,6 +993,10 @@ function handleKeyUp(event: KeyboardEvent) {
   }
 }
 
+function handleWindowBlur() {
+  isTemporarilyRevealing.value = false
+}
+
 function updateViewBox() {
   if (svgRef.value) {
     const rect = svgRef.value.getBoundingClientRect()
@@ -1014,6 +1017,7 @@ onMounted(() => {
   window.addEventListener('resize', updateViewBox)
   window.addEventListener('keydown', handleKeyDown)
   window.addEventListener('keyup', handleKeyUp)
+  window.addEventListener('blur', handleWindowBlur)
 })
 
 onUnmounted(() => {
@@ -1021,6 +1025,7 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateViewBox)
   window.removeEventListener('keydown', handleKeyDown)
   window.removeEventListener('keyup', handleKeyUp)
+  window.removeEventListener('blur', handleWindowBlur)
 })
 </script>
 

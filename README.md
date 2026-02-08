@@ -5,6 +5,7 @@
   <p>极简、高效、现代化的 Web 端思维导图工具</p>
   
   <p>
+    <img src="https://img.shields.io/badge/Version-0.2.3-blue?style=flat-square" />
     <img src="https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js" />
     <img src="https://img.shields.io/badge/TypeScript-5.6-3178c6?style=flat-square&logo=typescript" />
     <img src="https://img.shields.io/badge/Vite-6.0-646cff?style=flat-square&logo=vite" />
@@ -76,6 +77,7 @@ src/
 - [x] **Quality**: 导入数据验证、导出 Loading 提示、IME 兼容优化
 - [x] **彩虹分支**: 一键开启，主分支自动着色
 - [x] **Pitch Mode**: 演说模式，智能运镜、视觉聚焦、激光笔
+- [x] **Zen Mode**: 禅模式，支持双层级沉浸与分支聚焦
 - [x] **Import+**: XMind、FreeMind、OPML 等专业格式导入导出支持
 - [ ] **AI Assistant**: 接入 LLM，支持自然语言一键生成导图、节点扩写与总结
 - [ ] **PWA**: 深度支持离线使用与桌面安装

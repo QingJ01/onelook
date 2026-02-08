@@ -192,7 +192,7 @@
     </footer>
     <Transition name="zen-float">
       <div v-if="mapStore.zenMode" class="zen-floating-controls">
-        <span class="zen-badge">ZEN · {{ zenLevelLabel }} · {{ zenFocusModeLabel }}</span>
+        <span class="zen-badge">禅 · {{ zenLevelLabel }} · {{ zenFocusModeLabel }}</span>
         <button class="zen-action-btn" @click="cycleZenLevel">层级</button>
         <button class="zen-action-btn" @click="cycleZenFocusMode">聚焦</button>
         <button class="zen-action-btn" @click="openSearch">搜索</button>
@@ -283,19 +283,21 @@ const toastMessage = ref('')
 const toastType = ref<'success' | 'error' | 'info'>('info')
 const showToast = ref(false)
 const isExporting = ref(false)
+let toastTimer: ReturnType<typeof setTimeout> | null = null
 
 function showNotification(message: string, type: 'success' | 'error' | 'info' = 'info') {
+  if (toastTimer) clearTimeout(toastTimer)
   toastMessage.value = message
   toastType.value = type
   showToast.value = true
-  setTimeout(() => showToast.value = false, 3000)
+  toastTimer = setTimeout(() => showToast.value = false, 3000)
 }
 
 const layoutLabels: Record<string, string> = {
-  mind: 'Mind Map',
-  tree: 'Tree',
-  fishbone: 'Fishbone',
-  org: 'Org Chart'
+  mind: '思维导图',
+  tree: '树形',
+  fishbone: '鱼骨图',
+  org: '组织架构'
 }
 const layoutLabel = computed(() => layoutLabels[mapStore.document.layout] || 'Mind Map')
 
@@ -310,13 +312,13 @@ const isZenLite = computed(() => mapStore.zenMode && mapStore.zenLevel === 'lite
 const isZenDeep = computed(() => mapStore.zenMode && mapStore.zenLevel === 'deep')
 
 const zenLevelLabels: Record<string, string> = {
-  lite: 'Lite',
-  deep: 'Deep',
+  lite: '轻量',
+  deep: '深度',
 }
 const zenFocusModeLabels: Record<string, string> = {
-  branch: 'Branch',
-  path: 'Path',
-  highlight: 'Highlight',
+  branch: '分支',
+  path: '路径',
+  highlight: '高亮',
 }
 
 const zenLevelLabel = computed(() => zenLevelLabels[mapStore.zenLevel] || 'Lite')
@@ -368,28 +370,28 @@ function handleToggleZenMode() {
   const nextMode = !mapStore.zenMode
   mapStore.setZenMode(nextMode)
   if (nextMode) {
-    showNotification(`Zen mode on (${zenLevelLabel.value}) · Press Esc to exit`, 'info')
+    showNotification(`禅模式已开启 (${zenLevelLabel.value})，按 Esc 退出`, 'info')
   }
 }
 
 function exitZenMode() {
   if (!mapStore.zenMode) return
   mapStore.setZenMode(false)
-  showNotification('Zen mode off', 'info')
+  showNotification('禅模式已关闭', 'info')
 }
 
 function cycleZenLevel() {
   mapStore.cycleZenLevel()
-  showNotification(`Zen level: ${zenLevelLabel.value}`, 'info')
+  showNotification(`禅模式层级：${zenLevelLabel.value}`, 'info')
 }
 
 function cycleZenFocusMode() {
   mapStore.cycleZenFocusMode()
-  showNotification(`Focus mode: ${zenFocusModeLabel.value}`, 'info')
+  showNotification(`聚焦模式：${zenFocusModeLabel.value}`, 'info')
 }
 
 function handleNewDocument() {
-  if (confirm('Create a new document? Unsaved changes will be lost.')) {
+  if (confirm('创建新文档？未保存的更改将丢失。')) {
     mapStore.newDocument()
   }
 }
@@ -440,7 +442,7 @@ async function handleExportXMind() {
     showNotification('已导出为 XMind 格式', 'success')
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : '未知错误'
-    showNotification(`Export failed: ${errorMessage}`, 'error')
+    showNotification(`导出失败：${errorMessage}`, 'error')
   }
   showExportMenu.value = false
 }
@@ -481,7 +483,7 @@ function handleImport() {
       showNotification(`成功导入: ${doc.name}`, 'success')
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '未知错误'
-      showNotification(`Import failed: ${errorMessage}`, 'error')
+      showNotification(`导入失败：${errorMessage}`, 'error')
       console.error('导入错误:', err)
     }
   }
@@ -526,13 +528,14 @@ function handleGlobalKeydown(event: KeyboardEvent) {
     return
   }
 
-  if (mapStore.selectedIds.length > 0 || mapStore.focusedId) {
+  if (mapStore.zenMode) {
     mapStore.clearSelection()
+    exitZenMode()
     return
   }
 
-  if (mapStore.zenMode) {
-    exitZenMode()
+  if (mapStore.selectedIds.length > 0 || mapStore.focusedId) {
+    mapStore.clearSelection()
   }
 }
 
