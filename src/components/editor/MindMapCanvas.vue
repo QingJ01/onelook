@@ -98,7 +98,7 @@
             
             
             <foreignObject
-              v-if="shouldRenderRichContent(node) && editingNodeId !== node.id"
+              v-if="editingNodeId !== node.id"
               :x="-node.width / 2"
               :y="-node.height / 2"
               :width="node.width"
@@ -107,7 +107,10 @@
               <div
                 xmlns="http://www.w3.org/1999/xhtml"
                 class="md-content"
-                :class="{ 'md-content-image': hasNodePhoto(node) || hasMarkdownImage(node.node.text) }"
+                :class="{
+                  'md-content-image': hasNodePhoto(node) || hasMarkdownImage(node.node.text),
+                  'plain-text': !hasMarkdownFormat(node.node.text) && !hasNodePhoto(node)
+                }"
                 :style="getRichContentStyle(node)"
               >
                 <img
@@ -129,20 +132,15 @@
                 >
                   {{ node.node.text }}
                 </div>
+                <div
+                  v-else
+                  class="node-rich-text-body"
+                  :class="{ 'root-node': !node.node.parentId }"
+                >
+                  {{ node.node.text }}
+                </div>
               </div>
             </foreignObject>
-            
-            
-            <text 
-              v-else-if="editingNodeId !== node.id"
-              class="node-text" 
-              :x="node.node.data?.icon ? 8 : 0"
-              text-anchor="middle" 
-              dominant-baseline="middle"
-              :style="getTextStyle(node)"
-            >
-              {{ node.node.text }}
-            </text>
             
             
             <g 
@@ -671,10 +669,6 @@ function getNodeImageStyle(node: LayoutNode): Record<string, string> {
   }
 }
 
-function shouldRenderRichContent(node: LayoutNode): boolean {
-  return hasMarkdownFormat(node.node.text) || hasNodePhoto(node)
-}
-
 function getRenderedMarkdown(text: string): string {
   return renderMarkdown(text)
 }
@@ -1089,18 +1083,6 @@ onUnmounted(() => {
   stroke: var(--color-primary);
 }
 
-.node-text {
-  font-size: 13px;
-  fill: var(--color-text);
-  pointer-events: none;
-  font-family: 'Inter', system-ui, sans-serif;
-}
-
-.node.root .node-text {
-  fill: white;
-  font-weight: 500;
-}
-
 .connection {
   fill: none;
   stroke-width: 2;
@@ -1245,6 +1227,35 @@ onUnmounted(() => {
 
 .node.root .md-content {
   color: white;
+}
+
+.md-content.plain-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.node.root .md-content.plain-text {
+  color: white;
+}
+
+.node-rich-text-body {
+  margin: 0;
+  text-align: center;
+  line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  width: 100%;
+}
+
+.node-rich-text-body.root-node {
+  color: white;
+  font-weight: 500;
 }
 
 .summary-bracket {

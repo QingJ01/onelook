@@ -400,6 +400,19 @@ function buildExportStyles(): string {
             object-fit: contain;
             border-radius: 4px;
         }
+        .node-rich-text-body {
+            margin: 0;
+            text-align: center;
+            line-height: 1.4;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+            width: 100%;
+        }
+        .node-rich-text-body.root-node {
+            color: white;
+            font-weight: 500;
+        }
         .node-rich-text-body.with-image {
             margin: 0;
             color: inherit;
