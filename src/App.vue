@@ -423,10 +423,15 @@ async function handleExportPNG() {
   }
 }
 
-function handleExportSVG() {
+async function handleExportSVG() {
   const svg = document.querySelector('.mindmap-canvas') as SVGSVGElement
   if (svg) {
-    exportService.exportSVG(svg, mapStore.document.name)
+    try {
+      await exportService.exportSVG(svg, mapStore.document.name)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '导出失败'
+      showNotification(msg, 'error')
+    }
   }
   showExportMenu.value = false
 }
