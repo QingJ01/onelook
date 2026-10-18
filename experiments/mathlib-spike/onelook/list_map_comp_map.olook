@@ -1,25 +1,25 @@
 {
   "version": "1.0.0",
   "app": "OneLook",
-  "created": 1792302650562,
-  "modified": 1792302650562,
+  "created": 1792302907167,
+  "modified": 1792302907167,
   "document": {
-    "id": "3382e5fe-9603-4c78-b7da-70cdc34a978c",
+    "id": "dcc4c532-635d-4275-a66a-d27168017d69",
     "name": "mathlib 图投影 · List.map_comp_map（聚焦 r=2）",
     "root": {
-      "id": "06931252-49b2-4e73-af3c-74630d4e4a86",
-      "text": "List.map_comp_map",
+      "id": "9d0afd37-3e1d-427d-8995-b67070a8b4be",
+      "text": "学习投影 · List.map_comp_map",
       "children": [
         {
-          "id": "6927718d-ab42-4c2e-a7f3-55443fdbe11b",
+          "id": "dc0591bc-5c6f-45d0-806c-8b1279d26bef",
           "text": "中心概念：列表与拼接",
           "children": [
             {
-              "id": "3f7478f5-fece-4c8a-829e-98afde13a673",
-              "text": "List.map_comp_map",
+              "id": "843facdb-4dfd-46a5-b9d4-4d0df909751a",
+              "text": "[目标] List.map_comp_map",
               "children": [],
               "isExpanded": true,
-              "parentId": "6927718d-ab42-4c2e-a7f3-55443fdbe11b",
+              "parentId": "dc0591bc-5c6f-45d0-806c-8b1279d26bef",
               "data": {
                 "note": "**层** 目标\n\n**类型** theorem\n\n**模块** `Mathlib.Data.List.Basic`\n\n**角色** 目标定理\n\n**签名**\n```lean\n∀ {α : Type u} {β : Type v} {γ : Type w} (g : β → γ) (f : α → β), List.map g ∘ List.map f = List.map (g ∘ f)\n```\n\n**文档**\nComposing a `List.map` with another `List.map` is equal to\na single `List.map` of composed functions.",
                 "tags": [
@@ -38,11 +38,11 @@
               }
             },
             {
-              "id": "ac015c1d-5cd4-48bd-ac1b-fdb5f42cb9e3",
+              "id": "26a17d81-1b2c-4a94-97de-d2ecdc593d1b",
               "text": "[陈述] List",
               "children": [],
               "isExpanded": true,
-              "parentId": "6927718d-ab42-4c2e-a7f3-55443fdbe11b",
+              "parentId": "dc0591bc-5c6f-45d0-806c-8b1279d26bef",
               "data": {
                 "note": "**层** 陈述\n\n**类型** inductive\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\nType u → Type u\n```\n\n**文档**\nLinked lists: ordered lists, in which each element has a reference to the next element.\n\nMost operations on linked lists take time proportional to the length of the list, because each\nelement must be traversed to find the next element.\n\n`List α` is isomorphic to `Array α`, but they are useful for different things:\n* `List α` is easier for reasoning, and `Array α` is modeled as a wrapper around `List α`.\n* `List α` works well as a persistent data structure, when many copies of the tail are shared. When\n  the value is not shared, `Array α` will have better performance because it can do destructive\n  updates.",
                 "tags": [
@@ -59,11 +59,11 @@
               }
             },
             {
-              "id": "100cbd40-831d-4a4b-882a-bb47e815343c",
+              "id": "3cec93b1-9074-4c68-bcdd-fd33945f60cc",
               "text": "[证明] List.comp_map",
               "children": [],
               "isExpanded": true,
-              "parentId": "6927718d-ab42-4c2e-a7f3-55443fdbe11b",
+              "parentId": "dc0591bc-5c6f-45d0-806c-8b1279d26bef",
               "data": {
                 "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Mathlib.Data.List.Basic`\n\n**签名**\n```lean\n∀ {α : Type u} {β : Type v} {γ : Type w} (h : β → γ) (g : α → β) (l : List α), List.map (h ∘ g) l = List.map h (List.map g l)\n```\n\n**文档**\nA single `List.map` of a composition of functions is equal to\ncomposing a `List.map` with another `List.map`, fully applied.\nThis is the reverse direction of `List.map_map`.",
                 "tags": [
@@ -80,11 +80,11 @@
               }
             },
             {
-              "id": "f709c07a-25b4-4106-88d0-193c5f485ff7",
+              "id": "15c35e97-f015-46e3-b7b6-90126dd83b99",
               "text": "[证明] List.ext_getElem?",
               "children": [],
               "isExpanded": true,
-              "parentId": "6927718d-ab42-4c2e-a7f3-55443fdbe11b",
+              "parentId": "dc0591bc-5c6f-45d0-806c-8b1279d26bef",
               "data": {
                 "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Init.Data.List.Lemmas`\n\n**签名**\n```lean\n∀ {α : Type u_1} {l₁ l₂ : List α}, (∀ (i : ℕ), l₁[i]? = l₂[i]?) → l₁ = l₂\n```\n\n**文档**\n（无 docstring）",
                 "tags": [
@@ -101,11 +101,11 @@
               }
             },
             {
-              "id": "8511e9d3-aa69-4e4a-9fd2-d2132079754d",
+              "id": "84f3331d-77ee-4533-8b56-f101345a7c11",
               "text": "[证明] List.length",
               "children": [],
               "isExpanded": true,
-              "parentId": "6927718d-ab42-4c2e-a7f3-55443fdbe11b",
+              "parentId": "dc0591bc-5c6f-45d0-806c-8b1279d26bef",
               "data": {
                 "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Type u_1} → List α → ℕ\n```\n\n**文档**\nThe length of a list.\n\nThis function is overridden in the compiler to `lengthTR`, which uses constant stack space.\n\nExamples:\n* `([] : List String).length = 0`\n* `[\"green\", \"brown\"].length = 2`",
                 "tags": [
@@ -122,11 +122,11 @@
               }
             },
             {
-              "id": "5663b425-b5d9-4077-982e-1023237aeaae",
+              "id": "b68f4c39-c3bd-45e4-99ca-3bd35b8b2aac",
               "text": "[陈述] List.map",
               "children": [],
               "isExpanded": true,
-              "parentId": "6927718d-ab42-4c2e-a7f3-55443fdbe11b",
+              "parentId": "dc0591bc-5c6f-45d0-806c-8b1279d26bef",
               "data": {
                 "note": "**层** 陈述\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Type u_1} → {β : Type u_2} → (α → β) → List α → List β\n```\n\n**文档**\nApplies a function to each element of the list, returning the resulting list of values.\n\n`O(|l|)`.\n\nExamples:\n* `[a, b, c].map f = [f a, f b, f c]`\n* `[].map Nat.succ = []`\n* `[\"one\", \"two\", \"three\"].map (·.length) = [3, 3, 5]`\n* `[\"one\", \"two\", \"three\"].map (·.reverse) = [\"eno\", \"owt\", \"eerht\"]`",
                 "tags": [
@@ -143,11 +143,11 @@
               }
             },
             {
-              "id": "2c08d3dc-696f-494f-8e15-4dd9b0af0b8b",
+              "id": "728d9a86-9ec1-42b3-89e2-cd7598cafc9f",
               "text": "[证明] List.map_map",
               "children": [],
               "isExpanded": true,
-              "parentId": "6927718d-ab42-4c2e-a7f3-55443fdbe11b",
+              "parentId": "dc0591bc-5c6f-45d0-806c-8b1279d26bef",
               "data": {
                 "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Init.Data.List.Lemmas`\n\n**签名**\n```lean\n∀ {β : Type u_1} {γ : Type u_2} {α : Type u_3} {g : β → γ} {f : α → β} {l : List α}, List.map g (List.map f l) = List.map (g ∘ f) l\n```\n\n**文档**\n（无 docstring）",
                 "tags": [
@@ -165,7 +165,7 @@
             }
           ],
           "isExpanded": true,
-          "parentId": "06931252-49b2-4e73-af3c-74630d4e4a86",
+          "parentId": "9d0afd37-3e1d-427d-8995-b67070a8b4be",
           "data": {
             "note": "**概念** 列表与拼接（List / ++ / length）\n\n**锚点** 7 个\n\n**概念依赖（聚焦内）**\n- 等式与同余（Eq / congr）：type 4 / proof 7\n- 函数与复合（Function / ∘）：type 3 / proof 4\n- 元素访问（GetElem? / getElem?）：type 1 / proof 2\n- 实例/类型类机器（instances）：type 2 / proof 4\n- 内部管道（equation compiler / recursor / match）：type 0 / proof 7\n- 逻辑与函数外延（True / Iff / propext / funext）：type 0 / proof 3\n- 自然数与加法（Nat / +）：type 2 / proof 3\n- Option 与可空值：type 1 / proof 4\n- 序关系（LT / LE）：type 1 / proof 2",
             "tags": [
@@ -185,19 +185,19 @@
           }
         },
         {
-          "id": "c2da3744-e927-4743-818f-9e48000dbb8f",
+          "id": "1c5debc4-5927-4d25-b452-14714c6175c2",
           "text": "读懂陈述",
           "children": [
             {
-              "id": "ad555784-8f13-4708-9adc-106138bf4c6b",
+              "id": "0dae367c-e479-4e9f-a1de-d7aeccead3fd",
               "text": "等式与同余",
               "children": [
                 {
-                  "id": "44bd6cec-b311-4e6b-b960-8f1cbbe28190",
+                  "id": "9a0ad65d-82c7-4a71-a53f-9c589c13338b",
                   "text": "[陈述] Eq",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "ad555784-8f13-4708-9adc-106138bf4c6b",
+                  "parentId": "0dae367c-e479-4e9f-a1de-d7aeccead3fd",
                   "data": {
                     "note": "**层** 陈述\n\n**类型** inductive\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Sort u_1} → α → α → Prop\n```\n\n**文档**\nThe equality relation. It has one introduction rule, `Eq.refl`.\nWe use `a = b` as notation for `Eq a b`.\nA fundamental property of equality is that it is an equivalence relation.\n```\nvariable (α : Type) (a b c d : α)\nvariable (hab : a = b) (hcb : c = b) (hcd : c = d)\n\nexample : a = d :=\n  Eq.trans (Eq.trans hab (Eq.symm hcb)) hcd\n```\nEquality is much more than an equivalence relation, however. It has the important property that every assertion\nrespects the equivalence, in the sense that we can substitute equal expressions without changing the truth value.\nThat is, given `h1 : a = b` and `h2 : p a`, we can construct a proof for `p b` using substitution: `Eq.subst h1 h2`.\nExample:\n```\nexample (α : Type) (a b : α) (p : α → Prop)\n        (h1 : a = b) (h2 : p a) : p b :=\n  Eq.subst h1 h2\n\nexample (α : Type) (a b : α) (p : α → Prop)\n    (h1 : a = b) (h2 : p a) : p b :=\n  h1 ▸ h2\n```\nThe triangle in the second presentation is a macro built on top of `Eq.subst` and `Eq.symm`, and you can enter it by typing `\\t`.\nFor more information: [Equality](https://lean-lang.org/theorem_proving_in_lean4/quantifiers_and_equality.html#equality)",
                     "tags": [
@@ -214,11 +214,11 @@
                   }
                 },
                 {
-                  "id": "453a4c62-0449-41fd-893a-356a71b14a90",
+                  "id": "ac5886d1-8db1-46f4-af69-84fb651082da",
                   "text": "[证明] Eq.mpr",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "ad555784-8f13-4708-9adc-106138bf4c6b",
+                  "parentId": "0dae367c-e479-4e9f-a1de-d7aeccead3fd",
                   "data": {
                     "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Init.Core`\n\n**签名**\n```lean\n{α β : Sort u} → α = β → β → α\n```\n\n**文档**\nIf `h : α = β` is a proof of type equality, then `h.mpr : β → α` is the induced\n\"cast\" operation in the reverse direction, mapping elements of `β` to elements of `α`.\n\nYou can prove theorems about the resulting element by induction on `h`, since\n`rfl.mpr` is definitionally the identity function.",
                     "tags": [
@@ -235,11 +235,11 @@
                   }
                 },
                 {
-                  "id": "707f5acd-87dd-438f-b467-91653eb197ac",
+                  "id": "fc70e080-90dc-4e1c-8556-889b6fe023b4",
                   "text": "[证明] Eq.rec",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "ad555784-8f13-4708-9adc-106138bf4c6b",
+                  "parentId": "0dae367c-e479-4e9f-a1de-d7aeccead3fd",
                   "data": {
                     "note": "**层** 证明\n\n**类型** recursor\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Sort u_1} → {a : α} → {motive : (a_1 : α) → a = a_1 → Sort u} → motive a ⋯ → {a_1 : α} → (t : a = a_1) → motive a_1 t\n```\n\n**文档**\n（无 docstring）",
                     "tags": [
@@ -256,11 +256,11 @@
                   }
                 },
                 {
-                  "id": "7aa659da-aed6-4e0f-9d29-7fd2e9217f8f",
+                  "id": "4df46554-0f4e-4805-a0a7-e4a6a123a62d",
                   "text": "[证明] Eq.symm",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "ad555784-8f13-4708-9adc-106138bf4c6b",
+                  "parentId": "0dae367c-e479-4e9f-a1de-d7aeccead3fd",
                   "data": {
                     "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n∀ {α : Sort u} {a b : α}, a = b → b = a\n```\n\n**文档**\nEquality is symmetric: if `a = b` then `b = a`.\n\nBecause this is in the `Eq` namespace, if you have a variable `h : a = b`,\n`h.symm` can be used as shorthand for `Eq.symm h` as a proof of `b = a`.\n\nFor more information: [Equality](https://lean-lang.org/theorem_proving_in_lean4/quantifiers_and_equality.html#equality)",
                     "tags": [
@@ -277,11 +277,11 @@
                   }
                 },
                 {
-                  "id": "cd60764f-c899-47db-b3c0-883afa046362",
+                  "id": "aa3d5682-9035-436b-b8c4-b5c7b95c798f",
                   "text": "[证明] congrArg",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "ad555784-8f13-4708-9adc-106138bf4c6b",
+                  "parentId": "0dae367c-e479-4e9f-a1de-d7aeccead3fd",
                   "data": {
                     "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n∀ {α : Sort u} {β : Sort v} {a₁ a₂ : α} (f : α → β), a₁ = a₂ → f a₁ = f a₂\n```\n\n**文档**\nCongruence in the function argument: if `a₁ = a₂` then `f a₁ = f a₂` for\nany (nondependent) function `f`. This is more powerful than it might look at first, because\nyou can also use a lambda expression for `f` to prove that\n`<something containing a₁> = <something containing a₂>`. This function is used\ninternally by tactics like `congr` and `simp` to apply equalities inside\nsubterms.\n\nFor more information: [Equality](https://lean-lang.org/theorem_proving_in_lean4/quantifiers_and_equality.html#equality)",
                     "tags": [
@@ -298,11 +298,11 @@
                   }
                 },
                 {
-                  "id": "9ba72097-ab85-450b-883e-7ccc8c86e340",
+                  "id": "dff9d097-c80c-414b-98c4-b286f2cec5b1",
                   "text": "[证明] rfl",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "ad555784-8f13-4708-9adc-106138bf4c6b",
+                  "parentId": "0dae367c-e479-4e9f-a1de-d7aeccead3fd",
                   "data": {
                     "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n∀ {α : Sort u} {a : α}, a = a\n```\n\n**文档**\n`rfl : a = a` is the unique constructor of the equality type. This is the\nsame as `Eq.refl` except that it takes `a` implicitly instead of explicitly.\n\nThis is a more powerful theorem than it may appear at first, because although\nthe statement of the theorem is `a = a`, Lean will allow anything that is\ndefinitionally equal to that type. So, for instance, `2 + 2 = 4` is proven in\nLean by `rfl`, because both sides are the same up to definitional equality.",
                     "tags": [
@@ -320,7 +320,7 @@
                 }
               ],
               "isExpanded": true,
-              "parentId": "c2da3744-e927-4743-818f-9e48000dbb8f",
+              "parentId": "1c5debc4-5927-4d25-b452-14714c6175c2",
               "data": {
                 "note": "**概念** 等式与同余（Eq / congr）\n\n**锚点** 6 个\n\n**概念依赖（聚焦内）**\n（聚焦子图内无跨概念依赖）",
                 "tags": [
@@ -337,15 +337,15 @@
               }
             },
             {
-              "id": "c0adf42b-bce1-4121-bba7-c69be5c09174",
+              "id": "11373b35-a169-431b-bbdf-733c89915ad0",
               "text": "函数与复合",
               "children": [
                 {
-                  "id": "7ea7f1f9-dafb-4c17-b47e-5b9b54e9689d",
+                  "id": "cebae785-7821-4adf-b69b-764db83dfa8e",
                   "text": "[陈述] Function.comp",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "c0adf42b-bce1-4121-bba7-c69be5c09174",
+                  "parentId": "11373b35-a169-431b-bbdf-733c89915ad0",
                   "data": {
                     "note": "**层** 陈述\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Sort u} → {β : Sort v} → {δ : Sort w} → (β → δ) → (α → β) → α → δ\n```\n\n**文档**\nFunction composition, usually written with the infix operator `∘`. A new function is created from\ntwo existing functions, where one function's output is used as input to the other.\n\nExamples:\n * `Function.comp List.reverse (List.drop 2) [3, 2, 4, 1] = [1, 4]`\n * `(List.reverse ∘ List.drop 2) [3, 2, 4, 1] = [1, 4]`",
                     "tags": [
@@ -362,11 +362,11 @@
                   }
                 },
                 {
-                  "id": "49aafd16-434a-429b-8a57-01a3a82e3b1c",
+                  "id": "ddc6c71b-e057-4b4c-8150-fe82dd1e725c",
                   "text": "[证明] Function.comp_apply",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "c0adf42b-bce1-4121-bba7-c69be5c09174",
+                  "parentId": "11373b35-a169-431b-bbdf-733c89915ad0",
                   "data": {
                     "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Init.Core`\n\n**签名**\n```lean\n∀ {β : Sort u_1} {δ : Sort u_2} {α : Sort u_3} {f : β → δ} {g : α → β} {x : α}, (f ∘ g) x = f (g x)\n```\n\n**文档**\n（无 docstring）",
                     "tags": [
@@ -384,7 +384,7 @@
                 }
               ],
               "isExpanded": true,
-              "parentId": "c2da3744-e927-4743-818f-9e48000dbb8f",
+              "parentId": "1c5debc4-5927-4d25-b452-14714c6175c2",
               "data": {
                 "note": "**概念** 函数与复合（Function / ∘）\n\n**锚点** 2 个\n\n**概念依赖（聚焦内）**\n- 等式与同余（Eq / congr）：type 1 / proof 1",
                 "tags": [
@@ -402,7 +402,7 @@
             }
           ],
           "isExpanded": true,
-          "parentId": "06931252-49b2-4e73-af3c-74630d4e4a86",
+          "parentId": "9d0afd37-3e1d-427d-8995-b67070a8b4be",
           "data": {
             "note": "理解命题本身所需的概念（类型级闭包及其语义修正）。",
             "tags": [
@@ -420,19 +420,19 @@
           }
         },
         {
-          "id": "060b3111-9060-4193-8bca-1229aee36202",
+          "id": "a689223d-e1d7-4faa-8656-040d3cddd361",
           "text": "读懂证明",
           "children": [
             {
-              "id": "204aff98-5fd6-45fd-b7c0-8a53a7d07243",
+              "id": "02be13bc-eb42-45c1-a55d-8d30f4890693",
               "text": "逻辑与函数外延",
               "children": [
                 {
-                  "id": "f7fdc13b-4f43-4c70-86f7-111917a88d9e",
+                  "id": "190f2c3d-b104-42d3-8721-ea4dfb4b524d",
                   "text": "[证明] Iff",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "204aff98-5fd6-45fd-b7c0-8a53a7d07243",
+                  "parentId": "02be13bc-eb42-45c1-a55d-8d30f4890693",
                   "data": {
                     "note": "**层** 证明\n\n**类型** inductive\n\n**模块** `Init.Core`\n\n**签名**\n```lean\nProp → Prop → Prop\n```\n\n**文档**\nIf and only if, or logical bi-implication. `a ↔ b` means that `a` implies `b` and vice versa.\nBy `propext`, this implies that `a` and `b` are equal and hence any expression involving `a`\nis equivalent to the corresponding expression with `b` instead.",
                     "tags": [
@@ -449,11 +449,11 @@
                   }
                 },
                 {
-                  "id": "14a9cd16-839d-4f92-b2ce-45ee11f3fe09",
+                  "id": "391c6782-711b-4810-aa68-d1891eb0d99b",
                   "text": "[证明] Iff.mp",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "204aff98-5fd6-45fd-b7c0-8a53a7d07243",
+                  "parentId": "02be13bc-eb42-45c1-a55d-8d30f4890693",
                   "data": {
                     "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Init.Core`\n\n**签名**\n```lean\n∀ {a b : Prop}, (a ↔ b) → a → b\n```\n\n**文档**\nModus ponens for if and only if. If `a ↔ b` and `a`, then `b`.",
                     "tags": [
@@ -470,11 +470,11 @@
                   }
                 },
                 {
-                  "id": "24c216fa-c81c-4592-a053-42834a55954a",
+                  "id": "f70e51fe-ad19-4e1e-967f-f1be6e654ad4",
                   "text": "[证明] Iff.mpr",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "204aff98-5fd6-45fd-b7c0-8a53a7d07243",
+                  "parentId": "02be13bc-eb42-45c1-a55d-8d30f4890693",
                   "data": {
                     "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Init.Core`\n\n**签名**\n```lean\n∀ {a b : Prop}, (a ↔ b) → b → a\n```\n\n**文档**\nModus ponens for if and only if, reversed. If `a ↔ b` and `b`, then `a`.",
                     "tags": [
@@ -491,11 +491,11 @@
                   }
                 },
                 {
-                  "id": "be1142f1-3f69-42da-8046-0bafa6822cd1",
+                  "id": "4729a229-f5f6-4565-8e72-58efee7c9eac",
                   "text": "[证明] Iff.refl",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "204aff98-5fd6-45fd-b7c0-8a53a7d07243",
+                  "parentId": "02be13bc-eb42-45c1-a55d-8d30f4890693",
                   "data": {
                     "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Init.Core`\n\n**签名**\n```lean\n∀ (a : Prop), a ↔ a\n```\n\n**文档**\n（无 docstring）",
                     "tags": [
@@ -512,11 +512,11 @@
                   }
                 },
                 {
-                  "id": "2faa0635-62dc-4fde-bd01-429cb9a1339b",
+                  "id": "286b84ed-ea1a-44e0-82f9-275968c8d1a1",
                   "text": "[证明] Iff.rfl",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "204aff98-5fd6-45fd-b7c0-8a53a7d07243",
+                  "parentId": "02be13bc-eb42-45c1-a55d-8d30f4890693",
                   "data": {
                     "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Init.Core`\n\n**签名**\n```lean\n∀ {a : Prop}, a ↔ a\n```\n\n**文档**\n（无 docstring）",
                     "tags": [
@@ -533,11 +533,11 @@
                   }
                 },
                 {
-                  "id": "5d57bb54-6477-49ed-852d-54ad1e5fb255",
+                  "id": "afbba7df-5e4f-4217-9ffa-9ecc954b71ee",
                   "text": "[证明] funext",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "204aff98-5fd6-45fd-b7c0-8a53a7d07243",
+                  "parentId": "02be13bc-eb42-45c1-a55d-8d30f4890693",
                   "data": {
                     "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Init.Core`\n\n**签名**\n```lean\n∀ {α : Sort u} {β : α → Sort v} {f g : (x : α) → β x}, (∀ (x : α), f x = g x) → f = g\n```\n\n**文档**\n**Function extensionality.** If two functions return equal results for all possible arguments, then\nthey are equal.\n\nIt is called “extensionality” because it provides a way to prove two objects equal based on the\nproperties of the underlying mathematical functions, rather than based on the syntax used to denote\nthem. Function extensionality is a theorem that can be [proved using quotient\ntypes](lean-manual://section/quotient-funext).",
                     "tags": [
@@ -555,7 +555,7 @@
                 }
               ],
               "isExpanded": true,
-              "parentId": "060b3111-9060-4193-8bca-1229aee36202",
+              "parentId": "a689223d-e1d7-4faa-8656-040d3cddd361",
               "data": {
                 "note": "**概念** 逻辑与函数外延（True / Iff / propext / funext）\n\n**锚点** 6 个\n\n**概念依赖（聚焦内）**\n- 等式与同余（Eq / congr）：type 1 / proof 2\n- 内部管道（equation compiler / recursor / match）：type 0 / proof 1\n- 商类型（Quot）：type 0 / proof 4",
                 "tags": [
@@ -572,15 +572,15 @@
               }
             },
             {
-              "id": "14add4a3-9ad2-44a9-b2ad-49dd4b8ac68f",
+              "id": "9b4c57e7-15c8-4a41-be24-a5602abc7481",
               "text": "Option 与可空值",
               "children": [
                 {
-                  "id": "f8e7f784-f766-441b-8dd9-6269f63ee49c",
+                  "id": "abce6237-9157-4fba-aeef-b39e6391df51",
                   "text": "[证明] Option",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "14add4a3-9ad2-44a9-b2ad-49dd4b8ac68f",
+                  "parentId": "9b4c57e7-15c8-4a41-be24-a5602abc7481",
                   "data": {
                     "note": "**层** 证明\n\n**类型** inductive\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\nType u → Type u\n```\n\n**文档**\nOptional values, which are either `some` around a value from the underlying type or `none`.\n\n`Option` can represent nullable types or computations that might fail. In the codomain of a function\ntype, it can also represent partiality.",
                     "tags": [
@@ -597,11 +597,11 @@
                   }
                 },
                 {
-                  "id": "dcdf4848-7517-43e9-9343-781605c4b19e",
+                  "id": "3022590e-c031-4b33-b279-6d213385e23c",
                   "text": "[证明] Option.ext",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "14add4a3-9ad2-44a9-b2ad-49dd4b8ac68f",
+                  "parentId": "9b4c57e7-15c8-4a41-be24-a5602abc7481",
                   "data": {
                     "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Init.Data.Option.Lemmas`\n\n**签名**\n```lean\n∀ {α : Type u_1} {o₁ o₂ : Option α}, (∀ (a : α), o₁ = some a ↔ o₂ = some a) → o₁ = o₂\n```\n\n**文档**\n（无 docstring）",
                     "tags": [
@@ -618,11 +618,11 @@
                   }
                 },
                 {
-                  "id": "3add3a4b-c9f4-434f-849c-851be69f9756",
+                  "id": "31ba6770-6403-4b3c-9c97-b3f281b474bf",
                   "text": "[证明] Option.none",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "14add4a3-9ad2-44a9-b2ad-49dd4b8ac68f",
+                  "parentId": "9b4c57e7-15c8-4a41-be24-a5602abc7481",
                   "data": {
                     "note": "**层** 证明\n\n**类型** constructor\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Type u} → Option α\n```\n\n**文档**\nNo value.",
                     "tags": [
@@ -639,11 +639,11 @@
                   }
                 },
                 {
-                  "id": "90200007-a9f9-4582-a708-919337e948f0",
+                  "id": "343d2710-888e-442f-b219-bc6e8cc242fb",
                   "text": "[证明] Option.some",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "14add4a3-9ad2-44a9-b2ad-49dd4b8ac68f",
+                  "parentId": "9b4c57e7-15c8-4a41-be24-a5602abc7481",
                   "data": {
                     "note": "**层** 证明\n\n**类型** constructor\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Type u} → α → Option α\n```\n\n**文档**\nSome value of type `α`.",
                     "tags": [
@@ -661,7 +661,7 @@
                 }
               ],
               "isExpanded": true,
-              "parentId": "060b3111-9060-4193-8bca-1229aee36202",
+              "parentId": "a689223d-e1d7-4faa-8656-040d3cddd361",
               "data": {
                 "note": "**概念** Option 与可空值\n\n**锚点** 4 个\n\n**概念依赖（聚焦内）**\n- 等式与同余（Eq / congr）：type 1 / proof 3\n- 内部管道（equation compiler / recursor / match）：type 0 / proof 1\n- 逻辑与函数外延（True / Iff / propext / funext）：type 1 / proof 3",
                 "tags": [
@@ -678,15 +678,15 @@
               }
             },
             {
-              "id": "07f12366-b94d-4d26-bee5-13e14b8e2c52",
+              "id": "3314c56c-bbd9-467a-adea-63a0295206ce",
               "text": "商类型",
               "children": [
                 {
-                  "id": "1b3b9a2e-29e0-4c62-a689-afa9dfbef8ad",
+                  "id": "00873df1-713f-4bb9-b77b-6448c155ab7c",
                   "text": "[证明] Quot",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "07f12366-b94d-4d26-bee5-13e14b8e2c52",
+                  "parentId": "3314c56c-bbd9-467a-adea-63a0295206ce",
                   "data": {
                     "note": "**层** 证明\n\n**类型** quotient\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Sort u} → (α → α → Prop) → Sort u\n```\n\n**文档**\nLow-level quotient types. Quotient types coarsen the propositional equality for a type `α`, so that\nterms related by some relation `r` are considered equal in `Quot r`.\n\nSet-theoretically, `Quot r` can be seen as the set of equivalence classes of `α` modulo `r`.\nFunctions from `Quot r` must prove that they respect `r`: to define a function `f : Quot r → β`,\nit is necessary to provide `f' : α → β` and prove that for all `x : α` and `y : α`,\n`r x y → f' x = f' y`.\n\n`Quot` is a built-in primitive:\n * `Quot.mk` places elements of the underlying type `α` into the quotient.\n * `Quot.lift` allows the definition of functions from the quotient to some other type.\n * `Quot.sound` asserts the equality of elements related by `r`.\n * `Quot.ind` is used to write proofs about quotients by assuming that all elements are constructed\n   with `Quot.mk`.\n\nThe relation `r` is not required to be an equivalence relation; the resulting quotient type's\nequality extends `r` to an equivalence as a consequence of the rules for equality and quotients.\nWhen `r` is an equivalence relation, it can be more convenient to use the higher-level type\n`Quotient`.",
                     "tags": [
@@ -703,11 +703,11 @@
                   }
                 },
                 {
-                  "id": "3e651674-15e4-42f1-8249-f8d6162b1079",
+                  "id": "1f04ca1f-4ab7-47c1-af16-37ecb5ab3da1",
                   "text": "[证明] Quot.liftOn",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "07f12366-b94d-4d26-bee5-13e14b8e2c52",
+                  "parentId": "3314c56c-bbd9-467a-adea-63a0295206ce",
                   "data": {
                     "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Init.Core`\n\n**签名**\n```lean\n{α : Sort u} → {β : Sort v} → {r : α → α → Prop} → Quot r → (f : α → β) → (∀ (a b : α), r a b → f a = f b) → β\n```\n\n**文档**\nLifts a function from an underlying type to a function on a quotient, requiring that it respects the\nquotient's relation.\n\nGiven a relation `r : α → α → Prop` and a quotient's value `q : Quot r`, applying a `f : α → β`\nrequires a proof `c` that `f` respects `r`. In this case, `Quot.liftOn q f h : β` evaluates\nto the result of applying `f` to the underlying value in `α` from `q`.\n\n`Quot.liftOn` is a version of the built-in primitive `Quot.lift` with its parameters re-ordered.\n\n[Quotient types](lean-manual://section/quotients) are described in more detail in the Lean Language\nReference.",
                     "tags": [
@@ -724,11 +724,11 @@
                   }
                 },
                 {
-                  "id": "4903cc5f-0a13-4647-a3a6-eff9ab280bfc",
+                  "id": "0d736478-453f-4082-be1b-964737863cf0",
                   "text": "[证明] Quot.mk",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "07f12366-b94d-4d26-bee5-13e14b8e2c52",
+                  "parentId": "3314c56c-bbd9-467a-adea-63a0295206ce",
                   "data": {
                     "note": "**层** 证明\n\n**类型** quotient\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Sort u} → (r : α → α → Prop) → α → Quot r\n```\n\n**文档**\nPlaces an element of a type into the quotient that equates terms according to the provided relation.\n\nGiven `v : α` and relation `r : α → α → Prop`, `Quot.mk r v : Quot r` is like `v`, except all\nobservations of `v`'s value must respect `r`.\n\n`Quot.mk` is a built-in primitive:\n * `Quot` is the built-in quotient type.\n * `Quot.lift` allows the definition of functions from the quotient to some other type.\n * `Quot.sound` asserts the equality of elements related by `r`.\n * `Quot.ind` is used to write proofs about quotients by assuming that all elements are constructed\n   with `Quot.mk`.",
                     "tags": [
@@ -745,11 +745,11 @@
                   }
                 },
                 {
-                  "id": "f72af504-2960-4782-8035-f420b77c9f5b",
+                  "id": "bdc8cd89-060d-4836-b2f8-9e5ccdbdc273",
                   "text": "[证明] Quot.sound",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "07f12366-b94d-4d26-bee5-13e14b8e2c52",
+                  "parentId": "3314c56c-bbd9-467a-adea-63a0295206ce",
                   "data": {
                     "note": "**层** 证明\n\n**类型** axiom\n\n**模块** `Init.Core`\n\n**签名**\n```lean\n∀ {α : Sort u} {r : α → α → Prop} {a b : α}, r a b → Quot.mk r a = Quot.mk r b\n```\n\n**文档**\nThe **quotient axiom**, which asserts the equality of elements related by the quotient's relation.\n\nThe relation `r` does not need to be an equivalence relation to use this axiom. When `r` is not an\nequivalence relation, the quotient is with respect to the equivalence relation generated by `r`.\n\n`Quot.sound` is part of the built-in primitive quotient type:\n * `Quot` is the built-in quotient type.\n * `Quot.mk` places elements of the underlying type `α` into the quotient.\n * `Quot.lift` allows the definition of functions from the quotient to some other type.\n * `Quot.ind` is used to write proofs about quotients by assuming that all elements are constructed\n   with `Quot.mk`; it is analogous to the [recursor](lean-manual://section/recursors) for a\n   structure.\n\n[Quotient types](lean-manual://section/quotients) are described in more detail in the Lean Language\nReference.",
                     "tags": [
@@ -767,7 +767,7 @@
                 }
               ],
               "isExpanded": true,
-              "parentId": "060b3111-9060-4193-8bca-1229aee36202",
+              "parentId": "a689223d-e1d7-4faa-8656-040d3cddd361",
               "data": {
                 "note": "**概念** 商类型（Quot）\n\n**锚点** 4 个\n\n**概念依赖（聚焦内）**\n- 等式与同余（Eq / congr）：type 2 / proof 1",
                 "tags": [
@@ -784,15 +784,15 @@
               }
             },
             {
-              "id": "f94bd6f2-5a0e-48dd-aba6-d2ac04b3dc7c",
+              "id": "db24dafe-84a1-4598-a76b-3e5ec356b970",
               "text": "元素访问",
               "children": [
                 {
-                  "id": "e097390e-7cd3-4645-b02b-9df7f6da8686",
+                  "id": "ab1be015-99ca-4c71-a03c-363c1dd166db",
                   "text": "[证明] GetElem?",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "f94bd6f2-5a0e-48dd-aba6-d2ac04b3dc7c",
+                  "parentId": "db24dafe-84a1-4598-a76b-3e5ec356b970",
                   "data": {
                     "note": "**层** 证明\n\n**类型** inductive\n\n**模块** `Init.GetElem`\n\n**签名**\n```lean\n(coll : Type u) → (idx : Type v) → outParam (Type w) → outParam (coll → idx → Prop) → Type (max (max u v) w)\n```\n\n**文档**\nThe classes `GetElem` and `GetElem?` implement lookup notation,\nspecifically `xs[i]`, `xs[i]?`, `xs[i]!`, and `xs[i]'p`.\n\nBoth classes are indexed by types `coll`, `idx`, and `elem` which are\nthe collection, the index, and the element types.\nA single collection may support lookups with multiple index\ntypes. The relation `valid` determines when the index is guaranteed to be\nvalid; lookups of valid indices are guaranteed not to fail.\n\nFor example, an instance for arrays looks like\n`GetElem (Array α) Nat α (fun xs i => i < xs.size)`. In other words, given an\narray `xs` and a natural number `i`, `xs[i]` will return an `α` when `valid xs i`\nholds, which is true when `i` is less than the size of the array. `Array`\nadditionally supports indexing with `USize` instead of `Nat`.\nIn either case, because the bounds are checked at compile time,\nno runtime check is required.\n\nGiven `xs[i]` with `xs : coll` and `i : idx`, Lean looks for an instance of\n`GetElem coll idx elem valid` and uses this to infer the type of the return\nvalue `elem` and side condition `valid` required to ensure `xs[i]` yields\na valid value of type `elem`. The tactic `get_elem_tactic` is\ninvoked to prove validity automatically. The `xs[i]'p` notation uses the\nproof `p` to satisfy the validity condition.\nIf the proof `p` is long, it is often easier to place the\nproof in the context using `have`, because `get_elem_tactic` tries\n`assumption`.\n\n\nThe proof side-condition `valid xs i` is automatically dispatched by the\n`get_elem_tactic` tactic; this tactic can be extended by adding more clauses to\n`get_elem_tactic_extensible` using `macro_rules`.\n\n`xs[i]?` and `xs[i]!` do not impose a proof obligation; the former returns\nan `Option elem`, with `none` signalling that the value isn't present, and\nthe latter returns `elem` but panics if the value isn't there, returning\n`default : elem` based on the `Inhabited elem` instance.\nThese are provided by the `GetElem?` class, for which there is a default instance\ngenerated from a `GetElem` class as long as `valid xs i` is always decidable.\n\nImportant instances include:\n  * `arr[i] : α` where `arr : Array α` and `i : Nat` or `i : USize`: does array\n    indexing with no runtime bounds check and a proof side goal `i < arr.size`.\n  * `l[i] : α` where `l : List α` and `i : Nat`: index into a list, with proof\n    side goal `i < l.length`.",
                     "tags": [
@@ -809,11 +809,11 @@
                   }
                 },
                 {
-                  "id": "d4f0736f-47f7-4b03-bc49-bb7fdfc183be",
+                  "id": "3229550b-6efd-444f-8969-b56d96cb0860",
                   "text": "[证明] GetElem?.getElem?",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "f94bd6f2-5a0e-48dd-aba6-d2ac04b3dc7c",
+                  "parentId": "db24dafe-84a1-4598-a76b-3e5ec356b970",
                   "data": {
                     "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Init.GetElem`\n\n**签名**\n```lean\n{coll : Type u} → {idx : Type v} → {elem : outParam (Type w)} → {valid : outParam (coll → idx → Prop)} → [self : GetElem? coll idx elem valid] → coll → idx → Option elem\n```\n\n**文档**\nThe syntax `arr[i]?` gets the `i`'th element of the collection `arr`,\nif it is present (and wraps it in `some`), and otherwise returns `none`.",
                     "tags": [
@@ -830,11 +830,11 @@
                   }
                 },
                 {
-                  "id": "ab1c3fb5-9a74-468c-8318-de4a71b65ceb",
+                  "id": "25f48fb1-4024-4875-9396-00a26d9ee7be",
                   "text": "[证明] GetElem?.mk",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "f94bd6f2-5a0e-48dd-aba6-d2ac04b3dc7c",
+                  "parentId": "db24dafe-84a1-4598-a76b-3e5ec356b970",
                   "data": {
                     "note": "**层** 证明\n\n**类型** constructor\n\n**模块** `Init.GetElem`\n\n**签名**\n```lean\n{coll : Type u} → {idx : Type v} → {elem : outParam (Type w)} → {valid : outParam (coll → idx → Prop)} → [toGetElem : GetElem coll idx elem valid] → (coll → idx → Option elem) → ([Inhabited elem] → coll → idx → elem) → GetElem? coll idx elem valid\n```\n\n**文档**\n（无 docstring）",
                     "tags": [
@@ -852,7 +852,7 @@
                 }
               ],
               "isExpanded": true,
-              "parentId": "060b3111-9060-4193-8bca-1229aee36202",
+              "parentId": "a689223d-e1d7-4faa-8656-040d3cddd361",
               "data": {
                 "note": "**概念** 元素访问（GetElem? / getElem?）\n\n**锚点** 3 个\n\n**概念依赖（聚焦内）**\n- 内部管道（equation compiler / recursor / match）：type 4 / proof 1\n- Option 与可空值：type 2 / proof 0",
                 "tags": [
@@ -869,15 +869,15 @@
               }
             },
             {
-              "id": "e39d514e-b0ab-4774-9297-1756978d995f",
+              "id": "25f5f166-c05a-4d85-a4da-94ebcc7b267e",
               "text": "序关系",
               "children": [
                 {
-                  "id": "f8a30690-7c78-4596-83f5-665df791dae9",
+                  "id": "7b4fa048-2073-49aa-9e16-4504fbfc3f08",
                   "text": "[证明] LT",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "e39d514e-b0ab-4774-9297-1756978d995f",
+                  "parentId": "25f5f166-c05a-4d85-a4da-94ebcc7b267e",
                   "data": {
                     "note": "**层** 证明\n\n**类型** inductive\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\nType u → Type u\n```\n\n**文档**\n`LT α` is the typeclass which supports the notation `x < y` where `x y : α`.",
                     "tags": [
@@ -894,11 +894,11 @@
                   }
                 },
                 {
-                  "id": "670cd14c-dab9-4107-add7-eadabbad5435",
+                  "id": "f769cae2-e208-4574-bdcf-da4e625e5a05",
                   "text": "[证明] LT.lt",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "e39d514e-b0ab-4774-9297-1756978d995f",
+                  "parentId": "25f5f166-c05a-4d85-a4da-94ebcc7b267e",
                   "data": {
                     "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Type u} → [self : LT α] → α → α → Prop\n```\n\n**文档**\nThe less-than relation: `x < y`",
                     "tags": [
@@ -915,11 +915,11 @@
                   }
                 },
                 {
-                  "id": "4b732f52-48cb-479c-bd5e-172f7c50a0b7",
+                  "id": "8a4925c1-a039-4a93-96a9-bfb5ab98275c",
                   "text": "[证明] LT.mk",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "e39d514e-b0ab-4774-9297-1756978d995f",
+                  "parentId": "25f5f166-c05a-4d85-a4da-94ebcc7b267e",
                   "data": {
                     "note": "**层** 证明\n\n**类型** constructor\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Type u} → (α → α → Prop) → LT α\n```\n\n**文档**\n（无 docstring）",
                     "tags": [
@@ -937,7 +937,7 @@
                 }
               ],
               "isExpanded": true,
-              "parentId": "060b3111-9060-4193-8bca-1229aee36202",
+              "parentId": "a689223d-e1d7-4faa-8656-040d3cddd361",
               "data": {
                 "note": "**概念** 序关系（LT / LE）\n\n**锚点** 3 个\n\n**概念依赖（聚焦内）**\n（聚焦子图内无跨概念依赖）",
                 "tags": [
@@ -954,15 +954,15 @@
               }
             },
             {
-              "id": "e7f9f6b8-dc36-4050-8b27-66623f0698fd",
+              "id": "5b74fede-b4a2-4662-a5a9-7952bf00b17f",
               "text": "自然数与加法",
               "children": [
                 {
-                  "id": "0b56cdc0-b353-4eae-8785-7b921ee1ad1f",
+                  "id": "c0c7b19e-9808-40f6-b811-5424a1d68110",
                   "text": "[证明] Nat",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "e7f9f6b8-dc36-4050-8b27-66623f0698fd",
+                  "parentId": "5b74fede-b4a2-4662-a5a9-7952bf00b17f",
                   "data": {
                     "note": "**层** 证明\n\n**类型** inductive\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\nType\n```\n\n**文档**\nThe natural numbers, starting at zero.\n\nThis type is special-cased by both the kernel and the compiler, and overridden with an efficient\nimplementation. Both use a fast arbitrary-precision arithmetic library (usually\n[GMP](https://gmplib.org/)); at runtime, `Nat` values that are sufficiently small are unboxed.",
                     "tags": [
@@ -979,11 +979,11 @@
                   }
                 },
                 {
-                  "id": "4859ce69-f06c-4b85-8532-b0aadf28606f",
+                  "id": "bd7a2c86-8028-4a51-83b4-210a2d1b0d6c",
                   "text": "[证明] Nat.lt",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "e7f9f6b8-dc36-4050-8b27-66623f0698fd",
+                  "parentId": "5b74fede-b4a2-4662-a5a9-7952bf00b17f",
                   "data": {
                     "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\nℕ → ℕ → Prop\n```\n\n**文档**\nStrict inequality of natural numbers, usually accessed via the `<` operator.\n\nIt is defined as `n < m = n + 1 ≤ m`.",
                     "tags": [
@@ -1001,7 +1001,7 @@
                 }
               ],
               "isExpanded": true,
-              "parentId": "060b3111-9060-4193-8bca-1229aee36202",
+              "parentId": "a689223d-e1d7-4faa-8656-040d3cddd361",
               "data": {
                 "note": "**概念** 自然数与加法（Nat / +）\n\n**锚点** 2 个\n\n**概念依赖（聚焦内）**\n（聚焦子图内无跨概念依赖）",
                 "tags": [
@@ -1019,7 +1019,7 @@
             }
           ],
           "isExpanded": true,
-          "parentId": "06931252-49b2-4e73-af3c-74630d4e4a86",
+          "parentId": "9d0afd37-3e1d-427d-8995-b67070a8b4be",
           "data": {
             "note": "证明层新增的依赖；其中可能混有证明机器，详见各概念备注。",
             "tags": [
@@ -1037,19 +1037,19 @@
           }
         },
         {
-          "id": "86a345c5-ac90-4f84-8bd2-399c1d454712",
+          "id": "a9fc36a1-694f-4d61-8c4c-2adfd075a5a0",
           "text": "机器与内部管道（折叠）",
           "children": [
             {
-              "id": "68fdee01-47d0-4618-9785-a43f11a902cf",
+              "id": "4c4d92ab-d4dc-44bd-ad3f-d8fd789f2d43",
               "text": "实例/类型类机器",
               "children": [
                 {
-                  "id": "9300956a-7bb2-4d26-ae87-55b6757abd85",
+                  "id": "7b63e440-1320-4a7f-b2f7-531d4137c07e",
                   "text": "[实例] List.instGetElem?NatLtLength",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "68fdee01-47d0-4618-9785-a43f11a902cf",
+                  "parentId": "4c4d92ab-d4dc-44bd-ad3f-d8fd789f2d43",
                   "data": {
                     "note": "**层** 实例\n\n**类型** definition\n\n**模块** `Init.GetElem`\n\n**签名**\n```lean\n{α : Type u_1} → GetElem? (List α) ℕ α fun as i => i < as.length\n```\n\n**文档**\nThis instance overrides the default implementation of `a[i]?` via `decidableGetElem?`,\ngiving better definitional equalities.\n\n**说明** 类型类实例，解释实现，不是学习先修；默认折叠。",
                     "tags": [
@@ -1066,11 +1066,11 @@
                   }
                 },
                 {
-                  "id": "0d3ebcae-7053-4e48-b0da-274f5fae13a8",
+                  "id": "4bdd6045-d05b-4981-a5dc-a33efbaa2b3e",
                   "text": "[实例] List.instGetElemNatLtLength",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "68fdee01-47d0-4618-9785-a43f11a902cf",
+                  "parentId": "4c4d92ab-d4dc-44bd-ad3f-d8fd789f2d43",
                   "data": {
                     "note": "**层** 实例\n\n**类型** definition\n\n**模块** `Init.GetElem`\n\n**签名**\n```lean\n{α : Type u_1} → GetElem (List α) ℕ α fun as i => i < as.length\n```\n\n**文档**\n（无 docstring）\n\n**说明** 类型类实例，解释实现，不是学习先修；默认折叠。",
                     "tags": [
@@ -1087,11 +1087,11 @@
                   }
                 },
                 {
-                  "id": "4e5daef2-0d7a-4d5e-8c6e-647268c18d13",
+                  "id": "6981e522-65e5-4819-8b36-d577f8916771",
                   "text": "[实例] instLTNat",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "68fdee01-47d0-4618-9785-a43f11a902cf",
+                  "parentId": "4c4d92ab-d4dc-44bd-ad3f-d8fd789f2d43",
                   "data": {
                     "note": "**层** 实例\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\nLT ℕ\n```\n\n**文档**\n（无 docstring）\n\n**说明** 类型类实例，解释实现，不是学习先修；默认折叠。",
                     "tags": [
@@ -1109,7 +1109,7 @@
                 }
               ],
               "isExpanded": false,
-              "parentId": "86a345c5-ac90-4f84-8bd2-399c1d454712",
+              "parentId": "a9fc36a1-694f-4d61-8c4c-2adfd075a5a0",
               "data": {
                 "note": "**概念** 实例/类型类机器（instances）\n\n**锚点** 3 个\n\n**概念依赖（聚焦内）**\n- 元素访问（GetElem? / getElem?）：type 1 / proof 1\n- 内部管道（equation compiler / recursor / match）：type 0 / proof 3\n- 列表与拼接（List / ++ / length）：type 4 / proof 4\n- 自然数与加法（Nat / +）：type 3 / proof 4\n- 序关系（LT / LE）：type 3 / proof 3\n\n**说明** 类型类实例层，默认折叠；它解释实现，不是学习概念。",
                 "tags": [
@@ -1127,15 +1127,15 @@
               }
             },
             {
-              "id": "0663966c-bee4-4381-85a9-0e7f2d9b6c55",
+              "id": "5be101a0-7a6c-4e59-b70c-85a4dbe4fd87",
               "text": "内部管道",
               "children": [
                 {
-                  "id": "5880bf7c-8e5b-4500-87a6-4c67a1a4c10d",
+                  "id": "0e40765f-edfd-415c-897c-5636df7be67e",
                   "text": "[内部] Inhabited",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "0663966c-bee4-4381-85a9-0e7f2d9b6c55",
+                  "parentId": "5be101a0-7a6c-4e59-b70c-85a4dbe4fd87",
                   "data": {
                     "note": "**层** 内部\n\n**类型** inductive\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\nSort u → Sort (max 1 u)\n```\n\n**文档**\n`Inhabited α` is a typeclass that says that `α` has a designated element,\ncalled `(default : α)`. This is sometimes referred to as a \"pointed type\".\n\nThis class is used by functions that need to return a value of the type\nwhen called \"out of domain\". For example, `Array.get! arr i : α` returns\na value of type `α` when `arr : Array α`, but if `i` is not in range of\nthe array, it reports a panic message, but this does not halt the program,\nso it must still return a value of type `α` (and in fact this is required\nfor logical consistency), so in this case it returns `default`.\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
                     "tags": [
@@ -1152,11 +1152,11 @@
                   }
                 },
                 {
-                  "id": "c0172a18-0817-4c72-9dd7-03461038d0fc",
+                  "id": "ec812831-ed8a-4e8a-bb48-810c9c08453a",
                   "text": "[内部] List.brecOn",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "0663966c-bee4-4381-85a9-0e7f2d9b6c55",
+                  "parentId": "5be101a0-7a6c-4e59-b70c-85a4dbe4fd87",
                   "data": {
                     "note": "**层** 内部\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Type u} → {motive : List α → Sort u_1} → (t : List α) → ((t : List α) → List.below t → motive t) → motive t\n```\n\n**文档**\n（无 docstring）\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
                     "tags": [
@@ -1173,11 +1173,11 @@
                   }
                 },
                 {
-                  "id": "4ff5e654-73a5-4ff3-b3df-e08edb66a3f8",
+                  "id": "2e489091-a986-4012-a3ea-c0c029f512b0",
                   "text": "[内部] List.ext_getElem?._f",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "0663966c-bee4-4381-85a9-0e7f2d9b6c55",
+                  "parentId": "5be101a0-7a6c-4e59-b70c-85a4dbe4fd87",
                   "data": {
                     "note": "**层** 内部\n\n**类型** definition\n\n**模块** `Init.Data.List.Lemmas`\n\n**签名**\n```lean\n∀ {α : Type u_1} {l₁ : List α} (f : List.below (motive := fun {l₁} => ∀ {l₂ : List α}, (∀ (i : ℕ), l₁[i]? = l₂[i]?) → l₁ = l₂) l₁) {l₂ : List α}, (∀ (i : ℕ), l₁[i]? = l₂[i]?) → l₁ = l₂\n```\n\n**文档**\n（无 docstring）\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
                     "tags": [
@@ -1194,11 +1194,11 @@
                   }
                 },
                 {
-                  "id": "5b4347e7-0c43-48dd-aea5-e1da2dff82e6",
+                  "id": "92061fd4-3878-44d7-943e-4c9b00145433",
                   "text": "[内部] List.get!Internal",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "0663966c-bee4-4381-85a9-0e7f2d9b6c55",
+                  "parentId": "5be101a0-7a6c-4e59-b70c-85a4dbe4fd87",
                   "data": {
                     "note": "**层** 内部\n\n**类型** definition\n\n**模块** `Init.GetElem`\n\n**签名**\n```lean\n{α : Type u_1} → [Inhabited α] → List α → ℕ → α\n```\n\n**文档**\nInternal implementation of `as[i]!`. Do not use directly.\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
                     "tags": [
@@ -1215,11 +1215,11 @@
                   }
                 },
                 {
-                  "id": "0f6bf7cb-9e85-4a50-ae9e-1fb4dd93a736",
+                  "id": "56269ebf-eb65-4430-8b14-2a67c7d412fa",
                   "text": "[内部] List.get?Internal",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "0663966c-bee4-4381-85a9-0e7f2d9b6c55",
+                  "parentId": "5be101a0-7a6c-4e59-b70c-85a4dbe4fd87",
                   "data": {
                     "note": "**层** 内部\n\n**类型** definition\n\n**模块** `Init.GetElem`\n\n**签名**\n```lean\n{α : Type u_1} → List α → ℕ → Option α\n```\n\n**文档**\nInternal implementation of `as[i]?`. Do not use directly.\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
                     "tags": [
@@ -1236,11 +1236,11 @@
                   }
                 },
                 {
-                  "id": "ff247ef1-0a52-4ab4-a6e6-ec76aef4ee66",
+                  "id": "bf392ab4-27f4-4a18-8f67-3e5e0cb4e0f3",
                   "text": "[内部] List.length._f",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "0663966c-bee4-4381-85a9-0e7f2d9b6c55",
+                  "parentId": "5be101a0-7a6c-4e59-b70c-85a4dbe4fd87",
                   "data": {
                     "note": "**层** 内部\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Type u_1} → (x : List α) → List.below x → ℕ\n```\n\n**文档**\n（无 docstring）\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
                     "tags": [
@@ -1257,11 +1257,11 @@
                   }
                 },
                 {
-                  "id": "48d5f8cb-9173-47ab-84f3-c098d66c40dd",
+                  "id": "72347017-168d-4ea6-89c7-2600f28836d7",
                   "text": "[内部] List.map._f",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "0663966c-bee4-4381-85a9-0e7f2d9b6c55",
+                  "parentId": "5be101a0-7a6c-4e59-b70c-85a4dbe4fd87",
                   "data": {
                     "note": "**层** 内部\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Type u_1} → {β : Type u_2} → (α → β) → (x : List α) → List.below x → List β\n```\n\n**文档**\n（无 docstring）\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
                     "tags": [
@@ -1278,11 +1278,11 @@
                   }
                 },
                 {
-                  "id": "b228b708-6ec8-44a0-8a80-a9891ac593d2",
+                  "id": "c4b4eaa3-a591-493a-9ea0-0128033f1fd2",
                   "text": "[内部] _private.Init.Data.Option.Lemmas.0.Option.ext.match_1_1",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "0663966c-bee4-4381-85a9-0e7f2d9b6c55",
+                  "parentId": "5be101a0-7a6c-4e59-b70c-85a4dbe4fd87",
                   "data": {
                     "note": "**层** 内部\n\n**类型** definition\n\n**模块** `Init.Data.Option.Lemmas`\n\n**签名**\n```lean\n∀ {α : Type u_1} (motive : (x x_1 : Option α) → (∀ (a : α), x = some a ↔ x_1 = some a) → Prop) (x x_1 : Option α) (x_2 : ∀ (a : α), x = some a ↔ x_1 = some a), (∀ (x : ∀ (a : α), none = some a ↔ none = some a), motive none none x) → (∀ (val : α) (x : Option α) (H : ∀ (a : α), some val = some a ↔ x = some a), motive (some val) x H) → (∀ (x : Option α) (val : α) (H : ∀ (a : α), x = some a ↔ some val = some a), motive x (some val) H) → motive x x_1 x_2\n```\n\n**文档**\n（无 docstring）\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
                     "tags": [
@@ -1299,11 +1299,11 @@
                   }
                 },
                 {
-                  "id": "9a265e2e-0f0f-4788-bc74-815ec71013ad",
+                  "id": "f40dce33-c0a9-44fe-8b20-2834d863d882",
                   "text": "[内部] id",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "0663966c-bee4-4381-85a9-0e7f2d9b6c55",
+                  "parentId": "5be101a0-7a6c-4e59-b70c-85a4dbe4fd87",
                   "data": {
                     "note": "**层** 内部\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Sort u} → α → α\n```\n\n**文档**\nThe identity function. `id` takes an implicit argument `α : Sort u`\n(a type in any universe), and an argument `a : α`, and returns `a`.\n\nAlthough this may look like a useless function, one application of the identity\nfunction is to explicitly put a type on an expression. If `e` has type `T`,\nand `T'` is definitionally equal to `T`, then `@id T' e` typechecks, and Lean\nknows that this expression has type `T'` rather than `T`. This can make a\ndifference for typeclass inference, since `T` and `T'` may have different\ntypeclass instances on them. `show T' from e` is sugar for an `@id T' e`\nexpression.\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
                     "tags": [
@@ -1320,11 +1320,11 @@
                   }
                 },
                 {
-                  "id": "6a42d36d-b6ed-42be-8796-ccfd06f0f25e",
+                  "id": "57927506-6707-4973-849c-a18901880d39",
                   "text": "[内部] outParam",
                   "children": [],
                   "isExpanded": true,
-                  "parentId": "0663966c-bee4-4381-85a9-0e7f2d9b6c55",
+                  "parentId": "5be101a0-7a6c-4e59-b70c-85a4dbe4fd87",
                   "data": {
                     "note": "**层** 内部\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\nSort u → Sort u\n```\n\n**文档**\nGadget for marking output parameters in type classes.\n\nFor example, the `Membership` class is defined as:\n```\nclass Membership (α : outParam (Type u)) (γ : Type v)\n```\nThis means that whenever a typeclass goal of the form `Membership ?α ?γ` comes\nup, Lean will wait to solve it until `?γ` is known, but then it will run\ntypeclass inference, and take the first solution it finds, for any value of `?α`,\nwhich thereby determines what `?α` should be.\n\nThis expresses that in a term like `a ∈ s`, `s` might be a `Set α` or\n`List α` or some other type with a membership operation, and in each case\nthe \"member\" type `α` is determined by looking at the container type.\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
                     "tags": [
@@ -1342,7 +1342,7 @@
                 }
               ],
               "isExpanded": false,
-              "parentId": "86a345c5-ac90-4f84-8bd2-399c1d454712",
+              "parentId": "a9fc36a1-694f-4d61-8c4c-2adfd075a5a0",
               "data": {
                 "note": "**概念** 内部管道（equation compiler / recursor / match）\n\n**锚点** 10 个\n\n**概念依赖（聚焦内）**\n- 等式与同余（Eq / congr）：type 2 / proof 5\n- 元素访问（GetElem? / getElem?）：type 1 / proof 1\n- 实例/类型类机器（instances）：type 2 / proof 2\n- 列表与拼接（List / ++ / length）：type 7 / proof 7\n- 逻辑与函数外延（True / Iff / propext / funext）：type 1 / proof 1\n- 自然数与加法（Nat / +）：type 4 / proof 4\n- Option 与可空值：type 5 / proof 7\n- 序关系（LT / LE）：type 1 / proof 1\n\n**说明** 内部管道层，默认折叠；不要把这里的东西当成先修知识。",
                 "tags": [
@@ -1361,7 +1361,7 @@
             }
           ],
           "isExpanded": false,
-          "parentId": "06931252-49b2-4e73-af3c-74630d4e4a86",
+          "parentId": "9d0afd37-3e1d-427d-8995-b67070a8b4be",
           "data": {
             "note": "实例/类型类与 equation compiler 管道。默认折叠；它们解释实现，不是学习先修。",
             "tags": [
@@ -1402,8 +1402,8 @@
     "theme": "light",
     "connectionStyle": "curve",
     "rainbowBranch": true,
-    "createdAt": 1792302650562,
-    "updatedAt": 1792302650562,
+    "createdAt": 1792302907167,
+    "updatedAt": 1792302907167,
     "version": "0.1.0"
   }
 }

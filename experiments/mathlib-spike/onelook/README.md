@@ -4,14 +4,16 @@
 
 ## 文件
 
-| 文件 | 目标 | 节点数 | 说明 |
-|:---|:---|---:|:---|
-| `nat_add_comm.olook` | `Nat.add_comm` | 54 | core，小图，全量展开 |
-| `list_length_append.olook` | `List.length_append` | 88 | core，小图，全量展开 |
-| `list_map_comp_map.olook` | `List.map_comp_map` | 65 | mathlib List，聚焦半径 2 |
-| `filter_coext.olook` | `Filter.coext` | 64 | mathlib Filter，聚焦半径 2 |
+| 文件 | 目标 | 节点数 | 预览 | 说明 |
+|:---|:---|---:|:---|:---|
+| `nat_add_comm.olook` | `Nat.add_comm` | 54 | [PNG](previews/nat_add_comm.png) | core，小图，全量展开 |
+| `list_length_append.olook` | `List.length_append` | 88 | [PNG](previews/list_length_append.png) | core，小图，全量展开 |
+| `list_map_comp_map.olook` | `List.map_comp_map` | 65 | [PNG](previews/list_map_comp_map.png) | mathlib List，聚焦半径 2 |
+| `filter_coext.olook` | `Filter.coext` | 64 | [PNG](previews/filter_coext.png) | mathlib Filter，聚焦半径 2 |
 
 `manifest.json` 是对应的机器可读清单。
+
+预览图是当前 OneLook 实际导入后的截图（缩小视图，仅用于确认可读性；细节请在应用里打开 `.olook`）。四张图都已在当前版本 OneLook 中实际导入验证。
 
 ## 导入
 

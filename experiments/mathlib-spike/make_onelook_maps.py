@@ -216,7 +216,7 @@ def make_document(slug):
     ])
 
     root = new_node(
-        target,
+        f"学习投影 · {target}",
         note=root_note,
         tags=["mathlib-graph", target, "spike"],
         style=STYLE["root"],
@@ -230,7 +230,7 @@ def make_document(slug):
         tags=["concept", target_concept, "中心"],
         style=STYLE["center"],
     )
-    add_child(center, target, note=anchor_note(target_node, "目标", target),
+    add_child(center, f"[目标] {target}", note=anchor_note(target_node, "目标", target),
               tags=["declaration", "目标", target_node["kind"]],
               style=STYLE["target"])
 
@@ -340,7 +340,7 @@ def make_document(slug):
         "createdAt": int(time.time() * 1000),
         "updatedAt": int(time.time() * 1000),
         "version": "0.1.0",
-    }
+    }, target
 
 
 def validate_tree(root):
@@ -369,7 +369,7 @@ def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     manifest = []
     for slug in TARGETS:
-        doc = make_document(slug)
+        doc, target = make_document(slug)
         validate_tree(doc["root"])
         wrapper = {
             "version": "1.0.0",
@@ -382,7 +382,7 @@ def main():
         path.write_text(json.dumps(wrapper, ensure_ascii=False, indent=2), encoding="utf-8")
         manifest.append({
             "file": path.name,
-            "target": doc["root"]["text"],
+            "target": target,
             "name": doc["name"],
             "nodes": count_nodes(doc["root"]),
             "layout": doc["layout"],
