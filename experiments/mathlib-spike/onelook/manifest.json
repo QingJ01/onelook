@@ -1,0 +1,30 @@
+[
+  {
+    "file": "nat_add_comm.olook",
+    "target": "Nat.add_comm",
+    "name": "Lean core 图投影 · Nat.add_comm",
+    "nodes": 54,
+    "layout": "mind"
+  },
+  {
+    "file": "list_length_append.olook",
+    "target": "List.length_append",
+    "name": "Lean core 图投影 · List.length_append",
+    "nodes": 88,
+    "layout": "mind"
+  },
+  {
+    "file": "list_map_comp_map.olook",
+    "target": "List.map_comp_map",
+    "name": "mathlib 图投影 · List.map_comp_map（聚焦 r=2）",
+    "nodes": 65,
+    "layout": "mind"
+  },
+  {
+    "file": "filter_coext.olook",
+    "target": "Filter.coext",
+    "name": "mathlib 图投影 · Filter.coext（聚焦 r=2）",
+    "nodes": 64,
+    "layout": "mind"
+  }
+]

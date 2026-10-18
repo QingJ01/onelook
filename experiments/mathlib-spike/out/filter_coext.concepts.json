@@ -1,0 +1,379 @@
+{
+  "target": "Filter.coext",
+  "targetConcept": "filter",
+  "focusDepth": 2,
+  "fullClosureNodes": 1327,
+  "focusNodes": 50,
+  "concepts": [
+    {
+      "id": "boolean",
+      "label": "布尔代数（BooleanAlgebra）",
+      "anchorCount": 3,
+      "anchors": [
+        "BooleanAlgebra",
+        "BooleanAlgebra.mk",
+        "BooleanAlgebra.toCompl"
+      ],
+      "inTypeClosure": false,
+      "inProofLayer": true
+    },
+    {
+      "id": "equality",
+      "label": "等式与同余（Eq / congr）",
+      "anchorCount": 2,
+      "anchors": [
+        "Eq",
+        "Eq.rec"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "filter",
+      "label": "滤子（Filter）",
+      "anchorCount": 5,
+      "anchors": [
+        "Filter",
+        "Filter.coext",
+        "Filter.ext",
+        "Filter.filter_eq",
+        "Filter.sets"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "function",
+      "label": "函数与复合（Function / ∘）",
+      "anchorCount": 3,
+      "anchors": [
+        "Function.Involutive.surjective",
+        "Function.Surjective",
+        "Function.Surjective.forall"
+      ],
+      "inTypeClosure": false,
+      "inProofLayer": true
+    },
+    {
+      "id": "instance",
+      "label": "实例/类型类机器（instances）",
+      "anchorCount": 9,
+      "anchors": [
+        "Filter.instMembership",
+        "Set.instBooleanAlgebra",
+        "Set.instBoundedOrder",
+        "Set.instCompl",
+        "Set.instDistribLattice",
+        "Set.instHImp",
+        "Set.instLE",
+        "Set.instMembership",
+        "Set.instSDiff"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "internal",
+      "label": "内部管道（equation compiler / recursor / match）",
+      "anchorCount": 8,
+      "anchors": [
+        "Set.instBooleanAlgebra._proof_1",
+        "Set.instBooleanAlgebra._proof_2",
+        "Set.instBooleanAlgebra._proof_3",
+        "Set.instBooleanAlgebra._proof_4",
+        "Set.instBooleanAlgebra._proof_5",
+        "Set.instBooleanAlgebra._proof_6",
+        "_private.Mathlib.Logic.Function.Basic.0.Function.Surjective.forall.match_1_1",
+        "outParam"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "logic",
+      "label": "逻辑与函数外延（True / Iff / propext / funext）",
+      "anchorCount": 5,
+      "anchors": [
+        "Exists",
+        "Iff",
+        "Iff.intro",
+        "Iff.mpr",
+        "Not"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "membership",
+      "label": "成员关系（Membership）",
+      "anchorCount": 3,
+      "anchors": [
+        "Membership",
+        "Membership.mem",
+        "Membership.mk"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "order",
+      "label": "序关系（LT / LE）",
+      "anchorCount": 4,
+      "anchors": [
+        "BoundedOrder.toOrderBot",
+        "BoundedOrder.toOrderTop",
+        "OrderBot.toBot",
+        "OrderTop.toTop"
+      ],
+      "inTypeClosure": false,
+      "inProofLayer": true
+    },
+    {
+      "id": "set",
+      "label": "集合与补集（Set / Compl）",
+      "anchorCount": 8,
+      "anchors": [
+        "Compl",
+        "Compl.compl",
+        "Compl.mk",
+        "Set",
+        "Set.ext",
+        "Set.ofPred",
+        "compl_involutive",
+        "compl_surjective"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    }
+  ],
+  "conceptEdges": [
+    {
+      "from": "instance",
+      "to": "set",
+      "kind": "proof-uses",
+      "weight": 12
+    },
+    {
+      "from": "instance",
+      "to": "set",
+      "kind": "type-uses",
+      "weight": 10
+    },
+    {
+      "from": "filter",
+      "to": "set",
+      "kind": "proof-uses",
+      "weight": 6
+    },
+    {
+      "from": "filter",
+      "to": "instance",
+      "kind": "proof-uses",
+      "weight": 6
+    },
+    {
+      "from": "filter",
+      "to": "set",
+      "kind": "type-uses",
+      "weight": 5
+    },
+    {
+      "from": "instance",
+      "to": "membership",
+      "kind": "proof-uses",
+      "weight": 5
+    },
+    {
+      "from": "instance",
+      "to": "order",
+      "kind": "proof-uses",
+      "weight": 4
+    },
+    {
+      "from": "function",
+      "to": "equality",
+      "kind": "proof-uses",
+      "weight": 4
+    },
+    {
+      "from": "set",
+      "to": "boolean",
+      "kind": "type-uses",
+      "weight": 4
+    },
+    {
+      "from": "filter",
+      "to": "instance",
+      "kind": "type-uses",
+      "weight": 3
+    },
+    {
+      "from": "filter",
+      "to": "equality",
+      "kind": "type-uses",
+      "weight": 3
+    },
+    {
+      "from": "filter",
+      "to": "logic",
+      "kind": "proof-uses",
+      "weight": 3
+    },
+    {
+      "from": "filter",
+      "to": "membership",
+      "kind": "proof-uses",
+      "weight": 3
+    },
+    {
+      "from": "boolean",
+      "to": "set",
+      "kind": "type-uses",
+      "weight": 3
+    },
+    {
+      "from": "function",
+      "to": "logic",
+      "kind": "proof-uses",
+      "weight": 3
+    },
+    {
+      "from": "set",
+      "to": "boolean",
+      "kind": "proof-uses",
+      "weight": 3
+    },
+    {
+      "from": "filter",
+      "to": "logic",
+      "kind": "type-uses",
+      "weight": 2
+    },
+    {
+      "from": "filter",
+      "to": "membership",
+      "kind": "type-uses",
+      "weight": 2
+    },
+    {
+      "from": "instance",
+      "to": "membership",
+      "kind": "type-uses",
+      "weight": 2
+    },
+    {
+      "from": "instance",
+      "to": "filter",
+      "kind": "proof-uses",
+      "weight": 2
+    },
+    {
+      "from": "instance",
+      "to": "logic",
+      "kind": "proof-uses",
+      "weight": 2
+    },
+    {
+      "from": "filter",
+      "to": "boolean",
+      "kind": "proof-uses",
+      "weight": 1
+    },
+    {
+      "from": "filter",
+      "to": "function",
+      "kind": "proof-uses",
+      "weight": 1
+    },
+    {
+      "from": "instance",
+      "to": "filter",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "instance",
+      "to": "boolean",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "instance",
+      "to": "boolean",
+      "kind": "proof-uses",
+      "weight": 1
+    },
+    {
+      "from": "function",
+      "to": "logic",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "set",
+      "to": "function",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "set",
+      "to": "function",
+      "kind": "proof-uses",
+      "weight": 1
+    },
+    {
+      "from": "filter",
+      "to": "equality",
+      "kind": "proof-uses",
+      "weight": 1
+    },
+    {
+      "from": "set",
+      "to": "logic",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "set",
+      "to": "membership",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "set",
+      "to": "instance",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "set",
+      "to": "equality",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "set",
+      "to": "logic",
+      "kind": "proof-uses",
+      "weight": 1
+    },
+    {
+      "from": "set",
+      "to": "membership",
+      "kind": "proof-uses",
+      "weight": 1
+    },
+    {
+      "from": "set",
+      "to": "instance",
+      "kind": "proof-uses",
+      "weight": 1
+    },
+    {
+      "from": "boolean",
+      "to": "equality",
+      "kind": "type-uses",
+      "weight": 1
+    }
+  ]
+}

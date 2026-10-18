@@ -1,0 +1,271 @@
+{
+  "target": "List.length_append",
+  "targetConcept": "list",
+  "focusDepth": null,
+  "fullClosureNodes": 77,
+  "focusNodes": 77,
+  "concepts": [
+    {
+      "id": "add-notation",
+      "label": "加法记号与实例（HAdd / Add / OfNat）",
+      "anchorCount": 12,
+      "anchors": [
+        "Add",
+        "Add.add",
+        "Add.mk",
+        "HAdd",
+        "HAdd.hAdd",
+        "HAdd.mk",
+        "OfNat",
+        "OfNat.mk",
+        "OfNat.ofNat",
+        "instAddNat",
+        "instHAdd",
+        "instOfNatNat"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "append-notation",
+      "label": "拼接记号与实例（HAppend / Append）",
+      "anchorCount": 8,
+      "anchors": [
+        "Append",
+        "Append.append",
+        "Append.mk",
+        "HAppend",
+        "HAppend.hAppend",
+        "HAppend.mk",
+        "List.instAppend",
+        "instHAppendOfAppend"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "equality",
+      "label": "等式与同余（Eq / congr）",
+      "anchorCount": 12,
+      "anchors": [
+        "Eq",
+        "Eq.rec",
+        "Eq.refl",
+        "Eq.symm",
+        "Eq.trans",
+        "congr",
+        "congrArg",
+        "congrFun'",
+        "eq_self",
+        "eq_true",
+        "of_eq_true",
+        "rfl"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "internal",
+      "label": "内部管道（equation compiler / recursor / match）",
+      "anchorCount": 25,
+      "anchors": [
+        "List.append._f",
+        "List.append.match_1",
+        "List.below",
+        "List.brecOn",
+        "List.brecOn.go",
+        "List.casesOn",
+        "List.length._f",
+        "Nat.add._f",
+        "Nat.add.match_1",
+        "Nat.below",
+        "Nat.brecOn",
+        "Nat.brecOn.go",
+        "Nat.casesOn",
+        "Nat.succ_add._f",
+        "Nat.zero_add._f",
+        "PProd",
+        "PProd.mk",
+        "PUnit",
+        "PUnit.unit",
+        "Unit",
+        "Unit.unit",
+        "_private.Init.Data.Nat.Basic.0.Nat.succ_add.match_1_1",
+        "_private.Init.Data.Nat.Basic.0.Nat.zero_add.match_1_1",
+        "instDecidableEqList.match_1",
+        "outParam"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "list",
+      "label": "列表与拼接（List / ++ / length）",
+      "anchorCount": 7,
+      "anchors": [
+        "List",
+        "List.append",
+        "List.cons",
+        "List.length",
+        "List.length_append",
+        "List.nil",
+        "List.rec"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "logic",
+      "label": "逻辑与函数外延（True / Iff / propext / funext）",
+      "anchorCount": 6,
+      "anchors": [
+        "Iff",
+        "Iff.intro",
+        "True",
+        "True.intro",
+        "propext",
+        "trivial"
+      ],
+      "inTypeClosure": false,
+      "inProofLayer": true
+    },
+    {
+      "id": "nat",
+      "label": "自然数与加法（Nat / +）",
+      "anchorCount": 7,
+      "anchors": [
+        "Nat",
+        "Nat.add",
+        "Nat.rec",
+        "Nat.succ",
+        "Nat.succ_add",
+        "Nat.zero",
+        "Nat.zero_add"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    }
+  ],
+  "conceptEdges": [
+    {
+      "from": "nat",
+      "to": "add-notation",
+      "kind": "type-uses",
+      "weight": 8
+    },
+    {
+      "from": "nat",
+      "to": "add-notation",
+      "kind": "proof-uses",
+      "weight": 8
+    },
+    {
+      "from": "list",
+      "to": "equality",
+      "kind": "proof-uses",
+      "weight": 7
+    },
+    {
+      "from": "equality",
+      "to": "logic",
+      "kind": "proof-uses",
+      "weight": 6
+    },
+    {
+      "from": "list",
+      "to": "add-notation",
+      "kind": "proof-uses",
+      "weight": 5
+    },
+    {
+      "from": "add-notation",
+      "to": "nat",
+      "kind": "type-uses",
+      "weight": 5
+    },
+    {
+      "from": "list",
+      "to": "nat",
+      "kind": "proof-uses",
+      "weight": 4
+    },
+    {
+      "from": "add-notation",
+      "to": "nat",
+      "kind": "proof-uses",
+      "weight": 4
+    },
+    {
+      "from": "list",
+      "to": "append-notation",
+      "kind": "type-uses",
+      "weight": 3
+    },
+    {
+      "from": "list",
+      "to": "add-notation",
+      "kind": "type-uses",
+      "weight": 3
+    },
+    {
+      "from": "list",
+      "to": "append-notation",
+      "kind": "proof-uses",
+      "weight": 3
+    },
+    {
+      "from": "equality",
+      "to": "logic",
+      "kind": "type-uses",
+      "weight": 3
+    },
+    {
+      "from": "list",
+      "to": "nat",
+      "kind": "type-uses",
+      "weight": 2
+    },
+    {
+      "from": "append-notation",
+      "to": "list",
+      "kind": "proof-uses",
+      "weight": 2
+    },
+    {
+      "from": "nat",
+      "to": "equality",
+      "kind": "type-uses",
+      "weight": 2
+    },
+    {
+      "from": "nat",
+      "to": "equality",
+      "kind": "proof-uses",
+      "weight": 2
+    },
+    {
+      "from": "list",
+      "to": "equality",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "list",
+      "to": "logic",
+      "kind": "proof-uses",
+      "weight": 1
+    },
+    {
+      "from": "append-notation",
+      "to": "list",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "logic",
+      "to": "equality",
+      "kind": "type-uses",
+      "weight": 1
+    }
+  ]
+}

@@ -1,0 +1,370 @@
+{
+  "target": "List.map_comp_map",
+  "targetConcept": "list",
+  "focusDepth": 2,
+  "fullClosureNodes": 649,
+  "focusNodes": 50,
+  "concepts": [
+    {
+      "id": "equality",
+      "label": "等式与同余（Eq / congr）",
+      "anchorCount": 6,
+      "anchors": [
+        "Eq",
+        "Eq.mpr",
+        "Eq.rec",
+        "Eq.symm",
+        "congrArg",
+        "rfl"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "function",
+      "label": "函数与复合（Function / ∘）",
+      "anchorCount": 2,
+      "anchors": [
+        "Function.comp",
+        "Function.comp_apply"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "getelem",
+      "label": "元素访问（GetElem? / getElem?）",
+      "anchorCount": 3,
+      "anchors": [
+        "GetElem?",
+        "GetElem?.getElem?",
+        "GetElem?.mk"
+      ],
+      "inTypeClosure": false,
+      "inProofLayer": true
+    },
+    {
+      "id": "instance",
+      "label": "实例/类型类机器（instances）",
+      "anchorCount": 3,
+      "anchors": [
+        "List.instGetElem?NatLtLength",
+        "List.instGetElemNatLtLength",
+        "instLTNat"
+      ],
+      "inTypeClosure": false,
+      "inProofLayer": true
+    },
+    {
+      "id": "internal",
+      "label": "内部管道（equation compiler / recursor / match）",
+      "anchorCount": 10,
+      "anchors": [
+        "Inhabited",
+        "List.brecOn",
+        "List.ext_getElem?._f",
+        "List.get!Internal",
+        "List.get?Internal",
+        "List.length._f",
+        "List.map._f",
+        "_private.Init.Data.Option.Lemmas.0.Option.ext.match_1_1",
+        "id",
+        "outParam"
+      ],
+      "inTypeClosure": false,
+      "inProofLayer": true
+    },
+    {
+      "id": "list",
+      "label": "列表与拼接（List / ++ / length）",
+      "anchorCount": 7,
+      "anchors": [
+        "List",
+        "List.comp_map",
+        "List.ext_getElem?",
+        "List.length",
+        "List.map",
+        "List.map_comp_map",
+        "List.map_map"
+      ],
+      "inTypeClosure": true,
+      "inProofLayer": true
+    },
+    {
+      "id": "logic",
+      "label": "逻辑与函数外延（True / Iff / propext / funext）",
+      "anchorCount": 6,
+      "anchors": [
+        "Iff",
+        "Iff.mp",
+        "Iff.mpr",
+        "Iff.refl",
+        "Iff.rfl",
+        "funext"
+      ],
+      "inTypeClosure": false,
+      "inProofLayer": true
+    },
+    {
+      "id": "nat",
+      "label": "自然数与加法（Nat / +）",
+      "anchorCount": 2,
+      "anchors": [
+        "Nat",
+        "Nat.lt"
+      ],
+      "inTypeClosure": false,
+      "inProofLayer": true
+    },
+    {
+      "id": "option",
+      "label": "Option 与可空值",
+      "anchorCount": 4,
+      "anchors": [
+        "Option",
+        "Option.ext",
+        "Option.none",
+        "Option.some"
+      ],
+      "inTypeClosure": false,
+      "inProofLayer": true
+    },
+    {
+      "id": "order",
+      "label": "序关系（LT / LE）",
+      "anchorCount": 3,
+      "anchors": [
+        "LT",
+        "LT.lt",
+        "LT.mk"
+      ],
+      "inTypeClosure": false,
+      "inProofLayer": true
+    },
+    {
+      "id": "quot",
+      "label": "商类型（Quot）",
+      "anchorCount": 4,
+      "anchors": [
+        "Quot",
+        "Quot.liftOn",
+        "Quot.mk",
+        "Quot.sound"
+      ],
+      "inTypeClosure": false,
+      "inProofLayer": true
+    }
+  ],
+  "conceptEdges": [
+    {
+      "from": "list",
+      "to": "equality",
+      "kind": "proof-uses",
+      "weight": 7
+    },
+    {
+      "from": "list",
+      "to": "equality",
+      "kind": "type-uses",
+      "weight": 4
+    },
+    {
+      "from": "list",
+      "to": "function",
+      "kind": "proof-uses",
+      "weight": 4
+    },
+    {
+      "from": "list",
+      "to": "option",
+      "kind": "proof-uses",
+      "weight": 4
+    },
+    {
+      "from": "list",
+      "to": "instance",
+      "kind": "proof-uses",
+      "weight": 4
+    },
+    {
+      "from": "logic",
+      "to": "quot",
+      "kind": "proof-uses",
+      "weight": 4
+    },
+    {
+      "from": "instance",
+      "to": "nat",
+      "kind": "proof-uses",
+      "weight": 4
+    },
+    {
+      "from": "instance",
+      "to": "list",
+      "kind": "type-uses",
+      "weight": 4
+    },
+    {
+      "from": "instance",
+      "to": "list",
+      "kind": "proof-uses",
+      "weight": 4
+    },
+    {
+      "from": "list",
+      "to": "function",
+      "kind": "type-uses",
+      "weight": 3
+    },
+    {
+      "from": "list",
+      "to": "logic",
+      "kind": "proof-uses",
+      "weight": 3
+    },
+    {
+      "from": "list",
+      "to": "nat",
+      "kind": "proof-uses",
+      "weight": 3
+    },
+    {
+      "from": "option",
+      "to": "logic",
+      "kind": "proof-uses",
+      "weight": 3
+    },
+    {
+      "from": "option",
+      "to": "equality",
+      "kind": "proof-uses",
+      "weight": 3
+    },
+    {
+      "from": "instance",
+      "to": "order",
+      "kind": "type-uses",
+      "weight": 3
+    },
+    {
+      "from": "instance",
+      "to": "nat",
+      "kind": "type-uses",
+      "weight": 3
+    },
+    {
+      "from": "instance",
+      "to": "order",
+      "kind": "proof-uses",
+      "weight": 3
+    },
+    {
+      "from": "list",
+      "to": "getelem",
+      "kind": "proof-uses",
+      "weight": 2
+    },
+    {
+      "from": "list",
+      "to": "order",
+      "kind": "proof-uses",
+      "weight": 2
+    },
+    {
+      "from": "logic",
+      "to": "equality",
+      "kind": "proof-uses",
+      "weight": 2
+    },
+    {
+      "from": "list",
+      "to": "nat",
+      "kind": "type-uses",
+      "weight": 2
+    },
+    {
+      "from": "list",
+      "to": "instance",
+      "kind": "type-uses",
+      "weight": 2
+    },
+    {
+      "from": "getelem",
+      "to": "option",
+      "kind": "type-uses",
+      "weight": 2
+    },
+    {
+      "from": "quot",
+      "to": "equality",
+      "kind": "type-uses",
+      "weight": 2
+    },
+    {
+      "from": "logic",
+      "to": "equality",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "list",
+      "to": "option",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "list",
+      "to": "getelem",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "list",
+      "to": "order",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "option",
+      "to": "logic",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "option",
+      "to": "equality",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "instance",
+      "to": "getelem",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "instance",
+      "to": "getelem",
+      "kind": "proof-uses",
+      "weight": 1
+    },
+    {
+      "from": "function",
+      "to": "equality",
+      "kind": "type-uses",
+      "weight": 1
+    },
+    {
+      "from": "function",
+      "to": "equality",
+      "kind": "proof-uses",
+      "weight": 1
+    },
+    {
+      "from": "quot",
+      "to": "equality",
+      "kind": "proof-uses",
+      "weight": 1
+    }
+  ]
+}

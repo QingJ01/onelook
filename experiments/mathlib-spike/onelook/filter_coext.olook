@@ -1,0 +1,1387 @@
+{
+  "version": "1.0.0",
+  "app": "OneLook",
+  "created": 1792302650575,
+  "modified": 1792302650575,
+  "document": {
+    "id": "c960a48e-843a-436f-b0d6-3d251a5132fc",
+    "name": "mathlib 图投影 · Filter.coext（聚焦 r=2）",
+    "root": {
+      "id": "344ae218-8380-42ed-99ba-157eb9cffb4a",
+      "text": "Filter.coext",
+      "children": [
+        {
+          "id": "2626c901-162b-4cc3-88a7-f06169f12033",
+          "text": "中心概念：滤子",
+          "children": [
+            {
+              "id": "b3fa1fa4-29b9-4dd3-8e11-87c4eb2d60bb",
+              "text": "Filter.coext",
+              "children": [],
+              "isExpanded": true,
+              "parentId": "2626c901-162b-4cc3-88a7-f06169f12033",
+              "data": {
+                "note": "**层** 目标\n\n**类型** theorem\n\n**模块** `Mathlib.Order.Filter.Basic`\n\n**角色** 目标定理\n\n**签名**\n```lean\n∀ {α : Type u} {f g : Filter α}, (∀ (s : Set α), sᶜ ∈ f ↔ sᶜ ∈ g) → f = g\n```\n\n**文档**\nAn extensionality lemma that is useful for filters with good lemmas about `sᶜ ∈ f` (e.g.,\n`Filter.comap`, `Filter.coprod`, `Filter.Coprod`, `Filter.cofinite`).",
+                "tags": [
+                  "declaration",
+                  "目标",
+                  "theorem"
+                ]
+              },
+              "style": {
+                "background": "#2563eb",
+                "color": "#ffffff",
+                "fontWeight": "bold",
+                "shape": "round",
+                "borderColor": "#1e40af",
+                "borderWidth": 2
+              }
+            },
+            {
+              "id": "050bebd1-466d-4cdc-afe9-59aeece70357",
+              "text": "[陈述] Filter",
+              "children": [],
+              "isExpanded": true,
+              "parentId": "2626c901-162b-4cc3-88a7-f06169f12033",
+              "data": {
+                "note": "**层** 陈述\n\n**类型** inductive\n\n**模块** `Mathlib.Order.Filter.Defs`\n\n**签名**\n```lean\nType u_1 → Type u_1\n```\n\n**文档**\nA filter `F` on a type `α` is a collection of sets of `α` which contains the whole `α`,\nis upwards-closed, and is stable under intersection. We do not forbid this collection to be\nall sets of `α`.",
+                "tags": [
+                  "declaration",
+                  "陈述",
+                  "inductive"
+                ]
+              },
+              "style": {
+                "background": "#f8fbff",
+                "color": "#1e3a8a",
+                "fontSize": 13,
+                "borderColor": "#93c5fd"
+              }
+            },
+            {
+              "id": "e63108fb-0b1e-4f83-a4a6-adf163f6d681",
+              "text": "[证明] Filter.ext",
+              "children": [],
+              "isExpanded": true,
+              "parentId": "2626c901-162b-4cc3-88a7-f06169f12033",
+              "data": {
+                "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Mathlib.Order.Filter.Defs`\n\n**签名**\n```lean\n∀ {α : Type u_1} {f g : Filter α}, (∀ (s : Set α), s ∈ f ↔ s ∈ g) → f = g\n```\n\n**文档**\n（无 docstring）",
+                "tags": [
+                  "declaration",
+                  "证明",
+                  "theorem"
+                ]
+              },
+              "style": {
+                "background": "#f7fef9",
+                "color": "#14532d",
+                "fontSize": 13,
+                "borderColor": "#86efac"
+              }
+            },
+            {
+              "id": "4482e463-cc6c-458f-a1fd-4beb7bb66934",
+              "text": "[证明] Filter.filter_eq",
+              "children": [],
+              "isExpanded": true,
+              "parentId": "2626c901-162b-4cc3-88a7-f06169f12033",
+              "data": {
+                "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Mathlib.Order.Filter.Defs`\n\n**签名**\n```lean\n∀ {α : Type u_1} {f g : Filter α}, f.sets = g.sets → f = g\n```\n\n**文档**\n（无 docstring）",
+                "tags": [
+                  "declaration",
+                  "证明",
+                  "theorem"
+                ]
+              },
+              "style": {
+                "background": "#f7fef9",
+                "color": "#14532d",
+                "fontSize": 13,
+                "borderColor": "#86efac"
+              }
+            },
+            {
+              "id": "465dbf47-debc-4095-be31-2512777abdd3",
+              "text": "[证明] Filter.sets",
+              "children": [],
+              "isExpanded": true,
+              "parentId": "2626c901-162b-4cc3-88a7-f06169f12033",
+              "data": {
+                "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Mathlib.Order.Filter.Defs`\n\n**签名**\n```lean\n{α : Type u_1} → Filter α → Set (Set α)\n```\n\n**文档**\nThe set of sets that belong to the filter.",
+                "tags": [
+                  "declaration",
+                  "证明",
+                  "definition"
+                ]
+              },
+              "style": {
+                "background": "#f7fef9",
+                "color": "#14532d",
+                "fontSize": 13,
+                "borderColor": "#86efac"
+              }
+            }
+          ],
+          "isExpanded": true,
+          "parentId": "344ae218-8380-42ed-99ba-157eb9cffb4a",
+          "data": {
+            "note": "**概念** 滤子（Filter）\n\n**锚点** 5 个\n\n**概念依赖（聚焦内）**\n- 布尔代数（BooleanAlgebra）：type 0 / proof 1\n- 等式与同余（Eq / congr）：type 3 / proof 1\n- 函数与复合（Function / ∘）：type 0 / proof 1\n- 实例/类型类机器（instances）：type 3 / proof 6\n- 逻辑与函数外延（True / Iff / propext / funext）：type 2 / proof 3\n- 成员关系（Membership）：type 2 / proof 3\n- 集合与补集（Set / Compl）：type 5 / proof 6",
+            "tags": [
+              "concept",
+              "filter",
+              "中心"
+            ]
+          },
+          "style": {
+            "background": "#dbeafe",
+            "color": "#1e3a8a",
+            "fontWeight": "bold",
+            "fontSize": 15,
+            "shape": "round",
+            "borderColor": "#2563eb",
+            "borderWidth": 2
+          }
+        },
+        {
+          "id": "a117a2de-83ec-4e4e-a85d-c4a0d75fdd2e",
+          "text": "读懂陈述",
+          "children": [
+            {
+              "id": "102f0a17-2552-4f66-a013-8375d2df254a",
+              "text": "集合与补集",
+              "children": [
+                {
+                  "id": "781868c7-f38f-4888-bf33-4d7f95ae3fb5",
+                  "text": "[陈述] Compl",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "102f0a17-2552-4f66-a013-8375d2df254a",
+                  "data": {
+                    "note": "**层** 陈述\n\n**类型** inductive\n\n**模块** `Mathlib.Order.Notation`\n\n**签名**\n```lean\nType u_1 → Type u_1\n```\n\n**文档**\nSet / lattice complement",
+                    "tags": [
+                      "declaration",
+                      "陈述",
+                      "inductive"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f8fbff",
+                    "color": "#1e3a8a",
+                    "fontSize": 13,
+                    "borderColor": "#93c5fd"
+                  }
+                },
+                {
+                  "id": "cf73c78b-15be-4db9-94d5-6a2dc8b02d07",
+                  "text": "[陈述] Compl.compl",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "102f0a17-2552-4f66-a013-8375d2df254a",
+                  "data": {
+                    "note": "**层** 陈述\n\n**类型** definition\n\n**模块** `Mathlib.Order.Notation`\n\n**签名**\n```lean\n{α : Type u_1} → [self : Compl α] → α → α\n```\n\n**文档**\nSet / lattice complement",
+                    "tags": [
+                      "declaration",
+                      "陈述",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f8fbff",
+                    "color": "#1e3a8a",
+                    "fontSize": 13,
+                    "borderColor": "#93c5fd"
+                  }
+                },
+                {
+                  "id": "41f9b632-accd-4b90-8dea-1050f44140f6",
+                  "text": "[证明] Compl.mk",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "102f0a17-2552-4f66-a013-8375d2df254a",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** constructor\n\n**模块** `Mathlib.Order.Notation`\n\n**签名**\n```lean\n{α : Type u_1} → (α → α) → Compl α\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "constructor"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "6904f9f6-63cd-4933-9b6b-d4b762620131",
+                  "text": "[陈述] Set",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "102f0a17-2552-4f66-a013-8375d2df254a",
+                  "data": {
+                    "note": "**层** 陈述\n\n**类型** definition\n\n**模块** `Mathlib.Data.Set.Defs`\n\n**签名**\n```lean\nType u → Type u\n```\n\n**文档**\nA set is a collection of elements of some type `α`.\n\nAlthough `Set` is defined as `α → Prop`, this is an implementation detail which should not be\nrelied on. Instead, `Set.ofPred` (also written `{x | p x}`) and membership of a set (`∈`) should be\nused to convert between sets and predicates.",
+                    "tags": [
+                      "declaration",
+                      "陈述",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f8fbff",
+                    "color": "#1e3a8a",
+                    "fontSize": 13,
+                    "borderColor": "#93c5fd"
+                  }
+                },
+                {
+                  "id": "ce2fd5ca-2483-4867-8a43-2574589094dc",
+                  "text": "[证明] Set.ext",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "102f0a17-2552-4f66-a013-8375d2df254a",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Mathlib.Data.Set.Defs`\n\n**签名**\n```lean\n∀ {α : Type u} {a b : Set α}, (∀ (x : α), x ∈ a ↔ x ∈ b) → a = b\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "theorem"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "ece295b8-93f7-4f61-9bf1-8dc1c38f6ede",
+                  "text": "[证明] Set.ofPred",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "102f0a17-2552-4f66-a013-8375d2df254a",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Mathlib.Data.Set.Defs`\n\n**签名**\n```lean\n{α : Type u} → (α → Prop) → Set α\n```\n\n**文档**\nTurn a predicate `p : α → Prop` into a set, also written as `{x | p x}`",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "56cf29a1-6b94-4b73-8a31-3d9a9735b8f9",
+                  "text": "[证明] compl_involutive",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "102f0a17-2552-4f66-a013-8375d2df254a",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Mathlib.Order.BooleanAlgebra.Basic`\n\n**签名**\n```lean\n∀ {α : Type u} [inst : BooleanAlgebra α], Function.Involutive compl\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "theorem"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "4bc6afcc-be8e-46c4-a5dc-ca1b460037e0",
+                  "text": "[证明] compl_surjective",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "102f0a17-2552-4f66-a013-8375d2df254a",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Mathlib.Order.BooleanAlgebra.Basic`\n\n**签名**\n```lean\n∀ {α : Type u} [inst : BooleanAlgebra α], Function.Surjective compl\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "theorem"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                }
+              ],
+              "isExpanded": true,
+              "parentId": "a117a2de-83ec-4e4e-a85d-c4a0d75fdd2e",
+              "data": {
+                "note": "**概念** 集合与补集（Set / Compl）\n\n**锚点** 8 个\n\n**概念依赖（聚焦内）**\n- 布尔代数（BooleanAlgebra）：type 4 / proof 3\n- 等式与同余（Eq / congr）：type 1 / proof 0\n- 函数与复合（Function / ∘）：type 1 / proof 1\n- 实例/类型类机器（instances）：type 1 / proof 1\n- 逻辑与函数外延（True / Iff / propext / funext）：type 1 / proof 1\n- 成员关系（Membership）：type 1 / proof 1",
+                "tags": [
+                  "concept",
+                  "set"
+                ]
+              },
+              "style": {
+                "background": "#eff6ff",
+                "color": "#1e40af",
+                "fontWeight": "bold",
+                "shape": "round",
+                "borderColor": "#60a5fa"
+              }
+            },
+            {
+              "id": "0a0db6fe-1059-4c0c-9a65-94ab39407d4d",
+              "text": "逻辑与函数外延",
+              "children": [
+                {
+                  "id": "0b675a1a-331c-4ab5-ab2b-f69eaecd4049",
+                  "text": "[证明] Exists",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "0a0db6fe-1059-4c0c-9a65-94ab39407d4d",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** inductive\n\n**模块** `Init.Core`\n\n**签名**\n```lean\n{α : Sort u} → (α → Prop) → Prop\n```\n\n**文档**\nExistential quantification. If `p : α → Prop` is a predicate, then `∃ x : α, p x`\nasserts that there is some `x` of type `α` such that `p x` holds.\nTo create an existential proof, use the `exists` tactic,\nor the anonymous constructor notation `⟨x, h⟩`.\nTo unpack an existential, use `cases h` where `h` is a proof of `∃ x : α, p x`,\nor `let ⟨x, hx⟩ := h` where `.\n\nBecause Lean has proof irrelevance, any two proofs of an existential are\ndefinitionally equal. One consequence of this is that it is impossible to recover the\nwitness of an existential from the mere fact of its existence.\nFor example, the following does not compile:\n```\nexample (h : ∃ x : Nat, x = x) : Nat :=\n  let ⟨x, _⟩ := h  -- fail, because the goal is `Nat : Type`\n  x\n```\nThe error message `recursor 'Exists.casesOn' can only eliminate into Prop` means\nthat this only works when the current goal is another proposition:\n```\nexample (h : ∃ x : Nat, x = x) : True :=\n  let ⟨x, _⟩ := h  -- ok, because the goal is `True : Prop`\n  trivial\n```",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "inductive"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "c17409ae-278c-4f51-aac0-e0dc55850c36",
+                  "text": "[陈述] Iff",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "0a0db6fe-1059-4c0c-9a65-94ab39407d4d",
+                  "data": {
+                    "note": "**层** 陈述\n\n**类型** inductive\n\n**模块** `Init.Core`\n\n**签名**\n```lean\nProp → Prop → Prop\n```\n\n**文档**\nIf and only if, or logical bi-implication. `a ↔ b` means that `a` implies `b` and vice versa.\nBy `propext`, this implies that `a` and `b` are equal and hence any expression involving `a`\nis equivalent to the corresponding expression with `b` instead.",
+                    "tags": [
+                      "declaration",
+                      "陈述",
+                      "inductive"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f8fbff",
+                    "color": "#1e3a8a",
+                    "fontSize": 13,
+                    "borderColor": "#93c5fd"
+                  }
+                },
+                {
+                  "id": "30861f81-9d75-4e34-9400-6d03e43bad6f",
+                  "text": "[证明] Iff.intro",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "0a0db6fe-1059-4c0c-9a65-94ab39407d4d",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** constructor\n\n**模块** `Init.Core`\n\n**签名**\n```lean\n∀ {a b : Prop}, (a → b) → (b → a) → (a ↔ b)\n```\n\n**文档**\nIf `a → b` and `b → a` then `a` and `b` are equivalent.",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "constructor"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "a36d36d8-54b8-4b04-b5b6-654280b83338",
+                  "text": "[证明] Iff.mpr",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "0a0db6fe-1059-4c0c-9a65-94ab39407d4d",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Init.Core`\n\n**签名**\n```lean\n∀ {a b : Prop}, (a ↔ b) → b → a\n```\n\n**文档**\nModus ponens for if and only if, reversed. If `a ↔ b` and `b`, then `a`.",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "theorem"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "7f07461f-92a5-4189-aa83-405a43464203",
+                  "text": "[证明] Not",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "0a0db6fe-1059-4c0c-9a65-94ab39407d4d",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\nProp → Prop\n```\n\n**文档**\n`Not p`, or `¬p`, is the negation of `p`. It is defined to be `p → False`,\nso if your goal is `¬p` you can use `intro h` to turn the goal into\n`h : p ⊢ False`, and if you have `hn : ¬p` and `h : p` then `hn h : False`\nand `(hn h).elim` will prove anything.\nFor more information: [Propositional Logic](https://lean-lang.org/theorem_proving_in_lean4/propositions_and_proofs.html#propositional-logic)",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                }
+              ],
+              "isExpanded": true,
+              "parentId": "a117a2de-83ec-4e4e-a85d-c4a0d75fdd2e",
+              "data": {
+                "note": "**概念** 逻辑与函数外延（True / Iff / propext / funext）\n\n**锚点** 5 个\n\n**概念依赖（聚焦内）**\n（聚焦子图内无跨概念依赖）",
+                "tags": [
+                  "concept",
+                  "logic"
+                ]
+              },
+              "style": {
+                "background": "#eff6ff",
+                "color": "#1e40af",
+                "fontWeight": "bold",
+                "shape": "round",
+                "borderColor": "#60a5fa"
+              }
+            },
+            {
+              "id": "62f589c5-f550-452c-82e2-049fbebae83b",
+              "text": "成员关系",
+              "children": [
+                {
+                  "id": "56c12e38-ca08-41f5-9e56-eaae285b8407",
+                  "text": "[陈述] Membership",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "62f589c5-f550-452c-82e2-049fbebae83b",
+                  "data": {
+                    "note": "**层** 陈述\n\n**类型** inductive\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\noutParam (Type u) → Type v → Type (max u v)\n```\n\n**文档**\nThe typeclass behind the notation `a ∈ s : Prop` where `a : α`, `s : γ`.\nBecause `α` is an `outParam`, the \"container type\" `γ` determines the type\nof the elements of the container.",
+                    "tags": [
+                      "declaration",
+                      "陈述",
+                      "inductive"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f8fbff",
+                    "color": "#1e3a8a",
+                    "fontSize": 13,
+                    "borderColor": "#93c5fd"
+                  }
+                },
+                {
+                  "id": "b27c1713-31bc-4f7a-9d1c-6a4ee93e9c11",
+                  "text": "[陈述] Membership.mem",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "62f589c5-f550-452c-82e2-049fbebae83b",
+                  "data": {
+                    "note": "**层** 陈述\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : outParam (Type u)} → {γ : Type v} → [self : Membership α γ] → γ → α → Prop\n```\n\n**文档**\nThe membership relation `a ∈ s : Prop` where `a : α`, `s : γ`.",
+                    "tags": [
+                      "declaration",
+                      "陈述",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f8fbff",
+                    "color": "#1e3a8a",
+                    "fontSize": 13,
+                    "borderColor": "#93c5fd"
+                  }
+                },
+                {
+                  "id": "cc47847f-ba7e-4019-aad2-6319f22b8d25",
+                  "text": "[证明] Membership.mk",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "62f589c5-f550-452c-82e2-049fbebae83b",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** constructor\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : outParam (Type u)} → {γ : Type v} → (γ → α → Prop) → Membership α γ\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "constructor"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                }
+              ],
+              "isExpanded": true,
+              "parentId": "a117a2de-83ec-4e4e-a85d-c4a0d75fdd2e",
+              "data": {
+                "note": "**概念** 成员关系（Membership）\n\n**锚点** 3 个\n\n**概念依赖（聚焦内）**\n- 内部管道（equation compiler / recursor / match）：type 3 / proof 1",
+                "tags": [
+                  "concept",
+                  "membership"
+                ]
+              },
+              "style": {
+                "background": "#eff6ff",
+                "color": "#1e40af",
+                "fontWeight": "bold",
+                "shape": "round",
+                "borderColor": "#60a5fa"
+              }
+            },
+            {
+              "id": "66f6d311-ca77-4c9a-928b-d4ac6e91abd4",
+              "text": "等式与同余",
+              "children": [
+                {
+                  "id": "f3e9ec63-40b7-4a88-bd98-653cf833e051",
+                  "text": "[陈述] Eq",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "66f6d311-ca77-4c9a-928b-d4ac6e91abd4",
+                  "data": {
+                    "note": "**层** 陈述\n\n**类型** inductive\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Sort u_1} → α → α → Prop\n```\n\n**文档**\nThe equality relation. It has one introduction rule, `Eq.refl`.\nWe use `a = b` as notation for `Eq a b`.\nA fundamental property of equality is that it is an equivalence relation.\n```\nvariable (α : Type) (a b c d : α)\nvariable (hab : a = b) (hcb : c = b) (hcd : c = d)\n\nexample : a = d :=\n  Eq.trans (Eq.trans hab (Eq.symm hcb)) hcd\n```\nEquality is much more than an equivalence relation, however. It has the important property that every assertion\nrespects the equivalence, in the sense that we can substitute equal expressions without changing the truth value.\nThat is, given `h1 : a = b` and `h2 : p a`, we can construct a proof for `p b` using substitution: `Eq.subst h1 h2`.\nExample:\n```\nexample (α : Type) (a b : α) (p : α → Prop)\n        (h1 : a = b) (h2 : p a) : p b :=\n  Eq.subst h1 h2\n\nexample (α : Type) (a b : α) (p : α → Prop)\n    (h1 : a = b) (h2 : p a) : p b :=\n  h1 ▸ h2\n```\nThe triangle in the second presentation is a macro built on top of `Eq.subst` and `Eq.symm`, and you can enter it by typing `\\t`.\nFor more information: [Equality](https://lean-lang.org/theorem_proving_in_lean4/quantifiers_and_equality.html#equality)",
+                    "tags": [
+                      "declaration",
+                      "陈述",
+                      "inductive"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f8fbff",
+                    "color": "#1e3a8a",
+                    "fontSize": 13,
+                    "borderColor": "#93c5fd"
+                  }
+                },
+                {
+                  "id": "c4db6d7b-24df-431c-8ba0-ab1926d17b95",
+                  "text": "[证明] Eq.rec",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "66f6d311-ca77-4c9a-928b-d4ac6e91abd4",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** recursor\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\n{α : Sort u_1} → {a : α} → {motive : (a_1 : α) → a = a_1 → Sort u} → motive a ⋯ → {a_1 : α} → (t : a = a_1) → motive a_1 t\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "recursor"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                }
+              ],
+              "isExpanded": true,
+              "parentId": "a117a2de-83ec-4e4e-a85d-c4a0d75fdd2e",
+              "data": {
+                "note": "**概念** 等式与同余（Eq / congr）\n\n**锚点** 2 个\n\n**概念依赖（聚焦内）**\n（聚焦子图内无跨概念依赖）",
+                "tags": [
+                  "concept",
+                  "equality"
+                ]
+              },
+              "style": {
+                "background": "#eff6ff",
+                "color": "#1e40af",
+                "fontWeight": "bold",
+                "shape": "round",
+                "borderColor": "#60a5fa"
+              }
+            }
+          ],
+          "isExpanded": true,
+          "parentId": "344ae218-8380-42ed-99ba-157eb9cffb4a",
+          "data": {
+            "note": "理解命题本身所需的概念（类型级闭包及其语义修正）。",
+            "tags": [
+              "layer",
+              "陈述"
+            ]
+          },
+          "style": {
+            "background": "#e5e7eb",
+            "color": "#111827",
+            "fontWeight": "bold",
+            "fontSize": 15,
+            "shape": "round",
+            "borderColor": "#9ca3af"
+          }
+        },
+        {
+          "id": "47731bb9-b014-4d7a-923a-e2a628b67c06",
+          "text": "读懂证明",
+          "children": [
+            {
+              "id": "84762227-126a-47df-87b7-a2ffe3ecac64",
+              "text": "序关系",
+              "children": [
+                {
+                  "id": "131a7260-5e38-40d3-a8c9-2c1b042373d1",
+                  "text": "[证明] BoundedOrder.toOrderBot",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "84762227-126a-47df-87b7-a2ffe3ecac64",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Mathlib.Order.BoundedOrder.Basic`\n\n**签名**\n```lean\n{α : Type u} → {inst : LE α} → [self : BoundedOrder α] → OrderBot α\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "e5e90b19-8141-4ed6-b4ab-7b220c18cf7d",
+                  "text": "[证明] BoundedOrder.toOrderTop",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "84762227-126a-47df-87b7-a2ffe3ecac64",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Mathlib.Order.BoundedOrder.Basic`\n\n**签名**\n```lean\n{α : Type u} → {inst : LE α} → [self : BoundedOrder α] → OrderTop α\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "d9ad5176-2cd9-460c-8dc5-bf241253a92c",
+                  "text": "[证明] OrderBot.toBot",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "84762227-126a-47df-87b7-a2ffe3ecac64",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Mathlib.Order.BoundedOrder.Basic`\n\n**签名**\n```lean\n{α : Type u} → {inst : LE α} → [self : OrderBot α] → Bot α\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "12c808a5-7fa2-4531-a5dd-08222e5866f5",
+                  "text": "[证明] OrderTop.toTop",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "84762227-126a-47df-87b7-a2ffe3ecac64",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Mathlib.Order.BoundedOrder.Basic`\n\n**签名**\n```lean\n{α : Type u} → {inst : LE α} → [self : OrderTop α] → Top α\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                }
+              ],
+              "isExpanded": true,
+              "parentId": "47731bb9-b014-4d7a-923a-e2a628b67c06",
+              "data": {
+                "note": "**概念** 序关系（LT / LE）\n\n**锚点** 4 个\n\n**概念依赖（聚焦内）**\n（聚焦子图内无跨概念依赖）",
+                "tags": [
+                  "concept",
+                  "order"
+                ]
+              },
+              "style": {
+                "background": "#f0fdf4",
+                "color": "#166534",
+                "fontWeight": "bold",
+                "shape": "round",
+                "borderColor": "#34d399"
+              }
+            },
+            {
+              "id": "4a0864bf-5cdc-4c32-a17b-194ea431d93f",
+              "text": "布尔代数",
+              "children": [
+                {
+                  "id": "4aaec705-87a9-4dc9-822b-79bc57f8a228",
+                  "text": "[证明] BooleanAlgebra",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "4a0864bf-5cdc-4c32-a17b-194ea431d93f",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** inductive\n\n**模块** `Mathlib.Order.BooleanAlgebra.Defs`\n\n**签名**\n```lean\nType u → Type u\n```\n\n**文档**\nA Boolean algebra is a bounded distributive lattice with a complement operator `ᶜ` such that\n`x ⊓ xᶜ = ⊥` and `x ⊔ xᶜ = ⊤`. For convenience, it must also provide a set difference operation `\\`\nand a Heyting implication `⇨` satisfying `x \\ y = x ⊓ yᶜ` and `x ⇨ y = y ⊔ xᶜ`.\n\nThis is a generalization of (classical) logic of propositions, or the powerset lattice.\n\nSince `BoundedOrder`, `OrderBot`, and `OrderTop` are mixins that require `LE`\nto be present at define-time, the `extends` mechanism does not work with them.\nInstead, we extend using the underlying `Bot` and `Top` data typeclasses, and replicate the\norder axioms of those classes here. A \"forgetful\" instance back to `BoundedOrder` is provided.",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "inductive"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "46e73aef-04e8-4a5e-9424-3d54540da150",
+                  "text": "[证明] BooleanAlgebra.mk",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "4a0864bf-5cdc-4c32-a17b-194ea431d93f",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** constructor\n\n**模块** `Mathlib.Order.BooleanAlgebra.Defs`\n\n**签名**\n```lean\n{α : Type u} → [toDistribLattice : DistribLattice α] → [toCompl : Compl α] → [toSDiff : SDiff α] → [toHImp : HImp α] → [toTop : Top α] → [toBot : Bot α] → (∀ (x : α), x ⊓ xᶜ ≤ ⊥) → (∀ (x : α), ⊤ ≤ x ⊔ xᶜ) → (∀ (a : α), a ≤ ⊤) → (∀ (a : α), ⊥ ≤ a) → autoParam (∀ (x y : α), x \\ y = x ⊓ yᶜ) BooleanAlgebra.sdiff_eq._autoParam → autoParam (∀ (x y : α), x ⇨ y = y ⊔ xᶜ) BooleanAlgebra.himp_eq._autoParam → BooleanAlgebra α\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "constructor"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "ac5fcc5f-365f-4b41-b460-f0a44848bb3b",
+                  "text": "[证明] BooleanAlgebra.toCompl",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "4a0864bf-5cdc-4c32-a17b-194ea431d93f",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Mathlib.Order.BooleanAlgebra.Defs`\n\n**签名**\n```lean\n{α : Type u} → [self : BooleanAlgebra α] → Compl α\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                }
+              ],
+              "isExpanded": true,
+              "parentId": "47731bb9-b014-4d7a-923a-e2a628b67c06",
+              "data": {
+                "note": "**概念** 布尔代数（BooleanAlgebra）\n\n**锚点** 3 个\n\n**概念依赖（聚焦内）**\n- 等式与同余（Eq / congr）：type 1 / proof 0\n- 集合与补集（Set / Compl）：type 3 / proof 0",
+                "tags": [
+                  "concept",
+                  "boolean"
+                ]
+              },
+              "style": {
+                "background": "#f0fdf4",
+                "color": "#166534",
+                "fontWeight": "bold",
+                "shape": "round",
+                "borderColor": "#34d399"
+              }
+            },
+            {
+              "id": "fdd05923-443b-4612-bb3d-adb85d91c683",
+              "text": "函数与复合",
+              "children": [
+                {
+                  "id": "a7b0d79c-b298-4b83-af30-dd90a453bc7e",
+                  "text": "[证明] Function.Involutive.surjective",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "fdd05923-443b-4612-bb3d-adb85d91c683",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Mathlib.Logic.Function.Basic`\n\n**签名**\n```lean\n∀ {α : Sort u} {f : α → α}, Function.Involutive f → Function.Surjective f\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "theorem"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "d7e83cbb-1325-4847-a90d-8acef369c851",
+                  "text": "[证明] Function.Surjective",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "fdd05923-443b-4612-bb3d-adb85d91c683",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** definition\n\n**模块** `Init.Data.Function`\n\n**签名**\n```lean\n{α : Sort u_1} → {β : Sort u_2} → (α → β) → Prop\n```\n\n**文档**\nA function `f : α → β` is called surjective if every `b : β` is equal to `f a`\nfor some `a : α`.",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                },
+                {
+                  "id": "9da7d171-c6de-4792-90a5-39f26214de05",
+                  "text": "[证明] Function.Surjective.forall",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "fdd05923-443b-4612-bb3d-adb85d91c683",
+                  "data": {
+                    "note": "**层** 证明\n\n**类型** theorem\n\n**模块** `Mathlib.Logic.Function.Basic`\n\n**签名**\n```lean\n∀ {α : Sort u_1} {β : Sort u_2} {f : α → β}, Function.Surjective f → ∀ {p : β → Prop}, (∀ (y : β), p y) ↔ ∀ (x : α), p (f x)\n```\n\n**文档**\n（无 docstring）",
+                    "tags": [
+                      "declaration",
+                      "证明",
+                      "theorem"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f7fef9",
+                    "color": "#14532d",
+                    "fontSize": 13,
+                    "borderColor": "#86efac"
+                  }
+                }
+              ],
+              "isExpanded": true,
+              "parentId": "47731bb9-b014-4d7a-923a-e2a628b67c06",
+              "data": {
+                "note": "**概念** 函数与复合（Function / ∘）\n\n**锚点** 3 个\n\n**概念依赖（聚焦内）**\n- 等式与同余（Eq / congr）：type 0 / proof 4\n- 内部管道（equation compiler / recursor / match）：type 0 / proof 1\n- 逻辑与函数外延（True / Iff / propext / funext）：type 1 / proof 3",
+                "tags": [
+                  "concept",
+                  "function"
+                ]
+              },
+              "style": {
+                "background": "#f0fdf4",
+                "color": "#166534",
+                "fontWeight": "bold",
+                "shape": "round",
+                "borderColor": "#34d399"
+              }
+            }
+          ],
+          "isExpanded": true,
+          "parentId": "344ae218-8380-42ed-99ba-157eb9cffb4a",
+          "data": {
+            "note": "证明层新增的依赖；其中可能混有证明机器，详见各概念备注。",
+            "tags": [
+              "layer",
+              "证明"
+            ]
+          },
+          "style": {
+            "background": "#e5e7eb",
+            "color": "#111827",
+            "fontWeight": "bold",
+            "fontSize": 15,
+            "shape": "round",
+            "borderColor": "#9ca3af"
+          }
+        },
+        {
+          "id": "56d2b089-52f4-459d-901f-bd0875872887",
+          "text": "机器与内部管道（折叠）",
+          "children": [
+            {
+              "id": "695c1f3b-d62b-45f7-9f95-86327dac8bda",
+              "text": "实例/类型类机器",
+              "children": [
+                {
+                  "id": "7ebe85c5-f190-4f66-b276-f1d24e81348d",
+                  "text": "[实例] Filter.instMembership",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "695c1f3b-d62b-45f7-9f95-86327dac8bda",
+                  "data": {
+                    "note": "**层** 实例\n\n**类型** definition\n\n**模块** `Mathlib.Order.Filter.Defs`\n\n**签名**\n```lean\n{α : Type u_1} → Membership (Set α) (Filter α)\n```\n\n**文档**\nIf `F` is a filter on `α`, and `U` a subset of `α` then we can write `U ∈ F` as on paper.\n\n**说明** 类型类实例，解释实现，不是学习先修；默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "实例",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "e5055e3e-3c97-4cc7-9443-6a9c349cc1e2",
+                  "text": "[实例] Set.instBooleanAlgebra",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "695c1f3b-d62b-45f7-9f95-86327dac8bda",
+                  "data": {
+                    "note": "**层** 实例\n\n**类型** definition\n\n**模块** `Mathlib.Order.BooleanAlgebra.Set`\n\n**签名**\n```lean\n{α : Type u_1} → BooleanAlgebra (Set α)\n```\n\n**文档**\n（无 docstring）\n\n**说明** 类型类实例，解释实现，不是学习先修；默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "实例",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "d1bca284-cb07-4b4b-ae64-3284e2624275",
+                  "text": "[实例] Set.instBoundedOrder",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "695c1f3b-d62b-45f7-9f95-86327dac8bda",
+                  "data": {
+                    "note": "**层** 实例\n\n**类型** definition\n\n**模块** `Mathlib.Data.Set.Basic`\n\n**签名**\n```lean\n{α : Type u} → BoundedOrder (Set α)\n```\n\n**文档**\n（无 docstring）\n\n**说明** 类型类实例，解释实现，不是学习先修；默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "实例",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "6344a452-44c3-4f8b-bf02-af35ad12fdf1",
+                  "text": "[实例] Set.instCompl",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "695c1f3b-d62b-45f7-9f95-86327dac8bda",
+                  "data": {
+                    "note": "**层** 实例\n\n**类型** definition\n\n**模块** `Mathlib.Data.Set.Operations`\n\n**签名**\n```lean\n{α : Type u} → Compl (Set α)\n```\n\n**文档**\n（无 docstring）\n\n**说明** 类型类实例，解释实现，不是学习先修；默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "实例",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "053b15a8-6e02-4c1a-ba75-6ada75395b37",
+                  "text": "[实例] Set.instDistribLattice",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "695c1f3b-d62b-45f7-9f95-86327dac8bda",
+                  "data": {
+                    "note": "**层** 实例\n\n**类型** definition\n\n**模块** `Mathlib.Data.Set.Basic`\n\n**签名**\n```lean\n{α : Type u} → DistribLattice (Set α)\n```\n\n**文档**\n（无 docstring）\n\n**说明** 类型类实例，解释实现，不是学习先修；默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "实例",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "7d817921-4b1b-46c1-b815-565297f41a2f",
+                  "text": "[实例] Set.instHImp",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "695c1f3b-d62b-45f7-9f95-86327dac8bda",
+                  "data": {
+                    "note": "**层** 实例\n\n**类型** definition\n\n**模块** `Mathlib.Order.BooleanAlgebra.Set`\n\n**签名**\n```lean\n{α : Type u_1} → HImp (Set α)\n```\n\n**文档**\n（无 docstring）\n\n**说明** 类型类实例，解释实现，不是学习先修；默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "实例",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "547ca645-8419-4b39-8468-054e04bdeb1a",
+                  "text": "[实例] Set.instLE",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "695c1f3b-d62b-45f7-9f95-86327dac8bda",
+                  "data": {
+                    "note": "**层** 实例\n\n**类型** definition\n\n**模块** `Mathlib.Data.Set.Defs`\n\n**签名**\n```lean\n{α : Type u} → LE (Set α)\n```\n\n**文档**\nWe introduce `≤` before `⊆` to help the unifier when applying lattice theorems\nto subset hypotheses.\n\n**说明** 类型类实例，解释实现，不是学习先修；默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "实例",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "2fb15c7f-550d-4e60-bf31-23e8df1838c9",
+                  "text": "[实例] Set.instMembership",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "695c1f3b-d62b-45f7-9f95-86327dac8bda",
+                  "data": {
+                    "note": "**层** 实例\n\n**类型** definition\n\n**模块** `Mathlib.Data.Set.Defs`\n\n**签名**\n```lean\n{α : Type u} → Membership α (Set α)\n```\n\n**文档**\n（无 docstring）\n\n**说明** 类型类实例，解释实现，不是学习先修；默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "实例",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "fd8644bc-115e-43c1-9055-ce574bb2f395",
+                  "text": "[实例] Set.instSDiff",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "695c1f3b-d62b-45f7-9f95-86327dac8bda",
+                  "data": {
+                    "note": "**层** 实例\n\n**类型** definition\n\n**模块** `Mathlib.Data.Set.Defs`\n\n**签名**\n```lean\n{α : Type u} → SDiff (Set α)\n```\n\n**文档**\n（无 docstring）\n\n**说明** 类型类实例，解释实现，不是学习先修；默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "实例",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                }
+              ],
+              "isExpanded": false,
+              "parentId": "56d2b089-52f4-459d-901f-bd0875872887",
+              "data": {
+                "note": "**概念** 实例/类型类机器（instances）\n\n**锚点** 9 个\n\n**概念依赖（聚焦内）**\n- 布尔代数（BooleanAlgebra）：type 1 / proof 1\n- 滤子（Filter）：type 1 / proof 2\n- 内部管道（equation compiler / recursor / match）：type 0 / proof 6\n- 逻辑与函数外延（True / Iff / propext / funext）：type 0 / proof 2\n- 成员关系（Membership）：type 2 / proof 5\n- 序关系（LT / LE）：type 0 / proof 4\n- 集合与补集（Set / Compl）：type 10 / proof 12\n\n**说明** 类型类实例层，默认折叠；它解释实现，不是学习概念。",
+                "tags": [
+                  "concept",
+                  "instance",
+                  "机器"
+                ]
+              },
+              "style": {
+                "background": "#f9fafb",
+                "color": "#4b5563",
+                "fontWeight": "bold",
+                "shape": "round",
+                "borderColor": "#d1d5db"
+              }
+            },
+            {
+              "id": "78e52492-f482-408d-b362-1762fbe6e346",
+              "text": "内部管道",
+              "children": [
+                {
+                  "id": "967a9a0a-c601-4dae-bb3d-8762f73fcf24",
+                  "text": "[内部] Set.instBooleanAlgebra._proof_1",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "78e52492-f482-408d-b362-1762fbe6e346",
+                  "data": {
+                    "note": "**层** 内部\n\n**类型** theorem\n\n**模块** `Mathlib.Order.BooleanAlgebra.Set`\n\n**签名**\n```lean\n∀ {α : Type u_1} (x : Set α), x ⊓ xᶜ ⊆ ⊥\n```\n\n**文档**\n（无 docstring）\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "内部",
+                      "theorem"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "5b8796df-6381-46c3-b5a0-ea1ea32397fc",
+                  "text": "[内部] Set.instBooleanAlgebra._proof_2",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "78e52492-f482-408d-b362-1762fbe6e346",
+                  "data": {
+                    "note": "**层** 内部\n\n**类型** theorem\n\n**模块** `Mathlib.Order.BooleanAlgebra.Set`\n\n**签名**\n```lean\n∀ {α : Type u_1} (x : Set α), ⊤ ⊆ x ⊔ xᶜ\n```\n\n**文档**\n（无 docstring）\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "内部",
+                      "theorem"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "9fc670d9-3ab6-475a-ac2c-3858c278a3af",
+                  "text": "[内部] Set.instBooleanAlgebra._proof_3",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "78e52492-f482-408d-b362-1762fbe6e346",
+                  "data": {
+                    "note": "**层** 内部\n\n**类型** theorem\n\n**模块** `Mathlib.Order.BooleanAlgebra.Set`\n\n**签名**\n```lean\n∀ {α : Type u_1} (a : Set α), a ⊆ ⊤\n```\n\n**文档**\n（无 docstring）\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "内部",
+                      "theorem"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "6a0c6b3b-031f-46cd-88d4-cf5958c8023a",
+                  "text": "[内部] Set.instBooleanAlgebra._proof_4",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "78e52492-f482-408d-b362-1762fbe6e346",
+                  "data": {
+                    "note": "**层** 内部\n\n**类型** theorem\n\n**模块** `Mathlib.Order.BooleanAlgebra.Set`\n\n**签名**\n```lean\n∀ {α : Type u_1} (a : Set α), ⊥ ⊆ a\n```\n\n**文档**\n（无 docstring）\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "内部",
+                      "theorem"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "9e96b224-14f7-47f9-9f15-519006e52d46",
+                  "text": "[内部] Set.instBooleanAlgebra._proof_5",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "78e52492-f482-408d-b362-1762fbe6e346",
+                  "data": {
+                    "note": "**层** 内部\n\n**类型** theorem\n\n**模块** `Mathlib.Order.BooleanAlgebra.Set`\n\n**签名**\n```lean\n∀ {α : Type u_1}, autoParam (∀ (x y : Set α), x \\ y = x ⊓ yᶜ) BooleanAlgebra.sdiff_eq._autoParam\n```\n\n**文档**\n（无 docstring）\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "内部",
+                      "theorem"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "bf63ff46-9503-4238-9f63-a0e904cd16a3",
+                  "text": "[内部] Set.instBooleanAlgebra._proof_6",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "78e52492-f482-408d-b362-1762fbe6e346",
+                  "data": {
+                    "note": "**层** 内部\n\n**类型** theorem\n\n**模块** `Mathlib.Order.BooleanAlgebra.Set`\n\n**签名**\n```lean\n∀ {α : Type u_1}, autoParam (∀ (x y : Set α), x ⇨ y = y ⊔ xᶜ) BooleanAlgebra.himp_eq._autoParam\n```\n\n**文档**\n（无 docstring）\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "内部",
+                      "theorem"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "75fc9af5-6d5e-4a97-a3f4-f0756f2a91ee",
+                  "text": "[内部] _private.Mathlib.Logic.Function.Basic.0.Function.Surjective.forall.match_1_1",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "78e52492-f482-408d-b362-1762fbe6e346",
+                  "data": {
+                    "note": "**层** 内部\n\n**类型** definition\n\n**模块** `Mathlib.Logic.Function.Basic`\n\n**签名**\n```lean\n∀ {α : Sort u_1} {β : Sort u_2} {f : α → β} (y : β) (motive : (∃ a, f a = y) → Prop) (x : ∃ a, f a = y), (∀ (x : α) (hx : f x = y), motive ⋯) → motive x\n```\n\n**文档**\n（无 docstring）\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "内部",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                },
+                {
+                  "id": "4624d2bb-9994-4301-b60d-b16f97daa007",
+                  "text": "[内部] outParam",
+                  "children": [],
+                  "isExpanded": true,
+                  "parentId": "78e52492-f482-408d-b362-1762fbe6e346",
+                  "data": {
+                    "note": "**层** 内部\n\n**类型** definition\n\n**模块** `Init.Prelude`\n\n**签名**\n```lean\nSort u → Sort u\n```\n\n**文档**\nGadget for marking output parameters in type classes.\n\nFor example, the `Membership` class is defined as:\n```\nclass Membership (α : outParam (Type u)) (γ : Type v)\n```\nThis means that whenever a typeclass goal of the form `Membership ?α ?γ` comes\nup, Lean will wait to solve it until `?γ` is known, but then it will run\ntypeclass inference, and take the first solution it finds, for any value of `?α`,\nwhich thereby determines what `?α` should be.\n\nThis expresses that in a term like `a ∈ s`, `s` might be a `Set α` or\n`List α` or some other type with a membership operation, and in each case\nthe \"member\" type `α` is determined by looking at the container type.\n\n**说明** equation compiler / recursor / match 管道，默认折叠。",
+                    "tags": [
+                      "declaration",
+                      "内部",
+                      "definition"
+                    ]
+                  },
+                  "style": {
+                    "background": "#f9fafb",
+                    "color": "#6b7280",
+                    "fontSize": 12,
+                    "borderColor": "#e5e7eb"
+                  }
+                }
+              ],
+              "isExpanded": false,
+              "parentId": "56d2b089-52f4-459d-901f-bd0875872887",
+              "data": {
+                "note": "**概念** 内部管道（equation compiler / recursor / match）\n\n**锚点** 8 个\n\n**概念依赖（聚焦内）**\n- 等式与同余（Eq / congr）：type 3 / proof 1\n- 实例/类型类机器（instances）：type 20 / proof 0\n- 逻辑与函数外延（True / Iff / propext / funext）：type 1 / proof 1\n- 序关系（LT / LE）：type 8 / proof 0\n- 集合与补集（Set / Compl）：type 10 / proof 0\n\n**说明** 内部管道层，默认折叠；不要把这里的东西当成先修知识。",
+                "tags": [
+                  "concept",
+                  "internal",
+                  "机器"
+                ]
+              },
+              "style": {
+                "background": "#f9fafb",
+                "color": "#4b5563",
+                "fontWeight": "bold",
+                "shape": "round",
+                "borderColor": "#d1d5db"
+              }
+            }
+          ],
+          "isExpanded": false,
+          "parentId": "344ae218-8380-42ed-99ba-157eb9cffb4a",
+          "data": {
+            "note": "实例/类型类与 equation compiler 管道。默认折叠；它们解释实现，不是学习先修。",
+            "tags": [
+              "layer",
+              "机器"
+            ]
+          },
+          "style": {
+            "background": "#e5e7eb",
+            "color": "#111827",
+            "fontWeight": "bold",
+            "fontSize": 15,
+            "shape": "round",
+            "borderColor": "#9ca3af"
+          }
+        }
+      ],
+      "isExpanded": true,
+      "data": {
+        "note": "**目标** `Filter.coext`\n\n**模块** `Mathlib.Order.Filter.Basic`\n\n**签名**\n```lean\n∀ {α : Type u} {f g : Filter α}, (∀ (s : Set α), sᶜ ∈ f ↔ sᶜ ∈ g) → f = g\n```\n\n**文档**\nAn extensionality lemma that is useful for filters with good lemmas about `sᶜ ∈ f` (e.g.,\n`Filter.comap`, `Filter.coprod`, `Filter.Coprod`, `Filter.cofinite`).\n\n**聚焦** 半径 2；全闭包 1327 节点，本图显示 50 个，深层 1277 个未展开\n\n**读图** `[陈述]` 是理解命题所需，`[证明]` 是证明层新增，`[实例]`/`[内部]` 默认折叠。概念之间的真实依赖写在概念节点备注里。\n\n**来源** `experiments/mathlib-spike` 生成；树是概念投影，不是原始依赖图。",
+        "tags": [
+          "mathlib-graph",
+          "Filter.coext",
+          "spike"
+        ]
+      },
+      "style": {
+        "background": "#1d4ed8",
+        "color": "#ffffff",
+        "fontWeight": "bold",
+        "fontSize": 18,
+        "shape": "round",
+        "borderColor": "#1e3a8a",
+        "borderWidth": 2
+      }
+    },
+    "layout": "mind",
+    "theme": "light",
+    "connectionStyle": "curve",
+    "rainbowBranch": true,
+    "createdAt": 1792302650574,
+    "updatedAt": 1792302650574,
+    "version": "0.1.0"
+  }
+}
