@@ -8,6 +8,7 @@
 |:---|:---|
 | [CHARTER.md](./CHARTER.md) | 项目章程：问题、范围、MVP、指标、里程碑、风险 |
 | [ADR-0001](./adr/0001-graph-substrate-overlay-projection.md) | 架构决策：形式图 substrate + 个人 overlay + 投影视图 |
+| [ADR-0002](./adr/0002-internal-cross-map-references.md) | 跨导图引用协议：`onelook://doc/<id>?node=<id>` |
 | [mathlib-graph](../../mathlib-graph/README.md) | 外部项目：mathlib → 多层图结构的转换与资产 |
 
 ## 当前状态
