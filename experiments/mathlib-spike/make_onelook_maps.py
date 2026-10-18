@@ -77,6 +77,14 @@ STYLE = {
         "background": "#f9fafb", "color": "#6b7280", "fontSize": 12,
         "borderColor": "#e5e7eb",
     },
+    "attr_group": {
+        "background": "#f3f4f6", "color": "#4b5563", "fontSize": 12,
+        "shape": "round", "borderColor": "#d1d5db",
+    },
+    "attr": {
+        "background": "#f9fafb", "color": "#6b7280", "fontSize": 11,
+        "borderColor": "#e5e7eb",
+    },
 }
 
 
@@ -182,7 +190,77 @@ def concept_note(cid, anchors, state):
     return "\n\n".join(parts)
 
 
-def make_document(slug):
+def truncate(text, limit=80):
+    text = one_line(text)
+    return text if len(text) <= limit else text[:limit - 1] + "…"
+
+
+def add_attr_group(parent, title, attrs, note=None):
+    group = add_child(
+        parent, title, note=note, tags=["attribute-group"],
+        style=STYLE["attr_group"], expanded=False,
+    )
+    for label, value in attrs:
+        full = value if value else "（无）"
+        add_child(
+            group,
+            f"{label}: {truncate(full)}",
+            note=f"**{label}**\n\n{full}",
+            tags=["attribute", label],
+            style=STYLE["attr"],
+        )
+    return group
+
+
+def add_decl_attrs(parent, node, layer, target):
+    attrs = [
+        ("层", layer),
+        ("类型", node["kind"]),
+        ("模块", node["module"]),
+    ]
+    sig = node.get("signature") or ""
+    if sig:
+        attrs.append(("签名", one_line(sig)))
+    attrs.append(("文档", (node.get("docstring") or "").strip()))
+    if node["id"] == target:
+        attrs.append(("角色", "目标定理"))
+    add_attr_group(parent, "属性", attrs)
+
+
+def add_concept_attrs(cnode, cid, state):
+    anchors = state["concepts"][cid]["nodes"]
+    add_attr_group(cnode, "属性", [("锚点数", str(len(anchors)))])
+
+    deps = []
+    by_target = defaultdict(lambda: [0, 0])
+    for (a, b, kind), weight in state["conceptEdges"].items():
+        if a == cid and b != cid:
+            by_target[b][0 if kind == "type-uses" else 1] += weight
+    for b, (type_w, proof_w) in sorted(by_target.items()):
+        deps.append((CONCEPT_LABELS.get(b, b), f"type {type_w} / proof {proof_w}"))
+    add_attr_group(
+        cnode, "概念依赖", deps or [("无", "聚焦子图内无跨概念依赖")],
+        note="聚焦子图内的跨概念依赖（type / proof 边计数）；作为子节点保留，不依赖备注。",
+    )
+
+
+def add_root_meta(root, target, target_node, focus_text):
+    attrs = [
+        ("目标", target),
+        ("模块", target_node["module"]),
+        ("聚焦", focus_text),
+    ]
+    sig = target_node.get("signature") or ""
+    if sig:
+        attrs.append(("签名", one_line(sig)))
+    attrs.append(("文档", (target_node.get("docstring") or "").strip()))
+    add_attr_group(
+        root, "元信息", attrs,
+        note="目标定理元信息；作为子节点保留，展开即可查看完整签名与文档。",
+    )
+
+
+def make_document(slug, with_attrs=False):
     graph = load_graph(slug)
     meta = graph["meta"]
     target = meta["target"]
@@ -230,21 +308,28 @@ def make_document(slug):
         tags=["concept", target_concept, "中心"],
         style=STYLE["center"],
     )
-    add_child(center, f"[目标] {target}", note=anchor_note(target_node, "目标", target),
-              tags=["declaration", "目标", target_node["kind"]],
-              style=STYLE["target"])
+    target_child = add_child(center, f"[目标] {target}", note=anchor_note(target_node, "目标", target),
+                             tags=["declaration", "目标", target_node["kind"]],
+                             style=STYLE["target"])
+    if with_attrs:
+        add_decl_attrs(target_child, target_node, "目标", target)
 
     for node in sorted(concepts[target_concept]["nodes"], key=lambda n: n["id"]):
         if node["id"] == target:
             continue
         layer = layer_of(node["id"], target, state)
-        add_child(
+        anchor = add_child(
             center,
             f"[{layer}] {node['id']}",
             note=anchor_note(node, layer, target),
             tags=["declaration", layer, node["kind"]],
             style=anchor_style(layer),
         )
+        if with_attrs:
+            add_decl_attrs(anchor, node, layer, target)
+
+    if with_attrs:
+        add_concept_attrs(center, target_concept, state)
 
     other_concepts = [cid for cid in concepts if cid not in (target_concept, "internal", "instance")]
     statement_concepts = [
@@ -264,13 +349,17 @@ def make_document(slug):
         )
         for node in sorted(c["nodes"], key=lambda n: n["id"]):
             layer = layer_of(node["id"], target, state)
-            add_child(
+            anchor = add_child(
                 cnode,
                 f"[{layer}] {node['id']}",
                 note=anchor_note(node, layer, target),
                 tags=["declaration", layer, node["kind"]],
                 style=anchor_style(layer),
             )
+            if with_attrs:
+                add_decl_attrs(anchor, node, layer, target)
+        if with_attrs:
+            add_concept_attrs(cnode, cid, state)
         return cnode
 
     if statement_concepts:
@@ -317,17 +406,26 @@ def make_document(slug):
             )
             for node in sorted(c["nodes"], key=lambda n: n["id"]):
                 layer = layer_of(node["id"], target, state)
-                add_child(
+                anchor = add_child(
                     cnode,
                     f"[{layer}] {node['id']}",
                     note=anchor_note(node, layer, target),
                     tags=["declaration", layer, node["kind"]],
                     style=STYLE["machinery_anchor"],
                 )
+                if with_attrs:
+                    add_decl_attrs(anchor, node, layer, target)
+            if with_attrs:
+                add_concept_attrs(cnode, cid, state)
+
+    if with_attrs:
+        add_root_meta(root, target, target_node, focus_text)
 
     name = target
     if depth is not None:
         name += f"（聚焦 r={depth}）"
+    if with_attrs:
+        name += " · 属性子节点"
     source_kind = "mathlib" if target_node["module"].startswith("Mathlib") else "Lean core"
     return {
         "id": str(uuid.uuid4()),
@@ -368,26 +466,29 @@ def count_nodes(node):
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     manifest = []
+    variants = [(False, "", "compact"), (True, ".attrs", "attrs")]
     for slug in TARGETS:
-        doc, target = make_document(slug)
-        validate_tree(doc["root"])
-        wrapper = {
-            "version": "1.0.0",
-            "app": "OneLook",
-            "created": int(time.time() * 1000),
-            "modified": int(time.time() * 1000),
-            "document": doc,
-        }
-        path = OUT_DIR / f"{slug}.olook"
-        path.write_text(json.dumps(wrapper, ensure_ascii=False, indent=2), encoding="utf-8")
-        manifest.append({
-            "file": path.name,
-            "target": target,
-            "name": doc["name"],
-            "nodes": count_nodes(doc["root"]),
-            "layout": doc["layout"],
-        })
-        print(f"{path.name}: {count_nodes(doc['root'])} nodes")
+        for with_attrs, suffix, variant in variants:
+            doc, target = make_document(slug, with_attrs)
+            validate_tree(doc["root"])
+            wrapper = {
+                "version": "1.0.0",
+                "app": "OneLook",
+                "created": int(time.time() * 1000),
+                "modified": int(time.time() * 1000),
+                "document": doc,
+            }
+            path = OUT_DIR / f"{slug}{suffix}.olook"
+            path.write_text(json.dumps(wrapper, ensure_ascii=False, indent=2), encoding="utf-8")
+            manifest.append({
+                "file": path.name,
+                "target": target,
+                "name": doc["name"],
+                "nodes": count_nodes(doc["root"]),
+                "layout": doc["layout"],
+                "variant": variant,
+            })
+            print(f"{path.name}: {count_nodes(doc['root'])} nodes")
     (OUT_DIR / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
     )

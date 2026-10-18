@@ -15,6 +15,21 @@
 
 预览图是当前 OneLook 实际导入后的截图（缩小视图，仅用于确认可读性；细节请在应用里打开 `.olook`）。四张图都已在当前版本 OneLook 中实际导入验证。
 
+## 属性子节点版
+
+同一批图另有 `*.attrs.olook` 变体，把属性从备注搬到子节点：
+
+| 文件 | 目标 | 总节点数 | 说明 |
+|:---|:---|---:|:---|
+| `nat_add_comm.attrs.olook` | `Nat.add_comm` | 364 | 属性子节点 |
+| `list_length_append.attrs.olook` | `List.length_append` | 597 | 属性子节点 |
+| `list_map_comp_map.attrs.olook` | `List.map_comp_map` | 440 | 属性子节点，[预览](previews/list_map_comp_map.attrs.png) |
+| `filter_coext.attrs.olook` | `Filter.coext` | 435 | 属性子节点 |
+
+每个声明节点下有一个默认折叠的 **属性** 子节点，包含：层、类型、模块、签名、文档；每个概念节点下有 **属性**（锚点数）和 **概念依赖** 子节点；根节点下有 **元信息** 子节点。属性组默认折叠，所以初始布局不会爆炸；展开即可看到完整内容。
+
+紧凑版（不带 `.attrs`）仍然把属性放在节点备注里，适合快速浏览。两版可以按需选择；如果确认属性子节点版更合适，我可以把默认输出切过去。
+
 ## 导入
 
 1. 启动 OneLook：

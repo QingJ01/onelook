@@ -4,27 +4,63 @@
     "target": "Nat.add_comm",
     "name": "Lean core 图投影 · Nat.add_comm",
     "nodes": 54,
-    "layout": "mind"
+    "layout": "mind",
+    "variant": "compact"
+  },
+  {
+    "file": "nat_add_comm.attrs.olook",
+    "target": "Nat.add_comm",
+    "name": "Lean core 图投影 · Nat.add_comm · 属性子节点",
+    "nodes": 364,
+    "layout": "mind",
+    "variant": "attrs"
   },
   {
     "file": "list_length_append.olook",
     "target": "List.length_append",
     "name": "Lean core 图投影 · List.length_append",
     "nodes": 88,
-    "layout": "mind"
+    "layout": "mind",
+    "variant": "compact"
+  },
+  {
+    "file": "list_length_append.attrs.olook",
+    "target": "List.length_append",
+    "name": "Lean core 图投影 · List.length_append · 属性子节点",
+    "nodes": 597,
+    "layout": "mind",
+    "variant": "attrs"
   },
   {
     "file": "list_map_comp_map.olook",
     "target": "List.map_comp_map",
     "name": "mathlib 图投影 · List.map_comp_map（聚焦 r=2）",
     "nodes": 65,
-    "layout": "mind"
+    "layout": "mind",
+    "variant": "compact"
+  },
+  {
+    "file": "list_map_comp_map.attrs.olook",
+    "target": "List.map_comp_map",
+    "name": "mathlib 图投影 · List.map_comp_map（聚焦 r=2） · 属性子节点",
+    "nodes": 440,
+    "layout": "mind",
+    "variant": "attrs"
   },
   {
     "file": "filter_coext.olook",
     "target": "Filter.coext",
     "name": "mathlib 图投影 · Filter.coext（聚焦 r=2）",
     "nodes": 64,
-    "layout": "mind"
+    "layout": "mind",
+    "variant": "compact"
+  },
+  {
+    "file": "filter_coext.attrs.olook",
+    "target": "Filter.coext",
+    "name": "mathlib 图投影 · Filter.coext（聚焦 r=2） · 属性子节点",
+    "nodes": 435,
+    "layout": "mind",
+    "variant": "attrs"
   }
 ]
