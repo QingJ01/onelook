@@ -156,6 +156,17 @@
                 {{ node.node.isExpanded ? '-' : '+' }}
               </text>
             </g>
+
+            <g
+              v-if="getInternalReference(node)"
+              class="ref-btn"
+              :transform="`translate(${-node.width / 2 + 2}, ${-node.height / 2 + 2})`"
+              @mousedown.stop
+              @click.stop="handleOpenReference(node)"
+            >
+              <circle r="9" class="ref-btn-bg"/>
+              <text text-anchor="middle" dominant-baseline="middle" class="ref-btn-text">↗</text>
+            </g>
           </g>
         </g>
         
@@ -201,6 +212,7 @@ import { useMapStore } from '@/stores/mapStore'
 import { MindMapLayout, generateConnectionPath, type LayoutNode } from '@/core/layout/mindLayout'
 import { TreeLayout, OrgLayout, FishboneLayout } from '@/core/layout/layouts'
 import { documentService } from '@/services/db'
+import { isInternalReference, openInternalReference } from '@/services/references'
 
 import { renderMarkdown } from '@/utils/markdown'
 import { estimateNodeImageHeight, getNodeContentSpacing, hasMarkdownImage, normalizeNodeImageWidth } from '@/utils/nodeContentMetrics'
@@ -545,6 +557,25 @@ function handleNodeDblClick(node: LayoutNode) {
   mapStore.selectNode(node.id)
 }
 
+function getInternalReference(node: LayoutNode): string | undefined {
+  const href = node.node.data?.hyperlink
+  return href && isInternalReference(href) ? href : undefined
+}
+
+async function handleOpenReference(node: LayoutNode) {
+  const href = getInternalReference(node)
+  if (!href) return
+
+  const result = await openInternalReference(href, mapStore)
+  if (result !== 'ok') {
+    window.alert(
+      result === 'missing-document'
+        ? '目标导图尚未导入到当前浏览器。请先导入被引用的 .olook 文件。'
+        : '引用无效或目标节点不存在。',
+    )
+  }
+}
+
 function handleToggleExpand(node: LayoutNode) {
   mapStore.toggleExpand(node.id)
 }
@@ -649,7 +680,7 @@ function getRichContentStyle(node: LayoutNode): Record<string, string> {
 
 function hasMarkdownFormat(text: string): boolean {
   if (!text) return false
-  return /\*|`|\$|~~|\[.*\]\(|^#|\n-|\n\d+\./.test(text)
+  return /\*|`|\$|~~|\[.*\]\(|^#|\n/.test(text)
 }
 
 function hasNodePhoto(node: LayoutNode): boolean {
@@ -1141,6 +1172,26 @@ onUnmounted(() => {
 
 .expand-btn:hover .expand-btn-text {
   fill: white;
+}
+
+.ref-btn {
+  cursor: pointer;
+}
+
+.ref-btn-bg {
+  fill: var(--color-primary);
+  opacity: 0.9;
+}
+
+.ref-btn-text {
+  font-size: 10px;
+  fill: white;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.ref-btn:hover .ref-btn-bg {
+  opacity: 1;
 }
 
 .node.dragging {

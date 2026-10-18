@@ -214,7 +214,7 @@
             type="url" 
             :value="node.data?.hyperlink || ''"
             @input="handleLinkChange"
-            placeholder="https://..." 
+            placeholder="https://... 或 onelook://doc/..." 
           />
           <button 
             v-if="node.data?.hyperlink"
@@ -296,6 +296,7 @@ import {
 } from '@/utils/nodeContentMetrics'
 import type { MindMapNode, NodeStyle } from '@/types'
 import { useMapStore } from '@/stores/mapStore'
+import { isInternalReference, openInternalReference } from '@/services/references'
 
 const props = defineProps<{
   node: MindMapNode | null
@@ -479,10 +480,23 @@ function handleNoteChange(event: Event) {
   }
 }
 
-function openLink() {
-  if (props.node?.data?.hyperlink) {
-    window.open(props.node.data.hyperlink, '_blank')
+async function openLink() {
+  const href = props.node?.data?.hyperlink
+  if (!href) return
+
+  if (isInternalReference(href)) {
+    const result = await openInternalReference(href, mapStore)
+    if (result !== 'ok') {
+      window.alert(
+        result === 'missing-document'
+          ? '目标导图尚未导入到当前浏览器。请先导入被引用的 .olook 文件。'
+          : '引用无效或目标节点不存在。',
+      )
+    }
+    return
   }
+
+  window.open(href, '_blank')
 }
 
 function addSummary() {
