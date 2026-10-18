@@ -3,7 +3,7 @@
 - 状态：提议（Proposed）
 - 日期：2026-10-18
 - 决策者：项目作者
-- 相关文档：[项目章程](../CHARTER.md)、[Spike 0001](../spikes/0001-mathlib-extraction.md)
+- 相关文档：[项目章程](../CHARTER.md)、[mathlib-graph 外部项目](../../../mathlib-graph/README.md)
 
 ## 背景
 
