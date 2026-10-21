@@ -129,20 +129,14 @@ async function addNewTab() {
       // 同时保存到数据库
       await documentService.save(JSON.parse(JSON.stringify(currentTab.document)))
     }
-    
-    // 创建新文档
-    mapStore.newDocument()
+
+    // 创建新文档：命名避开存储里已有名字（会话内计数器会与旧文档撞名）
+    const allDocs = await documentService.getAll()
+    const newName = mapStore.getNextAvailableName(allDocs.map(d => d.name))
+    mapStore.newDocument(newName)
+    // 下方 document.id 的 watch 会推入并激活新标签；这里不再手动 push，
+    // 否则同一文档入列两次（同名标签 + v-for 重复 key）
     await nextTick()
-    
-    const newDoc = JSON.parse(JSON.stringify(mapStore.document))
-    
-    // 添加新标签
-    tabs.value.push({
-      id: newDoc.id,
-      name: newDoc.name,
-      document: newDoc
-    })
-    activeTabId.value = newDoc.id
   } catch (e) {
     console.error('Add new tab error:', e)
   }
