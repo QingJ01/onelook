@@ -1,6 +1,6 @@
 import type { MindMapNode } from '@/types'
 import { calculateNodeSize } from '@/utils/nodeContentMetrics'
-import { getCellAnchor, getTableGeometry, isTableNode } from '@/utils/specialNodes'
+import { getCellAnchor, getTableGeometry, hasAutoLayoutOnly, isTableNode } from '@/utils/specialNodes'
 
 export interface LayoutNode {
     id: string
@@ -176,7 +176,7 @@ export class MindMapLayout {
         for (const child of node.children) {
             const childSubtreeHeight = (child as any)._subtreeHeight || child.height
 
-            if (child.node.position) {
+            if (child.node.position && !hasAutoLayoutOnly(child.node)) {
                 child.x = child.node.position.x
                 child.y = child.node.position.y
             } else {

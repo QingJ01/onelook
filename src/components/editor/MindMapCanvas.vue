@@ -309,7 +309,7 @@ import { TreeLayout, OrgLayout, FishboneLayout } from '@/core/layout/layouts'
 import { documentService } from '@/services/db'
 import { isInternalReference, openInternalReference } from '@/services/references'
 import {
-  isTableNode, isCodeNode, getCellAnchor, getTableGeometry, clampCellAnchors,
+  isTableNode, isCodeNode, getCellAnchor, getTableGeometry, clampCellAnchors, hasAutoLayoutOnly,
 } from '@/utils/specialNodes'
 import { highlightCode, CODE_LANGUAGES } from '@/utils/highlight'
 
@@ -1107,9 +1107,13 @@ function handleMouseUp(event: MouseEvent) {
         mapStore.moveNode(draggingNodeId.value, targetNode.parentId, dropInsertIndex.value)
       }
     } else if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-      const newX = dragNodeInitialX.value + dx / scale.value
-      const newY = dragNodeInitialY.value + dy / scale.value
-      mapStore.updateNodePosition(draggingNodeId.value, newX, newY)
+      // 表格/代码块/锚点子节点由自动布局接管，空白处拖放不落自由坐标
+      const dragNode = mapStore.findNode(draggingNodeId.value)
+      if (dragNode && !hasAutoLayoutOnly(dragNode)) {
+        const newX = dragNodeInitialX.value + dx / scale.value
+        const newY = dragNodeInitialY.value + dy / scale.value
+        mapStore.updateNodePosition(draggingNodeId.value, newX, newY)
+      }
     }
   }
   
