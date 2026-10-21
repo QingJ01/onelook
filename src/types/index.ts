@@ -27,6 +27,12 @@ export interface NodeData {
     priority?: number  // 1-9
     progress?: number  // 0-100
     tags?: string[]
+    // 代码块节点：node.text 即代码内容
+    code?: { language: string }
+    // 表格节点
+    table?: { header: string[]; rows: string[][] }
+    // 表格节点的子节点：挂靠的单元格（row 含表头，0=表头行）
+    cellAnchor?: { row: number; col: number }
 }
 
 // 概要定义

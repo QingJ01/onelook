@@ -1,5 +1,6 @@
 import type { MindMapNode } from '@/types'
 import { calculateNodeSize } from '@/utils/nodeContentMetrics'
+import { getCellAnchor, getTableGeometry, isTableNode } from '@/utils/specialNodes'
 
 export interface LayoutNode {
     id: string
@@ -72,6 +73,13 @@ export class MindMapLayout {
             return node.height
         }
 
+        if (isTableNode(node.node)) {
+            // 表格节点：子树高度取锚点组跨度（组间避让后）与表格自身高度的较大者
+            const span = this.buildTableGroups(node).span
+            ;(node as any)._subtreeHeight = Math.max(node.height, span.bottom - span.top)
+            return (node as any)._subtreeHeight
+        }
+
         let totalHeight = 0
         for (const child of node.children) {
             totalHeight += this.calculateSubtreeHeight(child)
@@ -83,8 +91,82 @@ export class MindMapLayout {
         return (node as any)._subtreeHeight
     }
 
+    /** 表格节点的子节点按单元格锚点分组；同时给出避让后的纵向跨度（相对 node.y） */
+    private buildTableGroups(node: LayoutNode): {
+        groups: Array<{ items: LayoutNode[]; height: number; center: number }>
+        unanchored: LayoutNode[]
+        span: { top: number; bottom: number }
+    } {
+        const geo = getTableGeometry(node.node)
+        const groups: Array<{ anchor: { row: number; col: number }; items: LayoutNode[]; height: number; desired: number; center: number }> = []
+        const byKey = new Map<string, (typeof groups)[number]>()
+        const unanchored: LayoutNode[] = []
+
+        for (const child of node.children) {
+            const anchor = getCellAnchor(child.node)
+            if (!anchor || !geo) {
+                unanchored.push(child)
+                continue
+            }
+            const row = Math.max(0, Math.min(geo.rowCount - 1, anchor.row))
+            const col = Math.max(0, Math.min(geo.colCount - 1, anchor.col))
+            const key = `${row}:${col}`
+            let group = byKey.get(key)
+            if (!group) {
+                const rect = geo.cellRect(row, col)
+                group = {
+                    anchor: { row, col },
+                    items: [],
+                    height: 0,
+                    desired: rect.y + rect.height / 2 - geo.height / 2,
+                    center: 0,
+                }
+                byKey.set(key, group)
+                groups.push(group)
+            }
+            group.items.push(child)
+        }
+
+        for (const g of groups) {
+            g.height =
+                g.items.reduce((s, it) => s + ((it as any)._subtreeHeight || it.height), 0) +
+                (g.items.length - 1) * this.options.verticalGap
+        }
+
+        // 组间避让：按期望中心排序，向下顺推
+        groups.sort((a, b) => a.desired - b.desired)
+        let prevBottom = -Infinity
+        for (const g of groups) {
+            const center = Math.max(node.y + g.desired, prevBottom + this.options.verticalGap + g.height / 2)
+            g.center = center
+            prevBottom = center + g.height / 2
+        }
+
+        let top = node.y - node.height / 2
+        let bottom = node.y + node.height / 2
+        if (groups.length > 0) {
+            top = Math.min(top, groups[0].center - groups[0].height / 2)
+            bottom = Math.max(bottom, prevBottom)
+        }
+        for (const it of unanchored) {
+            const h = (it as any)._subtreeHeight || it.height
+            bottom += this.options.verticalGap + h
+        }
+
+        return {
+            groups: groups.map(g => ({ items: g.items, height: g.height, center: g.center })),
+            unanchored,
+            span: { top, bottom },
+        }
+    }
+
     private assignPositions(node: LayoutNode, rootX: number = 0): void {
         if (node.children.length === 0) return
+
+        if (isTableNode(node.node)) {
+            this.assignTableChildPositions(node, rootX)
+            return
+        }
 
         const subtreeHeight = (node as any)._subtreeHeight || node.height
         let currentY = node.y - subtreeHeight / 2
@@ -110,6 +192,33 @@ export class MindMapLayout {
             currentY += childSubtreeHeight + this.options.verticalGap
 
             this.assignPositions(child, rootX)
+        }
+    }
+
+    /** 表格节点的子节点：按锚点组挂到对应单元格右侧，组内垂直堆叠 */
+    private assignTableChildPositions(node: LayoutNode, rootX: number): void {
+        const { groups, unanchored, span } = this.buildTableGroups(node)
+        const childX = node.x + node.width / 2 + this.options.horizontalGap
+
+        for (const g of groups) {
+            let y = g.center - g.height / 2
+            for (const it of g.items) {
+                const h = (it as any)._subtreeHeight || it.height
+                it.x = childX + it.width / 2
+                it.y = y + h / 2
+                y += h + this.options.verticalGap
+                this.assignPositions(it, rootX)
+            }
+        }
+
+        // 无锚点子节点（外部导入等）：排在锚点组下方
+        let y = span.bottom + this.options.verticalGap
+        for (const it of unanchored) {
+            const h = (it as any)._subtreeHeight || it.height
+            it.x = childX + it.width / 2
+            it.y = y + h / 2
+            y += h + this.options.verticalGap
+            this.assignPositions(it, rootX)
         }
     }
 

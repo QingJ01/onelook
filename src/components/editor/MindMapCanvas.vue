@@ -77,28 +77,102 @@
             @mousedown.stop="handleNodeMouseDown(node, $event)"
             @contextmenu.prevent="handleNodeContextMenu(node, $event)"
           >
-            <rect 
-              :x="-node.width / 2" 
+            <rect
+              v-if="!isTableNode(node.node) && !isCodeNode(node.node)"
+              :x="-node.width / 2"
               :y="-node.height / 2"
-              :width="node.width" 
+              :width="node.width"
               :height="node.height"
               :rx="getNodeRadius(node)"
               class="node-bg"
               :style="getNodeStyle(node)"
               filter="url(#node-shadow)"
             />
-            
-            <text 
-              v-if="node.node.data?.icon"
+
+            <text
+              v-if="node.node.data?.icon && !isTableNode(node.node) && !isCodeNode(node.node)"
               :x="-node.width / 2 + 12"
               :y="0"
               class="node-icon"
               dominant-baseline="middle"
             >{{ getIconEmoji(node.node.data.icon) }}</text>
-            
-            
+
+
+            <!-- 表格节点 -->
             <foreignObject
-              v-if="shouldRenderRichContent(node) && editingNodeId !== node.id"
+              v-if="isTableNode(node.node) && editingNodeId !== node.id"
+              :x="-node.width / 2"
+              :y="-node.height / 2"
+              :width="node.width"
+              :height="node.height"
+            >
+              <div xmlns="http://www.w3.org/1999/xhtml" class="table-node">
+                <table class="tn-table">
+                  <thead>
+                    <tr>
+                      <th
+                        v-for="(h, c) in node.node.data!.table!.header"
+                        :key="c"
+                        title="双击编辑；＋从该列延伸"
+                        @dblclick.stop="startCellEdit(node, 0, c)"
+                      >
+                        <span class="tn-cell-text">{{ h }}</span>
+                        <button class="tn-add" title="从该列延伸子节点" @click.stop="handleCellAddChild(node, 0, c)">＋</button>
+                        <span v-if="anchorCount(node.node, 0, c)" class="tn-badge">{{ anchorCount(node.node, 0, c) }}</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, r) in node.node.data!.table!.rows" :key="r">
+                      <td
+                        v-for="(_, c) in row"
+                        :key="c"
+                        title="双击编辑；＋从该格延伸"
+                        @dblclick.stop="startCellEdit(node, r + 1, c)"
+                      >
+                        <span class="tn-cell-text">{{ row[c] }}</span>
+                        <button class="tn-add" title="从该格延伸子节点" @click.stop="handleCellAddChild(node, r + 1, c)">＋</button>
+                        <span v-if="anchorCount(node.node, r + 1, c)" class="tn-badge">{{ anchorCount(node.node, r + 1, c) }}</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </foreignObject>
+
+            <!-- 代码块节点 -->
+            <foreignObject
+              v-else-if="isCodeNode(node.node) && editingNodeId !== node.id"
+              :x="-node.width / 2"
+              :y="-node.height / 2"
+              :width="node.width"
+              :height="node.height"
+            >
+              <div xmlns="http://www.w3.org/1999/xhtml" class="code-node">
+                <div class="code-node-head">{{ languageLabel(node.node) }}</div>
+                <pre class="code-node-body" v-html="highlightedCode(node.node)"></pre>
+              </div>
+            </foreignObject>
+
+            <!-- 表格选中时的行列控制条 -->
+            <foreignObject
+              v-if="isTableNode(node.node) && selectedIds.includes(node.id)"
+              :x="-node.width / 2"
+              :y="-node.height / 2 - 30"
+              :width="node.width"
+              :height="26"
+            >
+              <div xmlns="http://www.w3.org/1999/xhtml" class="tn-controls">
+                <button title="加行" @click.stop="addTableRow(node)">＋行</button>
+                <button title="加列" @click.stop="addTableCol(node)">＋列</button>
+                <button title="删末行" @click.stop="removeTableRow(node)">－行</button>
+                <button title="删末列" @click.stop="removeTableCol(node)">－列</button>
+              </div>
+            </foreignObject>
+
+
+            <foreignObject
+              v-else-if="shouldRenderRichContent(node) && editingNodeId !== node.id"
               :x="-node.width / 2"
               :y="-node.height / 2"
               :width="node.width"
@@ -197,22 +271,47 @@
       :scale="scale"
       :pan-x="panX"
       :pan-y="panY"
+      :mode="editingNode && isCodeNode(editingNode.node) ? 'code' : 'text'"
+      :language="editingNode?.node?.data?.code?.language || 'text'"
+      @update:language="handleCodeLanguage"
       @save="handleEditSave"
       @cancel="handleEditCancel"
     />
-    
+
+
+    <!-- 表格单元格编辑浮层 -->
+    <input
+      v-if="cellEdit"
+      ref="cellEditInputRef"
+      v-model="cellEdit.value"
+      class="cell-edit-input"
+      :style="{
+        left: cellEdit.x + 'px',
+        top: cellEdit.y + 'px',
+        fontSize: `${13 * scale}px`,
+      }"
+      @keydown.enter.stop.prevent="commitCellEdit"
+      @keydown.esc.stop="cellEdit = null"
+      @blur="commitCellEdit"
+    />
+
     
     <ContextMenu ref="contextMenuRef" @edit="handleContextEdit" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useMapStore } from '@/stores/mapStore'
+import type { MindMapNode } from '@/types'
 import { MindMapLayout, generateConnectionPath, type LayoutNode } from '@/core/layout/mindLayout'
 import { TreeLayout, OrgLayout, FishboneLayout } from '@/core/layout/layouts'
 import { documentService } from '@/services/db'
 import { isInternalReference, openInternalReference } from '@/services/references'
+import {
+  isTableNode, isCodeNode, getCellAnchor, getTableGeometry, clampCellAnchors,
+} from '@/utils/specialNodes'
+import { highlightCode, CODE_LANGUAGES } from '@/utils/highlight'
 
 import { renderMarkdown } from '@/utils/markdown'
 import { estimateNodeImageHeight, getNodeContentSpacing, hasMarkdownImage, normalizeNodeImageWidth } from '@/utils/nodeContentMetrics'
@@ -405,7 +504,24 @@ const connections = computed<ConnectionData[]>(() => {
   const connectionStyle = mapStore.document.connectionStyle || 'curve'
   const useRainbow = mapStore.document.rainbowBranch ?? false
   const defaultColor = 'var(--color-border)'
-  
+
+  // 表格锚点子节点：连线从对应单元格右缘中心出发
+  const connectionFrom = (parent: LayoutNode, child: LayoutNode) => {
+    const geo = getTableGeometry(parent.node)
+    const anchor = getCellAnchor(child.node)
+    if (!geo || !anchor) {
+      return { x: parent.x, y: parent.y, width: parent.width }
+    }
+    const row = Math.max(0, Math.min(geo.rowCount - 1, anchor.row))
+    const col = Math.max(0, Math.min(geo.colCount - 1, anchor.col))
+    const rect = geo.cellRect(row, col)
+    return {
+      x: parent.x,
+      y: parent.y + rect.y + rect.height / 2 - geo.height / 2,
+      width: parent.width,
+    }
+  }
+
   const traverse = (node: LayoutNode, branchColor: string) => {
     for (let i = 0; i < node.children.length; i++) {
       const child = node.children[i]
@@ -418,7 +534,7 @@ const connections = computed<ConnectionData[]>(() => {
         fromId: node.id,
         toId: child.id,
         path: generateConnectionPath(
-          { x: node.x, y: node.y, width: node.width },
+          connectionFrom(node, child),
           { x: child.x, y: child.y, width: child.width },
           connectionStyle
         ),
@@ -741,6 +857,111 @@ function handleEditCancel() {
   lastEditClosedAt.value = Date.now()
 }
 
+// ---------- 表格节点：单元格编辑 / 锚点子节点 / 行列增删 ----------
+
+const cellEditInputRef = ref<HTMLInputElement | null>(null)
+const cellEdit = ref<{ tableId: string; row: number; col: number; x: number; y: number; value: string } | null>(null)
+
+function anchorCount(node: MindMapNode, row: number, col: number): number {
+  return node.children.filter(child => {
+    const a = getCellAnchor(child)
+    return a !== null && a.row === row && a.col === col
+  }).length
+}
+
+function startCellEdit(node: LayoutNode, row: number, col: number) {
+  const geo = getTableGeometry(node.node)
+  const table = node.node.data?.table
+  if (!geo || !table) return
+  const rect = geo.cellRect(row, col)
+  const absX = node.x + rect.x + rect.width / 2 - geo.width / 2
+  const absY = node.y + rect.y + rect.height / 2 - geo.height / 2
+  const value = row === 0 ? (table.header[col] ?? '') : (table.rows[row - 1]?.[col] ?? '')
+  cellEdit.value = {
+    tableId: node.id,
+    row,
+    col,
+    x: absX * scale.value + panX.value,
+    y: absY * scale.value + panY.value,
+    value,
+  }
+  nextTick(() => cellEditInputRef.value?.focus())
+}
+
+function commitCellEdit() {
+  const edit = cellEdit.value
+  if (!edit) return
+  cellEdit.value = null
+  const tableNode = mapStore.findNode(edit.tableId)
+  const table = tableNode?.data?.table
+  if (!table) return
+  const value = edit.value.trim()
+  if (edit.row === 0) {
+    table.header[edit.col] = value
+  } else {
+    const row = table.rows[edit.row - 1]
+    if (row) row[edit.col] = value
+  }
+}
+
+/** 在指定单元格挂一个子节点（锚点 = 行列） */
+function handleCellAddChild(node: LayoutNode, row: number, col: number) {
+  const child = mapStore.addChild(node.id, '新节点')
+  if (child) {
+    child.data = { ...(child.data || {}), cellAnchor: { row, col } }
+    editingNodeId.value = child.id
+  }
+}
+
+function addTableRow(node: LayoutNode) {
+  const table = node.node.data?.table
+  if (!table) return
+  table.rows.push(new Array(table.header.length).fill(''))
+}
+
+function addTableCol(node: LayoutNode) {
+  const table = node.node.data?.table
+  if (!table) return
+  table.header.push('')
+  for (const row of table.rows) row.push('')
+}
+
+function removeTableRow(node: LayoutNode) {
+  const table = node.node.data?.table
+  if (!table || table.rows.length === 0) return
+  table.rows.pop()
+  const geo = getTableGeometry(node.node)
+  if (geo) clampCellAnchors(node.node.children, geo.rowCount, geo.colCount)
+}
+
+function removeTableCol(node: LayoutNode) {
+  const table = node.node.data?.table
+  if (!table || table.header.length <= 1) return
+  table.header.pop()
+  for (const row of table.rows) row.pop()
+  const geo = getTableGeometry(node.node)
+  if (geo) clampCellAnchors(node.node.children, geo.rowCount, geo.colCount)
+}
+
+// ---------- 代码块节点 ----------
+
+function languageLabel(node: MindMapNode): string {
+  const lang = node.data?.code?.language || 'text'
+  return CODE_LANGUAGES.find(l => l.value === lang)?.label || lang
+}
+
+function highlightedCode(node: MindMapNode): string {
+  return highlightCode(node.text || '', node.data?.code?.language || 'text')
+}
+
+function handleCodeLanguage(language: string) {
+  const node = editingNode.value?.node
+  if (node?.data?.code) {
+    node.data.code.language = language
+    mapStore.document.updatedAt = Date.now()
+  }
+}
+
 function handleSummaryClick(summary: SummaryData) {
   const nodeId = summary.id.replace('summary-', '')
   const node = mapStore.findNode(nodeId)
@@ -987,10 +1208,21 @@ function handleKeyDown(event: KeyboardEvent) {
   if (!focusedId) return
 
   switch (event.key) {
-    case 'Tab':
+    case 'Tab': {
       event.preventDefault()
+      // 表格节点上的 Tab：默认挂到最后一行第一格
+      const focusedNode = mapStore.findNode(focusedId)
+      if (focusedNode && isTableNode(focusedNode)) {
+        const target = layoutNodes.value.find(n => n.id === focusedId)
+        const geo = target ? getTableGeometry(target.node) : null
+        if (target && geo) {
+          handleCellAddChild(target, Math.max(1, geo.rowCount - 1), 0)
+          break
+        }
+      }
       mapStore.addChild(focusedId)
       break
+    }
     case 'Enter':
       event.preventDefault()
       if (!event.shiftKey && Date.now() - lastEditClosedAt.value > 250) {
@@ -1312,5 +1544,176 @@ onUnmounted(() => {
   fill: var(--color-primary);
   font-family: 'Inter', system-ui, sans-serif;
 }
+
+/* ---------- 表格节点 ---------- */
+
+.table-node {
+  width: 100%;
+  height: 100%;
+  background: var(--color-bg);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.tn-table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.tn-table th,
+.tn-table td {
+  border: 1px solid var(--color-border);
+  padding: 0 6px;
+  height: 30px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+
+.tn-table th {
+  background: var(--color-bg-secondary);
+  font-weight: 600;
+}
+
+.tn-table td:hover,
+.tn-table th:hover {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.tn-cell-text {
+  vertical-align: middle;
+}
+
+.tn-add {
+  display: none;
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  line-height: 14px;
+  padding: 0;
+  border: 1px solid var(--color-primary);
+  border-radius: 50%;
+  background: var(--color-bg);
+  color: var(--color-primary);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.tn-table th:hover .tn-add,
+.tn-table td:hover .tn-add {
+  display: inline-block;
+}
+
+.tn-badge {
+  display: inline-block;
+  margin-left: 3px;
+  min-width: 14px;
+  height: 14px;
+  line-height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 10px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.tn-controls {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.tn-controls button {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+
+.tn-controls button:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.cell-edit-input {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
+  min-width: 90px;
+  max-width: 260px;
+  padding: 4px 8px;
+  border: 2px solid var(--color-primary);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  outline: none;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+/* ---------- 代码块节点 ---------- */
+
+.code-node {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #f6f8fa;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.code-node-head {
+  flex: none;
+  height: 22px;
+  line-height: 22px;
+  padding: 0 10px;
+  background: rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.code-node-body {
+  flex: 1;
+  margin: 0;
+  padding: 8px 10px;
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #24292f;
+  white-space: pre;
+  overflow: hidden;
+}
+
+.code-node-body :deep(.hljs-keyword),
+.code-node-body :deep(.hljs-selector-tag),
+.code-node-body :deep(.hljs-built_in) { color: #cf222e; }
+.code-node-body :deep(.hljs-string),
+.code-node-body :deep(.hljs-attr) { color: #0a3069; }
+.code-node-body :deep(.hljs-comment) { color: #6e7781; font-style: italic; }
+.code-node-body :deep(.hljs-number),
+.code-node-body :deep(.hljs-literal) { color: #0550ae; }
+.code-node-body :deep(.hljs-title),
+.code-node-body :deep(.hljs-name) { color: #8250df; }
+.code-node-body :deep(.hljs-type),
+.code-node-body :deep(.hljs-class .hljs-title) { color: #953800; }
 </style>
 

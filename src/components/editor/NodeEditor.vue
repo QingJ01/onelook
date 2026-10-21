@@ -1,11 +1,24 @@
 <template>
-  <div 
+  <div
     v-if="isEditing"
     class="node-editor"
+    :class="{ 'node-editor-code': mode === 'code' }"
     :style="editorStyle"
   >
-    <!-- Markdown 工具栏 -->
-    <div class="md-toolbar" @mousedown.prevent>
+    <!-- Markdown 工具栏 / 代码块语言栏 -->
+    <div v-if="mode === 'code'" class="md-toolbar code-toolbar" @mousedown.prevent>
+      <select
+        class="lang-select"
+        :value="language"
+        @change="$emit('update:language', ($event.target as HTMLSelectElement).value)"
+      >
+        <option v-for="lang in CODE_LANGUAGES" :key="lang.value" :value="lang.value">
+          {{ lang.label }}
+        </option>
+      </select>
+      <span class="code-hint">⌘/Ctrl + Enter 保存</span>
+    </div>
+    <div v-else class="md-toolbar" @mousedown.prevent>
       <button class="toolbar-btn" @click="insertFormat('**', '**', '加粗')" title="加粗 (Ctrl+B)">B</button>
       <button class="toolbar-btn" @click="insertFormat('*', '*', '斜体')" title="斜体 (Ctrl+I)"><i>I</i></button>
       <button class="toolbar-btn" @click="insertFormat('~~', '~~', '删除线')" title="删除线">S̶</button>
@@ -116,6 +129,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { renderMarkdown } from '@/utils/markdown'
+import { CODE_LANGUAGES } from '@/utils/highlight'
 
 const props = defineProps<{
   isEditing: boolean
@@ -127,11 +141,14 @@ const props = defineProps<{
   scale: number
   panX: number
   panY: number
+  mode?: 'text' | 'code'
+  language?: string
 }>()
 
 const emit = defineEmits<{
   save: [text: string]
   cancel: []
+  'update:language': [language: string]
 }>()
 
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
@@ -231,10 +248,16 @@ function handleKeyDown(event: KeyboardEvent) {
   // IME 合成中的 Enter 是「上屏」不是「提交」；提前提交会拆掉 textarea，
   // 输入法随后补发的普通 Enter 落到 BODY，触发画布的添加同级节点
   if (event.isComposing || event.keyCode === 229) return
-  if (event.key === 'Enter' && !event.shiftKey) {
+  const submit = props.mode === 'code'
+    ? (event.key === 'Enter' && (event.metaKey || event.ctrlKey))
+    : (event.key === 'Enter' && !event.shiftKey)
+  if (submit) {
     event.preventDefault()
     event.stopPropagation()
     saveAndClose()
+  } else if (props.mode === 'code' && event.key === 'Enter' && !event.shiftKey) {
+    // 代码模式：Enter 换行，不提交
+    return
   } else if (event.key === 'Escape') {
     event.preventDefault()
     event.stopPropagation()
@@ -395,6 +418,35 @@ function saveAndClose() {
   font-family: 'Inter', system-ui, sans-serif;
   resize: none;
   outline: none;
+}
+
+.node-editor-code textarea {
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  tab-size: 4;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.code-toolbar {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lang-select {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  outline: none;
+}
+
+.code-hint {
+  font-size: 11px;
+  color: var(--color-text-secondary);
 }
 
 .preview-hint {

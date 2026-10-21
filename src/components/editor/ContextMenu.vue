@@ -23,6 +23,15 @@
           <span class="shortcut">Enter</span>
         </button>
         <div class="menu-divider"></div>
+        <button class="menu-item" @click="handleAddTable">
+          <Table :size="14" />
+          <span>插入表格节点</span>
+        </button>
+        <button class="menu-item" @click="handleAddCode">
+          <Code2 :size="14" />
+          <span>插入代码块节点</span>
+        </button>
+        <div class="menu-divider"></div>
         <button class="menu-item" @click="handleCopy">
           <Copy :size="14" />
           <span>复制</span>
@@ -67,11 +76,12 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { 
-  Edit3, Plus, CornerDownRight, Copy, Clipboard, 
-  ChevronRight, Trash2, Braces 
+import {
+  Edit3, Plus, CornerDownRight, Copy, Clipboard,
+  ChevronRight, Trash2, Braces, Table, Code2
 } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'
+import { defaultCodeData, defaultCodeText, defaultTableData } from '@/utils/specialNodes'
 
 const mapStore = useMapStore()
 
@@ -123,6 +133,27 @@ function handleAddChild() {
 function handleAddSibling() {
   if (nodeId.value) {
     mapStore.addSibling(nodeId.value)
+  }
+  close()
+}
+
+function handleAddTable() {
+  if (nodeId.value) {
+    const child = mapStore.addChild(nodeId.value, '表格')
+    if (child) {
+      child.data = { ...(child.data || {}), table: defaultTableData() }
+      child.text = '表格'
+    }
+  }
+  close()
+}
+
+function handleAddCode() {
+  if (nodeId.value) {
+    const child = mapStore.addChild(nodeId.value, defaultCodeText())
+    if (child) {
+      child.data = { ...(child.data || {}), code: defaultCodeData() }
+    }
   }
   close()
 }

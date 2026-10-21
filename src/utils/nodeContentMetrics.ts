@@ -1,4 +1,5 @@
 import type { MindMapNode } from '@/types'
+import { getCodeGeometry, getTableGeometry } from './specialNodes'
 
 const TEXT_WIDTH_PATTERN = /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/
 const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\(([^)]+)\)/g
@@ -120,6 +121,15 @@ export function hasMarkdownImage(text: string): boolean {
 }
 
 export function calculateNodeSize(node: MindMapNode): { width: number; height: number } {
+    // 表格/代码块节点：几何由 specialNodes 统一计算（布局锚点与渲染同源）
+    if (node.data?.table) {
+        const geo = getTableGeometry(node)
+        if (geo) return { width: geo.width, height: geo.height }
+    }
+    if (node.data?.code) {
+        return getCodeGeometry(node)
+    }
+
     const { fontSize, fontScale } = getFontMetrics(node)
     const { paddingX, paddingY, imageTextGap } = getNodeContentSpacing(fontSize)
     const totalPaddingX = paddingX * 2
