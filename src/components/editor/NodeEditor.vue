@@ -228,11 +228,16 @@ function handleBlur(event: FocusEvent) {
 }
 
 function handleKeyDown(event: KeyboardEvent) {
+  // IME 合成中的 Enter 是「上屏」不是「提交」；提前提交会拆掉 textarea，
+  // 输入法随后补发的普通 Enter 落到 BODY，触发画布的添加同级节点
+  if (event.isComposing || event.keyCode === 229) return
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
+    event.stopPropagation()
     saveAndClose()
   } else if (event.key === 'Escape') {
     event.preventDefault()
+    event.stopPropagation()
     emit('cancel')
   } else if (event.ctrlKey && event.key === 'b') {
     event.preventDefault()

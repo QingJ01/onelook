@@ -237,6 +237,9 @@ const panStartX = ref(0)
 const panStartY = ref(0)
 
 const editingNodeId = ref<string | null>(null)
+// 编辑器刚关闭的时间戳：IME 上屏可能补发普通 Enter（target=BODY），
+// 短窗内忽略 Enter 建节点，避免「关编辑器的同时冒出平级节点」
+const lastEditClosedAt = ref(0)
 
 const isDraggingNode = ref(false)
 const draggingNodeId = ref<string | null>(null)
@@ -730,10 +733,12 @@ function handleEditSave(text: string) {
     mapStore.updateNodeText(editingNodeId.value, text)
   }
   editingNodeId.value = null
+  lastEditClosedAt.value = Date.now()
 }
 
 function handleEditCancel() {
   editingNodeId.value = null
+  lastEditClosedAt.value = Date.now()
 }
 
 function handleSummaryClick(summary: SummaryData) {
@@ -988,7 +993,7 @@ function handleKeyDown(event: KeyboardEvent) {
       break
     case 'Enter':
       event.preventDefault()
-      if (!event.shiftKey) {
+      if (!event.shiftKey && Date.now() - lastEditClosedAt.value > 250) {
         mapStore.addSibling(focusedId)
       }
       break
