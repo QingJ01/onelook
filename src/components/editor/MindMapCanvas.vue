@@ -172,7 +172,7 @@
 
 
             <foreignObject
-              v-else-if="shouldRenderRichContent(node) && editingNodeId !== node.id"
+              v-else-if="!isTableNode(node.node) && !isCodeNode(node.node) && shouldRenderRichContent(node) && editingNodeId !== node.id"
               :x="-node.width / 2"
               :y="-node.height / 2"
               :width="node.width"
@@ -207,8 +207,8 @@
             </foreignObject>
             
             
-            <text 
-              v-else-if="editingNodeId !== node.id"
+            <text
+              v-else-if="!isTableNode(node.node) && !isCodeNode(node.node) && editingNodeId !== node.id"
               class="node-text" 
               :x="node.node.data?.icon ? 8 : 0"
               text-anchor="middle" 

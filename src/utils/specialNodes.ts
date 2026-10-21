@@ -105,10 +105,18 @@ export const CODE_MAX_HEIGHT = 360
 
 export function getCodeGeometry(node: MindMapNode): { width: number; height: number } {
     const lines = (node.text || '').split('\n')
-    const maxLen = lines.reduce((m, l) => Math.max(m, l.length), 0)
+    // 等宽字体里 CJK 字符宽度接近 ASCII 的两倍；宁可略高估也不截断行尾
+    const lineWidth = (line: string) => {
+        let w = 0
+        for (const ch of line) {
+            w += /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(ch) ? 14 : 8
+        }
+        return w
+    }
+    const maxWidth = lines.reduce((m, l) => Math.max(m, lineWidth(l)), 0)
     const width = Math.max(
         CODE_MIN_WIDTH,
-        Math.min(CODE_MAX_WIDTH, maxLen * CODE_FONT_WIDTH + 24)
+        Math.min(CODE_MAX_WIDTH, maxWidth + 28)
     )
     const height = Math.min(
         CODE_MAX_HEIGHT,
