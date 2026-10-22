@@ -241,6 +241,18 @@
               <circle r="9" class="ref-btn-bg"/>
               <text text-anchor="middle" dominant-baseline="middle" class="ref-btn-text">↗</text>
             </g>
+
+            <!-- vault 引用徽标：镜像自哪张导图，点击跳到源节点 -->
+            <g
+              v-if="getVaultRef(node)"
+              class="vault-ref-badge"
+              :transform="`translate(${node.width / 2 - 4}, ${-node.height / 2 + 4})`"
+              @mousedown.stop
+              @click.stop="handleOpenVaultRef(node)"
+            >
+              <rect x="-4" y="-8" :width="vaultBadgeWidth(node)" height="16" rx="8" class="vault-ref-bg"/>
+              <text :x="-4 + vaultBadgeWidth(node) / 2" y="0" text-anchor="middle" dominant-baseline="middle" class="vault-ref-text">{{ vaultBadgeText(node) }}</text>
+            </g>
           </g>
         </g>
         
@@ -307,7 +319,8 @@ import type { MindMapNode } from '@/types'
 import { MindMapLayout, generateConnectionPath, type LayoutNode } from '@/core/layout/mindLayout'
 import { TreeLayout, OrgLayout, FishboneLayout } from '@/core/layout/layouts'
 import { documentService } from '@/services/db'
-import { isInternalReference, openInternalReference } from '@/services/references'
+import { isInternalReference, openInternalReference, makeInternalReference } from '@/services/references'
+import { refOf } from '@/services/vault'
 import {
   isTableNode, isCodeNode, getCellAnchor, getTableGeometry, clampCellAnchors, hasAutoLayoutOnly,
 } from '@/utils/specialNodes'
@@ -692,6 +705,38 @@ async function handleOpenReference(node: LayoutNode) {
         ? '目标导图尚未导入到当前浏览器。请先导入被引用的 .olook 文件。'
         : '引用无效或目标节点不存在。',
     )
+  }
+}
+
+// ---------- vault 引用徽标 ----------
+
+function getVaultRef(node: LayoutNode) {
+  return refOf(node.node)
+}
+
+function vaultBadgeText(node: LayoutNode): string {
+  const ref = getVaultRef(node)
+  const name = ref?.docName || '源导图'
+  const trimmed = name.length > 6 ? name.slice(0, 6) + '…' : name
+  return `🔗 ${trimmed}`
+}
+
+function vaultBadgeWidth(node: LayoutNode): number {
+  const text = vaultBadgeText(node)
+  let w = 20
+  for (const ch of text) w += /[\u4e00-\u9fff]/.test(ch) ? 10 : 6
+  return Math.round(w)
+}
+
+async function handleOpenVaultRef(node: LayoutNode) {
+  const ref = getVaultRef(node)
+  if (!ref) return
+  const result = await openInternalReference(
+    makeInternalReference(ref.docId, ref.nodeId),
+    mapStore,
+  )
+  if (result !== 'ok') {
+    window.alert('源导图或源节点已不存在（引用断链）。')
   }
 }
 
@@ -1719,5 +1764,27 @@ onUnmounted(() => {
 .code-node-body :deep(.hljs-name) { color: #8250df; }
 .code-node-body :deep(.hljs-type),
 .code-node-body :deep(.hljs-class .hljs-title) { color: #953800; }
+
+/* ---------- vault 引用徽标 ---------- */
+
+.vault-ref-badge {
+  cursor: pointer;
+}
+
+.vault-ref-bg {
+  fill: var(--color-primary);
+  opacity: 0.92;
+}
+
+.vault-ref-text {
+  fill: #fff;
+  font-size: 10px;
+  font-family: 'Inter', system-ui, sans-serif;
+  pointer-events: none;
+}
+
+.vault-ref-badge:hover .vault-ref-bg {
+  opacity: 1;
+}
 </style>
 

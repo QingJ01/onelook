@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie'
 import type { MindMapDocument } from '@/types'
 import { tripleVol } from './tripleVol'
+import { syncVaultReferences } from './vault'
 
 /**
  * OneLook 数据库（浏览器本地后端）
@@ -71,12 +72,15 @@ export const documentService = {
         try {
             if (await useVol()) {
                 await tripleVol.write(doc)
-                return
+            } else {
+                await db.documents.put(doc)
             }
         } catch (err) {
-            console.error('[onelook] 卷写入失败，本次回落 IndexedDB', err)
+            console.error('[onelook] 保存失败', err)
+            await db.documents.put(doc)
         }
-        await db.documents.put(doc)
+        // vault 引用同步：写穿本图引用负载 + 刷新他图快照（内部防循环）
+        await syncVaultReferences(doc)
     },
 
     /**

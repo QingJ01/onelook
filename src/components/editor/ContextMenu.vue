@@ -32,6 +32,16 @@
           <span>插入代码块节点</span>
         </button>
         <div class="menu-divider"></div>
+        <button class="menu-item" @click="handleCopyRef">
+          <Link :size="14" />
+          <span>复制节点引用</span>
+        </button>
+        <button class="menu-item" @click="handlePasteRef" :disabled="!canPasteRef">
+          <Link2 :size="14" />
+          <span>粘贴为引用节点</span>
+          <span class="shortcut" v-if="lastCopiedRefName">{{ lastCopiedRefName }}</span>
+        </button>
+        <div class="menu-divider"></div>
         <button class="menu-item" @click="handleCopy">
           <Copy :size="14" />
           <span>复制</span>
@@ -78,10 +88,11 @@
 import { ref, computed } from 'vue'
 import {
   Edit3, Plus, CornerDownRight, Copy, Clipboard,
-  ChevronRight, Trash2, Braces, Table, Code2
+  ChevronRight, Trash2, Braces, Table, Code2, Link, Link2
 } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'
 import { defaultCodeData, defaultCodeText, defaultTableData } from '@/utils/specialNodes'
+import { copyNodeRef, createRefNode, pasteNodeRef } from '@/services/vault'
 
 const mapStore = useMapStore()
 
@@ -105,6 +116,7 @@ const emit = defineEmits<{
 }>()
 
 function open(clientX: number, clientY: number, targetNodeId?: string) {
+  refreshRefClipboardState()
   x.value = clientX
   y.value = clientY
   nodeId.value = targetNodeId || null
@@ -156,6 +168,41 @@ function handleAddCode() {
     }
   }
   close()
+}
+
+// ---------- vault 引用 ----------
+
+const canPasteRef = ref(false)
+const lastCopiedRefName = ref('')
+
+function refreshRefClipboardState() {
+  const ref = pasteNodeRef()
+  canPasteRef.value = ref !== null
+  lastCopiedRefName.value = ref?.docName || ''
+}
+
+function handleCopyRef() {
+  if (nodeId.value) {
+    const node = mapStore.findNode(nodeId.value)
+    if (node) {
+      copyNodeRef(mapStore.document, node)
+    }
+  }
+  close()
+}
+
+async function handlePasteRef() {
+  const targetId = nodeId.value
+  close()
+  const ref = pasteNodeRef()
+  if (!targetId || !ref) return
+  const created = await createRefNode(ref, targetId)
+  if (!created) return
+  const parent = mapStore.findNode(targetId)
+  if (!parent) return
+  parent.children.push(created.node)
+  parent.isExpanded = true
+  mapStore.document.updatedAt = Date.now()
 }
 
 function handleCopy() {

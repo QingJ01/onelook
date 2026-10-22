@@ -33,6 +33,9 @@ export interface NodeData {
     table?: { header: string[]; rows: string[][] }
     // 表格节点的子节点：挂靠的单元格（row 含表头，0=表头行）
     cellAnchor?: { row: number; col: number }
+    // vault 引用节点：本节点是 (docId, nodeId) 处节点的活镜像——
+    // 负载（text/data/style）双向同步，子节点各自本地、互不继承
+    ref?: { docId: string; nodeId: string; docName?: string }
 }
 
 // 概要定义

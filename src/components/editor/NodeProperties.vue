@@ -274,6 +274,34 @@
           + 添加概要
         </button>
       </div>
+
+      <!-- vault 引用 -->
+      <div class="property-group" v-if="isVaultRef">
+        <label>引用自</label>
+        <div class="vault-ref-info">
+          <span>{{ node.data!.ref!.docName || '未知导图' }}</span>
+          <button class="vault-ref-jump" @click="jumpToSource" title="跳到源节点">
+            <ExternalLink :size="12" />
+            跳转
+          </button>
+        </div>
+        <p class="vault-ref-hint">负载与源节点双向同步；子节点各自本地。</p>
+      </div>
+
+      <!-- 反向引用（谁引用了这个节点） -->
+      <div class="property-group" v-if="backlinks.length > 0">
+        <label>反向引用 ({{ backlinks.length }})</label>
+        <div
+          v-for="link in backlinks"
+          :key="link.docId + ':' + link.nodeId"
+          class="backlink-item"
+          @click="jumpToBacklink(link)"
+          :title="`${link.docName} · ${link.nodeText}`"
+        >
+          <span class="backlink-doc">{{ link.docName }}</span>
+          <span class="backlink-text">{{ link.nodeText }}</span>
+        </div>
+      </div>
     </div>
     
     <!-- 未选中状态 -->
@@ -296,7 +324,8 @@ import {
 } from '@/utils/nodeContentMetrics'
 import type { MindMapNode, NodeStyle } from '@/types'
 import { useMapStore } from '@/stores/mapStore'
-import { isInternalReference, openInternalReference } from '@/services/references'
+import { isInternalReference, openInternalReference, makeInternalReference } from '@/services/references'
+import { backlinksOf, refOf, type Backlink } from '@/services/vault'
 
 const props = defineProps<{
   node: MindMapNode | null
@@ -311,6 +340,33 @@ const mapStore = useMapStore()
 // 备注预览状态
 const showNotePreview = ref(false)
 const imageLoadError = ref(false)
+
+// ---------- vault 引用 / 反向引用 ----------
+
+const isVaultRef = computed(() => (props.node ? refOf(props.node) !== null : false))
+const backlinks = ref<Backlink[]>([])
+
+watch(
+  () => [props.node?.id, mapStore.document.id, mapStore.document.updatedAt],
+  async () => {
+    if (!props.node) {
+      backlinks.value = []
+      return
+    }
+    backlinks.value = await backlinksOf(mapStore.document.id, props.node.id)
+  },
+  { immediate: true },
+)
+
+async function jumpToSource() {
+  const ref = props.node ? refOf(props.node) : null
+  if (!ref) return
+  await openInternalReference(makeInternalReference(ref.docId, ref.nodeId), mapStore)
+}
+
+async function jumpToBacklink(link: Backlink) {
+  await openInternalReference(makeInternalReference(link.docId, link.nodeId), mapStore)
+}
 
 watch(
   () => props.node?.data?.image,
@@ -1027,5 +1083,72 @@ function handleSummaryTextChange(event: Event) {
   padding-left: 12px;
   margin: 0.5em 0;
   color: var(--color-text-secondary);
+}
+
+/* ---------- vault 引用 / 反向引用 ---------- */
+
+.vault-ref-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--color-bg-secondary);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.vault-ref-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-primary);
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.vault-ref-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.backlink-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  margin-bottom: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.backlink-item:hover {
+  border-color: var(--color-primary);
+}
+
+.backlink-doc {
+  flex: none;
+  color: var(--color-primary);
+  font-weight: 600;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backlink-text {
+  flex: 1;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
