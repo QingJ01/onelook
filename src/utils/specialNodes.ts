@@ -22,12 +22,17 @@ export function getCellAnchor(node: MindMapNode): { row: number; col: number } |
 }
 
 /**
- * 布局接管型节点：表格/代码块/表格锚点子节点。
+ * 布局接管型节点：表格/代码块/表格锚点子节点/vault 引用节点。
  * 这类节点的位置由布局引擎计算（锚点对齐、子树排布），
  * 忽略拖拽产生的自由坐标——拖到空白处松手即回到自动布局。
  */
 export function hasAutoLayoutOnly(node: MindMapNode): boolean {
-    return isTableNode(node) || isCodeNode(node) || getCellAnchor(node) !== null
+    return (
+        isTableNode(node) ||
+        isCodeNode(node) ||
+        getCellAnchor(node) !== null ||
+        node.data?.ref !== undefined
+    )
 }
 
 // ---------- 表格几何 ----------
