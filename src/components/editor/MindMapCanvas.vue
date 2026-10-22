@@ -291,6 +291,15 @@
     />
 
 
+    <!-- 布局模式序列键提示 -->
+    <div v-if="pendingKeys.length" class="keyseq-hint">
+      <span class="keyseq-prefix">{{ formatSequence(pendingKeys) }} ›</span>
+      <span v-for="h in layoutHints" :key="h.key" class="keyseq-option">
+        <kbd>{{ h.key }}</kbd>{{ h.label }}
+      </span>
+      <span class="keyseq-esc">Esc 取消</span>
+    </div>
+
     <!-- 表格单元格编辑浮层 -->
     <input
       v-if="cellEdit"
@@ -323,7 +332,12 @@ import { isInternalReference, openInternalReference, makeInternalReference } fro
 import { refOf } from '@/services/vault'
 import {
   isTableNode, isCodeNode, getCellAnchor, getTableGeometry, clampCellAnchors, hasAutoLayoutOnly,
+  defaultTableData, defaultCodeData, defaultCodeText,
 } from '@/utils/specialNodes'
+import {
+  buildMatcher, matchSequence, sequenceHints, keyToken, formatSequence,
+  type KeymapMode,
+} from '@/services/keymap'
 import { highlightCode, CODE_LANGUAGES } from '@/utils/highlight'
 
 import { renderMarkdown } from '@/utils/markdown'
@@ -1193,114 +1207,175 @@ function handleWheel(event: WheelEvent) {
   mapStore.setZoom(mapStore.zoom + delta)
 }
 
+// ---------- 可变快捷键：模式化分发（layout / node） ----------
+
+const layoutMatcher = computed(() => buildMatcher('layout'))
+const nodeMatcher = computed(() => buildMatcher('node'))
+
+const pendingKeys = ref<string[]>([])
+let pendingTimer: number | null = null
+
+function clearPendingKeys() {
+  pendingKeys.value = []
+  if (pendingTimer) {
+    clearTimeout(pendingTimer)
+    pendingTimer = null
+  }
+}
+
+function extendPendingKeys(tokens: string[]) {
+  pendingKeys.value = tokens
+  if (pendingTimer) clearTimeout(pendingTimer)
+  pendingTimer = window.setTimeout(clearPendingKeys, 2000)
+}
+
+const layoutHints = computed(() => sequenceHints(layoutMatcher.value, pendingKeys.value))
+
 function handleKeyDown(event: KeyboardEvent) {
-  if (editingNodeId.value) return
-  
+  if (editingNodeId.value) {
+    clearPendingKeys()
+    return
+  }
+
   if (event.isComposing) return
 
   if (mapStore.zenMode && event.key === 'Alt') {
     isTemporarilyRevealing.value = true
     return
   }
-  
+
   const activeElement = document.activeElement
-  const isInputFocused = activeElement instanceof HTMLInputElement || 
+  const isInputFocused = activeElement instanceof HTMLInputElement ||
                          activeElement instanceof HTMLTextAreaElement ||
                          activeElement instanceof HTMLSelectElement ||
                          activeElement?.hasAttribute('contenteditable')
-  
+
   if (isInputFocused) {
     if (event.key === 'Escape') {
       (activeElement as HTMLElement)?.blur()
     }
+    clearPendingKeys()
     return
   }
-  
-  const focusedId = mapStore.focusedId
-  
-  if (event.key === 'F2' && focusedId) {
-    event.preventDefault()
-    editingNodeId.value = focusedId
-    return
-  }
-  
-  if (event.key === ' ' && focusedId) {
-    event.preventDefault()
-    editingNodeId.value = focusedId
-    return
-  }
-  
-  if (event.ctrlKey && event.key === 'z' && !event.shiftKey) {
-    event.preventDefault()
-    mapStore.undo()
-    return
-  }
-  
-  if ((event.ctrlKey && event.key === 'y') || (event.ctrlKey && event.shiftKey && event.key === 'z')) {
-    event.preventDefault()
-    mapStore.redo()
-    return
-  }
-  
-  if (event.ctrlKey && event.key === 'c' && focusedId) {
-    event.preventDefault()
-    mapStore.copyNode(focusedId)
-    return
-  }
-  
-  if (event.ctrlKey && event.key === 'v' && focusedId) {
-    event.preventDefault()
-    mapStore.pasteNode(focusedId)
-    return
-  }
-  
-  if (!focusedId) return
 
-  switch (event.key) {
-    case 'Tab': {
-      event.preventDefault()
-      // 表格节点上的 Tab：默认挂到最后一行第一格
+  const token = keyToken(event)
+  if (!token) return
+
+  if (token === 'Escape') {
+    clearPendingKeys()
+    return
+  }
+
+  const focusedId = mapStore.focusedId
+  const mode: KeymapMode = focusedId ? 'node' : 'layout'
+  const matcher = mode === 'node' ? nodeMatcher.value : layoutMatcher.value
+
+  // 布局模式消费序列（前缀态）；节点模式单键直配
+  const pressed = mode === 'layout' ? [...pendingKeys.value, token] : [token]
+  const result = matchSequence(matcher, pressed)
+
+  if (result && 'pending' in result) {
+    event.preventDefault()
+    if (mode === 'layout') extendPendingKeys(pressed)
+    return
+  }
+
+  if (result && 'actionId' in result) {
+    event.preventDefault()
+    clearPendingKeys()
+    dispatchKeymapAction(result.actionId)
+    return
+  }
+
+  if (mode === 'layout') clearPendingKeys()
+}
+
+function dispatchKeymapAction(actionId: string) {
+  const focusedId = mapStore.focusedId
+
+  switch (actionId) {
+    // 布局模式插入：目标为聚焦节点（无则根，根的并列退化为子级）
+    case 'layout:table-sibling':
+      insertSpecialNode('table', 'sibling')
+      return
+    case 'layout:table-child':
+      insertSpecialNode('table', 'child')
+      return
+    case 'layout:code-sibling':
+      insertSpecialNode('code', 'sibling')
+      return
+    case 'layout:code-child':
+      insertSpecialNode('code', 'child')
+      return
+
+    // 节点模式（默认绑定与既有行为一致）
+    case 'node:add-child': {
+      if (!focusedId) return
       const focusedNode = mapStore.findNode(focusedId)
       if (focusedNode && isTableNode(focusedNode)) {
+        // 表格节点上的加子级：默认挂到最后一行第一格
         const target = layoutNodes.value.find(n => n.id === focusedId)
         const geo = target ? getTableGeometry(target.node) : null
         if (target && geo) {
           handleCellAddChild(target, Math.max(1, geo.rowCount - 1), 0)
-          break
+          return
         }
       }
       mapStore.addChild(focusedId)
-      break
+      return
     }
-    case 'Enter':
-      event.preventDefault()
-      if (!event.shiftKey && Date.now() - lastEditClosedAt.value > 250) {
+    case 'node:add-sibling':
+      if (focusedId && Date.now() - lastEditClosedAt.value > 250) {
         mapStore.addSibling(focusedId)
       }
-      break
-    case 'Delete':
-    case 'Backspace':
-      event.preventDefault()
-      mapStore.deleteNode(focusedId)
-      break
-    case 'Escape':
-      break
-    case 'ArrowLeft':
-      event.preventDefault()
+      return
+    case 'node:edit':
+      if (focusedId) editingNodeId.value = focusedId
+      return
+    case 'node:delete':
+      if (focusedId) mapStore.deleteNode(focusedId)
+      return
+    case 'node:undo':
+      mapStore.undo()
+      return
+    case 'node:redo':
+      mapStore.redo()
+      return
+    case 'node:copy':
+      if (focusedId) mapStore.copyNode(focusedId)
+      return
+    case 'node:paste':
+      if (focusedId) mapStore.pasteNode(focusedId)
+      return
+    case 'node:nav-parent':
       mapStore.navigateToParent()
-      break
-    case 'ArrowRight':
-      event.preventDefault()
+      return
+    case 'node:nav-child':
       mapStore.navigateToChild()
-      break
-    case 'ArrowUp':
-      event.preventDefault()
+      return
+    case 'node:nav-prev':
       mapStore.navigateToPrevSibling()
-      break
-    case 'ArrowDown':
-      event.preventDefault()
+      return
+    case 'node:nav-next':
       mapStore.navigateToNextSibling()
-      break
+      return
+  }
+}
+
+function insertSpecialNode(kind: 'table' | 'code', relation: 'sibling' | 'child') {
+  const focusedId = mapStore.focusedId
+  const rootId = mapStore.document.root.id
+  const target = focusedId ?? rootId
+  const isSibling = relation === 'sibling' && target !== rootId
+
+  const node = isSibling
+    ? mapStore.addSibling(target, kind === 'table' ? '表格' : defaultCodeText())
+    : mapStore.addChild(target, kind === 'table' ? '表格' : defaultCodeText())
+  if (node) {
+    node.data = {
+      ...(node.data || {}),
+      ...(kind === 'table' ? { table: defaultTableData() } : { code: defaultCodeData() }),
+    }
   }
 }
 
@@ -1785,6 +1860,58 @@ onUnmounted(() => {
 
 .vault-ref-badge:hover .vault-ref-bg {
   opacity: 1;
+}
+
+/* ---------- 布局模式序列键提示 ---------- */
+
+.keyseq-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 56px;
+  transform: translateX(-50%);
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  font-size: 12px;
+  color: var(--color-text);
+}
+
+.keyseq-prefix {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.keyseq-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-secondary);
+}
+
+.keyseq-option kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 1px 5px;
+  border: 1px solid var(--color-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--color-bg-secondary);
+  font-family: inherit;
+  font-size: 11px;
+  text-align: center;
+  color: var(--color-text);
+}
+
+.keyseq-esc {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  opacity: 0.7;
 }
 </style>
 

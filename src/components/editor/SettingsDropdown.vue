@@ -59,12 +59,20 @@
     </div>
     
     <div class="settings-divider"></div>
-    
+
+    <button class="about-btn" @click="showKeymap = true">
+      <Keyboard :size="16" />
+      <span>快捷键映射</span>
+    </button>
+
     <button class="about-btn" @click="showAbout = true">
       <Info :size="16" />
       <span>关于 OneLook</span>
     </button>
   </div>
+
+  <!-- 快捷键映射对话框 -->
+  <KeymapDialog v-if="showKeymap" @close="showKeymap = false" />
   
   <!-- 关于弹窗 -->
   <Teleport to="body">
@@ -103,7 +111,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { GitBranch, Network, Fish, Users, Info, Github, BookOpen, X } from 'lucide-vue-next'
+import { GitBranch, Network, Fish, Users, Info, Github, BookOpen, X, Keyboard } from 'lucide-vue-next'
+import KeymapDialog from './KeymapDialog.vue'
 import { useMapStore } from '@/stores/mapStore'
 import type { LayoutType, ThemeType, ConnectionStyle } from '@/types'
 
@@ -116,7 +125,8 @@ const emit = defineEmits<{
 }>()
 
 const mapStore = useMapStore()
-const showAbout = ref(false)
+const showKeymap = ref(false)
+    const showAbout = ref(false)
 
 const themes = [
   { value: 'light' as ThemeType, label: '亮色', color: '#ffffff' },
