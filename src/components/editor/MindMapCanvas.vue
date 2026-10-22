@@ -1267,13 +1267,13 @@ function handleKeyDown(event: KeyboardEvent) {
   const mode: KeymapMode = focusedId ? 'node' : 'layout'
   const matcher = mode === 'node' ? nodeMatcher.value : layoutMatcher.value
 
-  // 布局模式消费序列（前缀态）；节点模式单键直配
-  const pressed = mode === 'layout' ? [...pendingKeys.value, token] : [token]
+  // 两模式统一支持序列键：节点模式下先选中节点，再 t/c 决定插什么块
+  const pressed = [...pendingKeys.value, token]
   const result = matchSequence(matcher, pressed)
 
   if (result && 'pending' in result) {
     event.preventDefault()
-    if (mode === 'layout') extendPendingKeys(pressed)
+    extendPendingKeys(pressed)
     return
   }
 
@@ -1284,24 +1284,29 @@ function handleKeyDown(event: KeyboardEvent) {
     return
   }
 
-  if (mode === 'layout') clearPendingKeys()
+  clearPendingKeys()
 }
 
 function dispatchKeymapAction(actionId: string) {
   const focusedId = mapStore.focusedId
 
   switch (actionId) {
-    // 布局模式插入：目标为聚焦节点（无则根，根的并列退化为子级）
+    // 插入结构化块：目标=聚焦节点（无则根，根的并列退化为子级）。
+    // 节点模式与布局模式共用同一目标解析。
     case 'layout:table-sibling':
+    case 'node:table-sibling':
       insertSpecialNode('table', 'sibling')
       return
     case 'layout:table-child':
+    case 'node:table-child':
       insertSpecialNode('table', 'child')
       return
     case 'layout:code-sibling':
+    case 'node:code-sibling':
       insertSpecialNode('code', 'sibling')
       return
     case 'layout:code-child':
+    case 'node:code-child':
       insertSpecialNode('code', 'child')
       return
 

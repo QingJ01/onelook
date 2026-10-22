@@ -41,6 +41,10 @@ export const KEYMAP_ACTIONS: KeymapActionDef[] = [
     { id: 'layout:command-palette', mode: 'layout', label: '命令面板', defaultSequence: [':'] },
 
     // ---------- 节点模式（已聚焦节点）----------
+    { id: 'node:table-sibling', mode: 'node', label: '插入表格（同级之旁）', defaultSequence: ['t', 'Enter'] },
+    { id: 'node:table-child', mode: 'node', label: '插入表格（子级）', defaultSequence: ['t', 'Tab'] },
+    { id: 'node:code-sibling', mode: 'node', label: '插入代码块（同级之旁）', defaultSequence: ['c', 'Enter'] },
+    { id: 'node:code-child', mode: 'node', label: '插入代码块（子级）', defaultSequence: ['c', 'Tab'] },
     { id: 'node:add-child', mode: 'node', label: '添加子节点', defaultSequence: ['Tab'] },
     { id: 'node:add-sibling', mode: 'node', label: '添加同级节点', defaultSequence: ['Enter'] },
     { id: 'node:edit', mode: 'node', label: '编辑节点', defaultSequence: ['F2'], aliases: [[' ']] },

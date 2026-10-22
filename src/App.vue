@@ -188,6 +188,9 @@
       <span v-else-if="keyboardStatus.mode === 'layout'" class="status-static-hints">
         t 表格 · c 代码 · f 聚焦 · : 命令 · 方向键 平移 · +/− 缩放
       </span>
+      <span v-else-if="keyboardStatus.mode === 'node'" class="status-static-hints">
+        ⇥ 子节点 · ⏎ 同级 · t/c 表格/代码 · m 菜单 · F2 编辑 · Esc 返回
+      </span>
       <span v-if="keyboardStatus.message" class="status-message">{{ keyboardStatus.message }}</span>
       <span class="status-flex"></span>
       <span class="status-item">节点数: {{ mapStore.nodeCount }}</span>
