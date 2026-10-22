@@ -34,6 +34,11 @@
           <span>插入代码块节点</span>
         </button>
         <div class="menu-divider"></div>
+        <button class="menu-item" @click="handleYankShelf">
+          <Inbox :size="14" />
+          <span>放入缓存栏</span>
+          <span class="shortcut">y</span>
+        </button>
         <button class="menu-item" @click="handleCopyRef">
           <Link :size="14" />
           <span>复制节点引用</span>
@@ -90,11 +95,12 @@
 import { ref, computed, nextTick } from 'vue'
 import {
   Edit3, Plus, CornerDownRight, Copy, Clipboard,
-  ChevronRight, Trash2, Braces, Table, Code2, Link, Link2
+  ChevronRight, Trash2, Braces, Table, Code2, Link, Link2, Inbox
 } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'
 import { defaultCodeData, defaultCodeText, defaultTableData } from '@/utils/specialNodes'
 import { copyNodeRef, createRefNode, pasteNodeRef } from '@/services/vault'
+import { addToShelf } from '@/services/shelf'
 
 const mapStore = useMapStore()
 
@@ -212,6 +218,16 @@ function refreshRefClipboardState() {
   const ref = pasteNodeRef()
   canPasteRef.value = ref !== null
   lastCopiedRefName.value = ref?.docName || ''
+}
+
+function handleYankShelf() {
+  if (nodeId.value) {
+    const node = mapStore.findNode(nodeId.value)
+    if (node) {
+      addToShelf(mapStore.document.id, node.id, mapStore.document.name, node.text)
+    }
+  }
+  close()
 }
 
 function handleCopyRef() {

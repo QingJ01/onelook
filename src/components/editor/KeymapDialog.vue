@@ -9,12 +9,12 @@
 
         <div class="keymap-body">
           <p class="keymap-note">
-            布局模式＝未聚焦节点（序列键：前缀 + 键）；节点模式＝已聚焦节点。
+            观察模式＝未选中节点；布局模式＝已选中节点（支持前缀+键的序列键）；编辑模式＝节点编辑器内。
             点击绑定后按下新按键完成重绑。
           </p>
 
-          <div v-for="mode in (['layout', 'node'] as KeymapMode[])" :key="mode" class="keymap-section">
-            <div class="section-title">{{ mode === 'layout' ? '布局模式' : '节点模式' }}</div>
+          <div v-for="mode in (['observe', 'layout'] as KeymapMode[])" :key="mode" class="keymap-section">
+            <div class="section-title">{{ mode === 'observe' ? '观察模式（未选中节点）' : '布局模式（已选中节点）' }}</div>
             <div
               v-for="action in actionsOf(mode)"
               :key="action.id"

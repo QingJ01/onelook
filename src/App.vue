@@ -158,6 +158,7 @@
     
     
     <main class="editor-area">
+      <NodeShelf v-if="!(mapStore.zenMode && mapStore.zenLevel === 'deep')" />
       
       <OutlinePanel
         v-if="showOutlinePanel && !(mapStore.zenMode && mapStore.zenLevel === 'deep')"
@@ -185,11 +186,14 @@
           <kbd>{{ h.key }}</kbd>{{ h.label }}
         </span>
       </span>
-      <span v-else-if="keyboardStatus.mode === 'layout'" class="status-static-hints">
-        t 表格 · c 代码 · f 聚焦 · : 命令 · 方向键 平移 · +/− 缩放
+      <span v-else-if="keyboardStatus.mode === 'observe'" class="status-static-hints">
+        f 聚焦 · : 命令（新建/设置/重命名）· 方向键 平移 · +/− 缩放
       </span>
-      <span v-else-if="keyboardStatus.mode === 'node'" class="status-static-hints">
-        ⇥ 子节点 · ⏎ 同级 · t/c 表格/代码 · m 菜单 · F2 编辑 · Esc 返回
+      <span v-else-if="keyboardStatus.mode === 'layout'" class="status-static-hints">
+        hjkl 移动 · ⇥/⏎ 子级/同级 · t/c 表格/代码 · y 收集 · p 引用 · space 编辑 · m 菜单 · Esc 观察
+      </span>
+      <span v-else class="status-static-hints">
+        Enter 保存 · Esc 取消 · ⌘/Ctrl+Enter 代码块内保存
       </span>
       <span v-if="keyboardStatus.message" class="status-message">{{ keyboardStatus.message }}</span>
       <span class="status-flex"></span>
@@ -268,7 +272,7 @@ import { useMapStore } from '@/stores/mapStore'
 import { keyboardStatus, formatSequence } from '@/services/keymap'
 
 const modeLabel = computed(() =>
-  keyboardStatus.mode === 'editing' ? '编辑' : keyboardStatus.mode === 'node' ? '节点' : '布局',
+  keyboardStatus.mode === 'editing' ? '编辑' : keyboardStatus.mode === 'layout' ? '布局' : '观察',
 )
 import { exportService, importService } from '@/services/export'
 import MindMapCanvas from '@/components/editor/MindMapCanvas.vue'
@@ -276,6 +280,8 @@ import NodeProperties from '@/components/editor/NodeProperties.vue'
 import SearchDialog from '@/components/editor/SearchDialog.vue'
 import SettingsDropdown from '@/components/editor/SettingsDropdown.vue'
 import FileManager from '@/components/editor/FileManager.vue'
+import NodeShelf from '@/components/editor/NodeShelf.vue'
+import { toggleShelf } from '@/services/shelf'
 import CommandPalette from '@/components/editor/CommandPalette.vue'
 import ShortcutsHelp from '@/components/editor/ShortcutsHelp.vue'
 import OutlinePanel from '@/components/editor/OutlinePanel.vue'
@@ -576,6 +582,7 @@ function handlePanelToggle(event: Event) {
   if (panel === 'properties') showSidePanel.value = !showSidePanel.value
   else if (panel === 'outline') showOutlinePanel.value = !showOutlinePanel.value
   else if (panel === 'settings') showSettingsMenu.value = !showSettingsMenu.value
+  else if (panel === 'shelf') toggleShelf()
 }
 
 onMounted(() => {
@@ -833,8 +840,8 @@ onUnmounted(() => {
   background: var(--color-text-tertiary, #9ca3af);
 }
 
-.status-mode.mode-layout { background: #6b7280; }
-.status-mode.mode-node { background: var(--color-primary); }
+.status-mode.mode-observe { background: #6b7280; }
+.status-mode.mode-layout { background: var(--color-primary); }
 .status-mode.mode-editing { background: #16a34a; }
 
 .status-pending {

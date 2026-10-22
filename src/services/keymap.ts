@@ -3,9 +3,11 @@ import { reactive } from 'vue'
 /**
  * 可变快捷键映射表
  *
- * 三个键盘层：
- * - layout 布局模式：未聚焦节点时的序列键（前缀 + 键，如 t+Enter）
- * - node   节点模式：聚焦节点后的单键/组合键（Tab、Enter、F2…）
+ * 状态机（三态）：
+ * - observe 观察模式：未选中节点——新建页面/设置/重命名（经命令面板）、
+ *   平移缩放画布、f 聚焦根节点进入布局模式
+ * - layout 布局模式：已选中节点——hjkl/方向键导航、t/c 序列插块、
+ *   y 收集进缓存栏、p 依次建立引用、space 进入编辑模式
  * - editing 编辑模式：节点编辑器内部按键（v1 固定，不参与重绑定）
  *
  * 绑定持久化在 localStorage（onelook:keymaps），覆盖默认值；
@@ -13,7 +15,7 @@ import { reactive } from 'vue'
  * F1-F12/Arrow*、组合键 Ctrl+<token>。
  */
 
-export type KeymapMode = 'layout' | 'node'
+export type KeymapMode = 'observe' | 'layout'
 
 export interface KeymapActionDef {
     id: string
@@ -25,40 +27,39 @@ export interface KeymapActionDef {
 }
 
 export const KEYMAP_ACTIONS: KeymapActionDef[] = [
-    // ---------- 布局模式（未聚焦节点）----------
-    { id: 'layout:table-sibling', mode: 'layout', label: '插入表格（并列）', defaultSequence: ['t', 'Enter'] },
-    { id: 'layout:table-child', mode: 'layout', label: '插入表格（子级）', defaultSequence: ['t', 'Tab'] },
-    { id: 'layout:code-sibling', mode: 'layout', label: '插入代码块（并列）', defaultSequence: ['c', 'Enter'] },
-    { id: 'layout:code-child', mode: 'layout', label: '插入代码块（子级）', defaultSequence: ['c', 'Tab'] },
-    { id: 'layout:focus-root', mode: 'layout', label: '聚焦根节点', defaultSequence: ['f'] },
-    { id: 'layout:pan-left', mode: 'layout', label: '画布左移', defaultSequence: ['ArrowLeft'] },
-    { id: 'layout:pan-right', mode: 'layout', label: '画布右移', defaultSequence: ['ArrowRight'] },
-    { id: 'layout:pan-up', mode: 'layout', label: '画布上移', defaultSequence: ['ArrowUp'] },
-    { id: 'layout:pan-down', mode: 'layout', label: '画布下移', defaultSequence: ['ArrowDown'] },
-    { id: 'layout:zoom-in', mode: 'layout', label: '放大', defaultSequence: ['='] },
-    { id: 'layout:zoom-out', mode: 'layout', label: '缩小', defaultSequence: ['-'] },
-    { id: 'layout:zoom-reset', mode: 'layout', label: '重置缩放', defaultSequence: ['0'] },
-    { id: 'layout:command-palette', mode: 'layout', label: '命令面板', defaultSequence: [':'] },
+    // ---------- 观察模式（未选中节点）----------
+    { id: 'observe:focus-root', mode: 'observe', label: '聚焦根节点（进入布局模式）', defaultSequence: ['f'] },
+    { id: 'observe:pan-left', mode: 'observe', label: '画布左移', defaultSequence: ['ArrowLeft'] },
+    { id: 'observe:pan-right', mode: 'observe', label: '画布右移', defaultSequence: ['ArrowRight'] },
+    { id: 'observe:pan-up', mode: 'observe', label: '画布上移', defaultSequence: ['ArrowUp'] },
+    { id: 'observe:pan-down', mode: 'observe', label: '画布下移', defaultSequence: ['ArrowDown'] },
+    { id: 'observe:zoom-in', mode: 'observe', label: '放大', defaultSequence: ['='] },
+    { id: 'observe:zoom-out', mode: 'observe', label: '缩小', defaultSequence: ['-'] },
+    { id: 'observe:zoom-reset', mode: 'observe', label: '重置缩放', defaultSequence: ['0'] },
+    { id: 'observe:command-palette', mode: 'observe', label: '命令面板（新建/设置/重命名等）', defaultSequence: [':'] },
 
-    // ---------- 节点模式（已聚焦节点）----------
-    { id: 'node:table-sibling', mode: 'node', label: '插入表格（同级之旁）', defaultSequence: ['t', 'Enter'] },
-    { id: 'node:table-child', mode: 'node', label: '插入表格（子级）', defaultSequence: ['t', 'Tab'] },
-    { id: 'node:code-sibling', mode: 'node', label: '插入代码块（同级之旁）', defaultSequence: ['c', 'Enter'] },
-    { id: 'node:code-child', mode: 'node', label: '插入代码块（子级）', defaultSequence: ['c', 'Tab'] },
-    { id: 'node:add-child', mode: 'node', label: '添加子节点', defaultSequence: ['Tab'] },
-    { id: 'node:add-sibling', mode: 'node', label: '添加同级节点', defaultSequence: ['Enter'] },
-    { id: 'node:edit', mode: 'node', label: '编辑节点', defaultSequence: ['F2'], aliases: [[' ']] },
-    { id: 'node:delete', mode: 'node', label: '删除节点', defaultSequence: ['Delete'], aliases: [['Backspace']] },
-    { id: 'node:context-menu', mode: 'node', label: '节点菜单', defaultSequence: ['m'] },
-    { id: 'node:clear-focus', mode: 'node', label: '取消聚焦（回布局模式）', defaultSequence: ['Escape'] },
-    { id: 'node:undo', mode: 'node', label: '撤销', defaultSequence: ['Ctrl+z'] },
-    { id: 'node:redo', mode: 'node', label: '重做', defaultSequence: ['Ctrl+y'], aliases: [['Ctrl+Shift+z']] },
-    { id: 'node:copy', mode: 'node', label: '复制节点', defaultSequence: ['Ctrl+c'] },
-    { id: 'node:paste', mode: 'node', label: '粘贴节点', defaultSequence: ['Ctrl+v'] },
-    { id: 'node:nav-parent', mode: 'node', label: '聚焦父节点', defaultSequence: ['ArrowLeft'] },
-    { id: 'node:nav-child', mode: 'node', label: '聚焦子节点', defaultSequence: ['ArrowRight'] },
-    { id: 'node:nav-prev', mode: 'node', label: '聚焦上一同级', defaultSequence: ['ArrowUp'] },
-    { id: 'node:nav-next', mode: 'node', label: '聚焦下一同级', defaultSequence: ['ArrowDown'] },
+    // ---------- 布局模式（已选中节点）----------
+    { id: 'layout:nav-parent', mode: 'layout', label: '选中父节点', defaultSequence: ['h'], aliases: [['ArrowLeft']] },
+    { id: 'layout:nav-child', mode: 'layout', label: '选中子节点', defaultSequence: ['l'], aliases: [['ArrowRight']] },
+    { id: 'layout:nav-prev', mode: 'layout', label: '选中上一同级', defaultSequence: ['k'], aliases: [['ArrowUp']] },
+    { id: 'layout:nav-next', mode: 'layout', label: '选中下一同级', defaultSequence: ['j'], aliases: [['ArrowDown']] },
+    { id: 'layout:add-child', mode: 'layout', label: '添加子节点', defaultSequence: ['Tab'] },
+    { id: 'layout:add-sibling', mode: 'layout', label: '添加同级节点', defaultSequence: ['Enter'] },
+    { id: 'layout:table-sibling', mode: 'layout', label: '插入表格（同级之旁）', defaultSequence: ['t', 'Enter'] },
+    { id: 'layout:table-child', mode: 'layout', label: '插入表格（子级）', defaultSequence: ['t', 'Tab'] },
+    { id: 'layout:code-sibling', mode: 'layout', label: '插入代码块（同级之旁）', defaultSequence: ['c', 'Enter'] },
+    { id: 'layout:code-child', mode: 'layout', label: '插入代码块（子级）', defaultSequence: ['c', 'Tab'] },
+    { id: 'layout:edit', mode: 'layout', label: '编辑节点（进入编辑模式）', defaultSequence: ['F2'], aliases: [[' ']] },
+    { id: 'layout:delete', mode: 'layout', label: '删除节点', defaultSequence: ['Delete'], aliases: [['Backspace']] },
+    { id: 'layout:context-menu', mode: 'layout', label: '节点菜单', defaultSequence: ['m'] },
+    { id: 'layout:yank-shelf', mode: 'layout', label: '收集节点进缓存栏', defaultSequence: ['y'] },
+    { id: 'layout:paste-ref-child', mode: 'layout', label: '缓存栏活跃项→引用（子级）', defaultSequence: ['p'] },
+    { id: 'layout:paste-ref-sibling', mode: 'layout', label: '缓存栏活跃项→引用（同级）', defaultSequence: ['P'] },
+    { id: 'layout:clear-focus', mode: 'layout', label: '取消选中（回观察模式）', defaultSequence: ['Escape'] },
+    { id: 'layout:undo', mode: 'layout', label: '撤销', defaultSequence: ['Ctrl+z'] },
+    { id: 'layout:redo', mode: 'layout', label: '重做', defaultSequence: ['Ctrl+y'], aliases: [['Ctrl+Shift+Z']] },
+    { id: 'layout:copy', mode: 'layout', label: '复制节点', defaultSequence: ['Ctrl+c'] },
+    { id: 'layout:paste', mode: 'layout', label: '粘贴节点', defaultSequence: ['Ctrl+v'] },
 ]
 
 const STORAGE_KEY = 'onelook:keymaps'
@@ -66,7 +67,7 @@ const STORAGE_KEY = 'onelook:keymaps'
 // ---------- 键盘状态（vim 式状态栏数据源；画布写、状态栏读） ----------
 
 export interface KeyboardStatus {
-    mode: 'layout' | 'node' | 'editing'
+    mode: 'observe' | 'layout' | 'editing'
     pendingKeys: string[]
     hints: Array<{ key: string; label: string }>
     message: string
@@ -159,7 +160,7 @@ export function keyToken(event: KeyboardEvent): string | null {
         return null // 修饰键单独按下不产生 token
     }
     let key = event.key
-    if (key.length === 1) key = key.toLowerCase()
+    if (key.length === 1) key = event.shiftKey ? key.toUpperCase() : key.toLowerCase()
     if (event.ctrlKey || event.metaKey) return `Ctrl+${key}`
     return key
 }

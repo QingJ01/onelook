@@ -247,6 +247,14 @@ const commands = computed<Command[]>(() => [
     category: '面板',
   },
   {
+    id: 'toggle-shelf',
+    name: '切换缓存栏',
+    description: '批量收集节点、依次建立引用',
+    icon: markRaw(GitBranch),
+    action: () => window.dispatchEvent(new CustomEvent('onelook:toggle-panel', { detail: 'shelf' })),
+    category: '面板',
+  },
+  {
     id: 'open-keymap',
     name: '快捷键映射设置',
     icon: markRaw(Keyboard),

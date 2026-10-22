@@ -330,6 +330,8 @@ import {
   keyboardStatus, setKeymapMessage,
   type KeymapMode,
 } from '@/services/keymap'
+import { shelf, addToShelf, activeShelfItem, advanceShelf, type ShelfItem } from '@/services/shelf'
+import { createRefNode } from '@/services/vault'
 import { highlightCode, CODE_LANGUAGES } from '@/utils/highlight'
 
 import { renderMarkdown } from '@/utils/markdown'
@@ -1201,18 +1203,19 @@ function handleWheel(event: WheelEvent) {
 
 // ---------- 可变快捷键：模式化分发（layout / node） ----------
 
+const observeMatcher = computed(() => buildMatcher('observe'))
 const layoutMatcher = computed(() => buildMatcher('layout'))
-const nodeMatcher = computed(() => buildMatcher('node'))
 
 const pendingKeys = ref<string[]>([])
 let pendingTimer: number | null = null
 
 const layoutHints = computed(() => sequenceHints(layoutMatcher.value, pendingKeys.value))
+const observeHints = computed(() => sequenceHints(observeMatcher.value, pendingKeys.value))
 
 function syncKeyboardStatus() {
-  keyboardStatus.mode = editingNodeId.value ? 'editing' : (mapStore.focusedId ? 'node' : 'layout')
+  keyboardStatus.mode = editingNodeId.value ? 'editing' : (mapStore.focusedId ? 'layout' : 'observe')
   keyboardStatus.pendingKeys = [...pendingKeys.value]
-  keyboardStatus.hints = layoutHints.value
+  keyboardStatus.hints = keyboardStatus.mode === 'layout' ? layoutHints.value : observeHints.value
 }
 
 watch([() => mapStore.focusedId, editingNodeId, layoutHints], syncKeyboardStatus, { immediate: true })
@@ -1264,8 +1267,8 @@ function handleKeyDown(event: KeyboardEvent) {
   if (!token) return
 
   const focusedId = mapStore.focusedId
-  const mode: KeymapMode = focusedId ? 'node' : 'layout'
-  const matcher = mode === 'node' ? nodeMatcher.value : layoutMatcher.value
+  const mode: KeymapMode = focusedId ? 'layout' : 'observe'
+  const matcher = mode === 'layout' ? layoutMatcher.value : observeMatcher.value
 
   // 两模式统一支持序列键：节点模式下先选中节点，再 t/c 决定插什么块
   const pressed = [...pendingKeys.value, token]
@@ -1291,61 +1294,53 @@ function dispatchKeymapAction(actionId: string) {
   const focusedId = mapStore.focusedId
 
   switch (actionId) {
-    // 插入结构化块：目标=聚焦节点（无则根，根的并列退化为子级）。
-    // 节点模式与布局模式共用同一目标解析。
+    // ---------- 观察模式 ----------
+    case 'observe:focus-root':
+      mapStore.selectNode(mapStore.document.root.id)
+      setKeymapMessage('已聚焦根节点（布局模式）')
+      return
+    case 'observe:pan-left':
+      panX.value -= 60
+      return
+    case 'observe:pan-right':
+      panX.value += 60
+      return
+    case 'observe:pan-up':
+      panY.value -= 60
+      return
+    case 'observe:pan-down':
+      panY.value += 60
+      return
+    case 'observe:zoom-in':
+      mapStore.setZoom(mapStore.zoom + 10)
+      return
+    case 'observe:zoom-out':
+      mapStore.setZoom(mapStore.zoom - 10)
+      return
+    case 'observe:zoom-reset':
+      mapStore.setZoom(100)
+      return
+    case 'observe:command-palette':
+      window.dispatchEvent(new CustomEvent('onelook:open-palette'))
+      return
+
+    // ---------- 布局模式 ----------
     case 'layout:table-sibling':
-    case 'node:table-sibling':
       insertSpecialNode('table', 'sibling')
       return
     case 'layout:table-child':
-    case 'node:table-child':
       insertSpecialNode('table', 'child')
       return
     case 'layout:code-sibling':
-    case 'node:code-sibling':
       insertSpecialNode('code', 'sibling')
       return
     case 'layout:code-child':
-    case 'node:code-child':
       insertSpecialNode('code', 'child')
       return
-
-    // 布局模式：画布导航
-    case 'layout:pan-left':
-      panX.value -= 60
-      return
-    case 'layout:pan-right':
-      panX.value += 60
-      return
-    case 'layout:pan-up':
-      panY.value -= 60
-      return
-    case 'layout:pan-down':
-      panY.value += 60
-      return
-    case 'layout:zoom-in':
-      mapStore.setZoom(mapStore.zoom + 10)
-      return
-    case 'layout:zoom-out':
-      mapStore.setZoom(mapStore.zoom - 10)
-      return
-    case 'layout:zoom-reset':
-      mapStore.setZoom(100)
-      return
-    case 'layout:command-palette':
-      window.dispatchEvent(new CustomEvent('onelook:open-palette'))
-      return
-    case 'layout:focus-root':
-      mapStore.selectNode(mapStore.document.root.id)
-      setKeymapMessage('已聚焦根节点（节点模式）')
-      return
-
-    // 节点模式（默认绑定与既有行为一致）
-    case 'node:add-child': {
+    case 'layout:add-child': {
       if (!focusedId) return
       const focusedNode = mapStore.findNode(focusedId)
       if (focusedNode && isTableNode(focusedNode)) {
-        // 表格节点上的加子级：默认挂到最后一行第一格
         const target = layoutNodes.value.find(n => n.id === focusedId)
         const geo = target ? getTableGeometry(target.node) : null
         if (target && geo) {
@@ -1356,51 +1351,102 @@ function dispatchKeymapAction(actionId: string) {
       mapStore.addChild(focusedId)
       return
     }
-    case 'node:add-sibling':
+    case 'layout:add-sibling':
       if (focusedId && Date.now() - lastEditClosedAt.value > 250) {
         mapStore.addSibling(focusedId)
       }
       return
-    case 'node:edit':
+    case 'layout:edit':
       if (focusedId) editingNodeId.value = focusedId
       return
-    case 'node:delete':
+    case 'layout:delete':
       if (focusedId) {
         mapStore.deleteNode(focusedId)
         setKeymapMessage('已删除节点')
       }
       return
-    case 'node:context-menu':
+    case 'layout:context-menu':
       if (focusedId) openContextMenuOnNode(focusedId)
       return
-    case 'node:clear-focus':
+    case 'layout:clear-focus':
       mapStore.clearSelection()
       return
-    case 'node:undo':
+    case 'layout:yank-shelf': {
+      if (!focusedId) return
+      const node = mapStore.findNode(focusedId)
+      if (node) {
+        addToShelf(mapStore.document.id, node.id, mapStore.document.name, node.text)
+        setKeymapMessage(`已收集进缓存栏（第 ${shelf.items.length} 项）`)
+      }
+      return
+    }
+    case 'layout:paste-ref-child':
+    case 'layout:paste-ref-sibling': {
+      if (!focusedId) return
+      const item = activeShelfItem()
+      if (!item) {
+        setKeymapMessage('缓存栏为空（布局模式按 y 收集）')
+        return
+      }
+      insertShelfRef(item, actionId === 'layout:paste-ref-sibling' ? 'sibling' : 'child')
+      return
+    }
+    case 'layout:undo':
       mapStore.undo()
       return
-    case 'node:redo':
+    case 'layout:redo':
       mapStore.redo()
       return
-    case 'node:copy':
+    case 'layout:copy':
       if (focusedId) mapStore.copyNode(focusedId)
       return
-    case 'node:paste':
+    case 'layout:paste':
       if (focusedId) mapStore.pasteNode(focusedId)
       return
-    case 'node:nav-parent':
+    case 'layout:nav-parent':
       mapStore.navigateToParent()
       return
-    case 'node:nav-child':
+    case 'layout:nav-child':
       mapStore.navigateToChild()
       return
-    case 'node:nav-prev':
+    case 'layout:nav-prev':
       mapStore.navigateToPrevSibling()
       return
-    case 'node:nav-next':
+    case 'layout:nav-next':
       mapStore.navigateToNextSibling()
       return
   }
+}
+
+/** 缓存栏活跃项 → 在选中节点处建立引用（实时更新的复制），消费后队列前进 */
+async function insertShelfRef(item: ShelfItem, relation: 'child' | 'sibling') {
+  const targetId = mapStore.focusedId ?? mapStore.document.root.id
+  const targetNode = mapStore.findNode(targetId)
+  if (!targetNode) return
+  const isSibling = relation === 'sibling' && targetNode.parentId
+
+  const created = await createRefNode(
+    { docId: item.docId, nodeId: item.nodeId, docName: item.docName },
+    isSibling ? targetNode.parentId! : targetId,
+  )
+  if (!created) return
+
+  if (isSibling) {
+    const parent = mapStore.findNode(targetNode.parentId!)
+    if (!parent) return
+    const index = parent.children.findIndex(c => c.id === targetId)
+    parent.children.splice(index + 1, 0, created.node)
+  } else {
+    targetNode.children.push(created.node)
+    targetNode.isExpanded = true
+  }
+  mapStore.document.updatedAt = Date.now()
+  mapStore.selectNode(created.node.id)
+  advanceShelf()
+  const next = activeShelfItem()
+  setKeymapMessage(next
+    ? `已建立引用，下一项：${next.text.slice(0, 12)}（剩 ${shelf.items.length - shelf.activeIndex - 1} 项）`
+    : '已建立引用')
 }
 
 function insertSpecialNode(kind: 'table' | 'code', relation: 'sibling' | 'child') {
