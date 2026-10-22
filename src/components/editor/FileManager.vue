@@ -32,7 +32,9 @@
           :key="doc.id"
           class="file-item"
           :class="{ active: doc.id === currentDocId }"
+          tabindex="0"
           @click="handleSelectDocument(doc)"
+          @keydown.enter="handleSelectDocument(doc)"
           @contextmenu.prevent="handleItemContextMenu($event, doc)"
         >
           <div class="file-info">
@@ -151,6 +153,15 @@ import type { MindMapDocument } from '@/types'
 const mapStore = useMapStore()
 
 const isOpen = ref(false)
+
+// 全键盘：命令面板切换本面板
+function onTogglePanel(e: Event) {
+  if ((e as CustomEvent).detail === 'files') {
+    isOpen.value = !isOpen.value
+    if (isOpen.value) loadDocuments()
+  }
+}
+window.addEventListener('onelook:toggle-panel', onTogglePanel as EventListener)
 const loading = ref(false)
 const documents = ref<MindMapDocument[]>([])
 

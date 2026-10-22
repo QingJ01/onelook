@@ -1,10 +1,12 @@
 <template>
   <Teleport to="body">
-    <div 
+    <div
       v-if="isOpen"
       class="context-menu"
       :style="{ left: x + 'px', top: y + 'px' }"
+      tabindex="-1"
       @click.stop
+      @keydown="handleMenuKeydown"
     >
       <template v-if="nodeId">
         <button class="menu-item" @click="handleEdit">
@@ -85,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import {
   Edit3, Plus, CornerDownRight, Copy, Clipboard,
   ChevronRight, Trash2, Braces, Table, Code2, Link, Link2
@@ -121,6 +123,37 @@ function open(clientX: number, clientY: number, targetNodeId?: string) {
   y.value = clientY
   nodeId.value = targetNodeId || null
   isOpen.value = true
+  // 键盘可达：打开后聚焦菜单容器与第一个可用项（m 键入口）
+  nextTick(() => {
+    const el = document.querySelector('.context-menu') as HTMLElement | null
+    el?.focus()
+    focusMenuItem(0)
+  })
+}
+
+function focusMenuItem(index: number) {
+  const items = Array.from(
+    document.querySelectorAll('.context-menu .menu-item:not([disabled])')
+  ) as HTMLElement[]
+  if (items.length === 0) return
+  const clamped = ((index % items.length) + items.length) % items.length
+  items[clamped].focus()
+}
+
+function handleMenuKeydown(event: KeyboardEvent) {
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault()
+    event.stopPropagation()
+    const items = Array.from(
+      document.querySelectorAll('.context-menu .menu-item:not([disabled])')
+    ) as HTMLElement[]
+    const current = items.indexOf(document.activeElement as HTMLElement)
+    focusMenuItem(current + (event.key === 'ArrowDown' ? 1 : -1))
+  } else if (event.key === 'Escape') {
+    event.preventDefault()
+    event.stopPropagation()
+    close()
+  }
 }
 
 function close() {
@@ -324,5 +357,14 @@ defineExpose({ open, close })
 
 .menu-item svg.rotated {
   transform: rotate(90deg);
+}
+
+.context-menu:focus,
+.context-menu:focus-visible {
+  outline: none;
+}
+
+.context-menu .menu-item:focus-visible {
+  background: var(--color-bg-secondary);
 }
 </style>

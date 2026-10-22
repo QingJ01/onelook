@@ -291,15 +291,6 @@
     />
 
 
-    <!-- 布局模式序列键提示 -->
-    <div v-if="pendingKeys.length" class="keyseq-hint">
-      <span class="keyseq-prefix">{{ formatSequence(pendingKeys) }} ›</span>
-      <span v-for="h in layoutHints" :key="h.key" class="keyseq-option">
-        <kbd>{{ h.key }}</kbd>{{ h.label }}
-      </span>
-      <span class="keyseq-esc">Esc 取消</span>
-    </div>
-
     <!-- 表格单元格编辑浮层 -->
     <input
       v-if="cellEdit"
@@ -335,7 +326,8 @@ import {
   defaultTableData, defaultCodeData, defaultCodeText,
 } from '@/utils/specialNodes'
 import {
-  buildMatcher, matchSequence, sequenceHints, keyToken, formatSequence,
+  buildMatcher, matchSequence, sequenceHints, keyToken,
+  keyboardStatus, setKeymapMessage,
   type KeymapMode,
 } from '@/services/keymap'
 import { highlightCode, CODE_LANGUAGES } from '@/utils/highlight'
@@ -1215,21 +1207,31 @@ const nodeMatcher = computed(() => buildMatcher('node'))
 const pendingKeys = ref<string[]>([])
 let pendingTimer: number | null = null
 
+const layoutHints = computed(() => sequenceHints(layoutMatcher.value, pendingKeys.value))
+
+function syncKeyboardStatus() {
+  keyboardStatus.mode = editingNodeId.value ? 'editing' : (mapStore.focusedId ? 'node' : 'layout')
+  keyboardStatus.pendingKeys = [...pendingKeys.value]
+  keyboardStatus.hints = layoutHints.value
+}
+
+watch([() => mapStore.focusedId, editingNodeId, layoutHints], syncKeyboardStatus, { immediate: true })
+
 function clearPendingKeys() {
   pendingKeys.value = []
   if (pendingTimer) {
     clearTimeout(pendingTimer)
     pendingTimer = null
   }
+  syncKeyboardStatus()
 }
 
 function extendPendingKeys(tokens: string[]) {
   pendingKeys.value = tokens
   if (pendingTimer) clearTimeout(pendingTimer)
   pendingTimer = window.setTimeout(clearPendingKeys, 2000)
+  syncKeyboardStatus()
 }
-
-const layoutHints = computed(() => sequenceHints(layoutMatcher.value, pendingKeys.value))
 
 function handleKeyDown(event: KeyboardEvent) {
   if (editingNodeId.value) {
@@ -1260,11 +1262,6 @@ function handleKeyDown(event: KeyboardEvent) {
 
   const token = keyToken(event)
   if (!token) return
-
-  if (token === 'Escape') {
-    clearPendingKeys()
-    return
-  }
 
   const focusedId = mapStore.focusedId
   const mode: KeymapMode = focusedId ? 'node' : 'layout'
@@ -1308,6 +1305,36 @@ function dispatchKeymapAction(actionId: string) {
       insertSpecialNode('code', 'child')
       return
 
+    // 布局模式：画布导航
+    case 'layout:pan-left':
+      panX.value -= 60
+      return
+    case 'layout:pan-right':
+      panX.value += 60
+      return
+    case 'layout:pan-up':
+      panY.value -= 60
+      return
+    case 'layout:pan-down':
+      panY.value += 60
+      return
+    case 'layout:zoom-in':
+      mapStore.setZoom(mapStore.zoom + 10)
+      return
+    case 'layout:zoom-out':
+      mapStore.setZoom(mapStore.zoom - 10)
+      return
+    case 'layout:zoom-reset':
+      mapStore.setZoom(100)
+      return
+    case 'layout:command-palette':
+      window.dispatchEvent(new CustomEvent('onelook:open-palette'))
+      return
+    case 'layout:focus-root':
+      mapStore.selectNode(mapStore.document.root.id)
+      setKeymapMessage('已聚焦根节点（节点模式）')
+      return
+
     // 节点模式（默认绑定与既有行为一致）
     case 'node:add-child': {
       if (!focusedId) return
@@ -1333,7 +1360,16 @@ function dispatchKeymapAction(actionId: string) {
       if (focusedId) editingNodeId.value = focusedId
       return
     case 'node:delete':
-      if (focusedId) mapStore.deleteNode(focusedId)
+      if (focusedId) {
+        mapStore.deleteNode(focusedId)
+        setKeymapMessage('已删除节点')
+      }
+      return
+    case 'node:context-menu':
+      if (focusedId) openContextMenuOnNode(focusedId)
+      return
+    case 'node:clear-focus':
+      mapStore.clearSelection()
       return
     case 'node:undo':
       mapStore.undo()
@@ -1377,6 +1413,17 @@ function insertSpecialNode(kind: 'table' | 'code', relation: 'sibling' | 'child'
       ...(kind === 'table' ? { table: defaultTableData() } : { code: defaultCodeData() }),
     }
   }
+  setKeymapMessage(`已插入${kind === 'table' ? '表格' : '代码块'}（${isSibling ? '并列' : '子级'}），新节点已聚焦`)
+}
+
+/** 键盘（m 键）打开节点菜单：定位于节点屏幕坐标 */
+function openContextMenuOnNode(nodeId: string) {
+  const ln = layoutNodes.value.find(n => n.id === nodeId)
+  if (!ln || !svgRef.value) return
+  const rect = svgRef.value.getBoundingClientRect()
+  const x = rect.left + ln.x * scale.value + panX.value
+  const y = rect.top + ln.y * scale.value + panY.value
+  contextMenuRef.value?.open(x, y, nodeId)
 }
 
 function handleKeyUp(event: KeyboardEvent) {

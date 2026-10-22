@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { X, Plus } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'
 import { documentService } from '@/services/db'
@@ -119,6 +119,41 @@ async function selectTab(tabId: string) {
     }
   }
 }
+
+// ---------- 全键盘：Ctrl+Alt+←/→ 切换标签，Alt+数字直达 ----------
+function handleTabKeydown(event: KeyboardEvent) {
+  if (event.isComposing) return
+  const activeElement = document.activeElement
+  const isInputFocused = activeElement instanceof HTMLInputElement ||
+    activeElement instanceof HTMLTextAreaElement ||
+    (activeElement as HTMLElement | null)?.isContentEditable
+  if (isInputFocused) return
+
+  if (event.ctrlKey && event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
+    event.preventDefault()
+    if (tabs.value.length < 2) return
+    const current = tabs.value.findIndex(t => t.id === activeTabId.value)
+    const delta = event.key === 'ArrowRight' ? 1 : -1
+    const next = ((current + delta) % tabs.value.length + tabs.value.length) % tabs.value.length
+    selectTab(tabs.value[next].id)
+    return
+  }
+
+  if (event.altKey && !event.ctrlKey && /^[1-9]$/.test(event.key)) {
+    const index = Number(event.key) - 1
+    if (index < tabs.value.length) {
+      event.preventDefault()
+      selectTab(tabs.value[index].id)
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleTabKeydown)
+})
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleTabKeydown)
+})
 
 async function addNewTab() {
   try {

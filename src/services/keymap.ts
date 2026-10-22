@@ -1,3 +1,5 @@
+import { reactive } from 'vue'
+
 /**
  * 可变快捷键映射表
  *
@@ -28,12 +30,23 @@ export const KEYMAP_ACTIONS: KeymapActionDef[] = [
     { id: 'layout:table-child', mode: 'layout', label: '插入表格（子级）', defaultSequence: ['t', 'Tab'] },
     { id: 'layout:code-sibling', mode: 'layout', label: '插入代码块（并列）', defaultSequence: ['c', 'Enter'] },
     { id: 'layout:code-child', mode: 'layout', label: '插入代码块（子级）', defaultSequence: ['c', 'Tab'] },
+    { id: 'layout:focus-root', mode: 'layout', label: '聚焦根节点', defaultSequence: ['f'] },
+    { id: 'layout:pan-left', mode: 'layout', label: '画布左移', defaultSequence: ['ArrowLeft'] },
+    { id: 'layout:pan-right', mode: 'layout', label: '画布右移', defaultSequence: ['ArrowRight'] },
+    { id: 'layout:pan-up', mode: 'layout', label: '画布上移', defaultSequence: ['ArrowUp'] },
+    { id: 'layout:pan-down', mode: 'layout', label: '画布下移', defaultSequence: ['ArrowDown'] },
+    { id: 'layout:zoom-in', mode: 'layout', label: '放大', defaultSequence: ['='] },
+    { id: 'layout:zoom-out', mode: 'layout', label: '缩小', defaultSequence: ['-'] },
+    { id: 'layout:zoom-reset', mode: 'layout', label: '重置缩放', defaultSequence: ['0'] },
+    { id: 'layout:command-palette', mode: 'layout', label: '命令面板', defaultSequence: [':'] },
 
     // ---------- 节点模式（已聚焦节点）----------
     { id: 'node:add-child', mode: 'node', label: '添加子节点', defaultSequence: ['Tab'] },
     { id: 'node:add-sibling', mode: 'node', label: '添加同级节点', defaultSequence: ['Enter'] },
     { id: 'node:edit', mode: 'node', label: '编辑节点', defaultSequence: ['F2'], aliases: [[' ']] },
     { id: 'node:delete', mode: 'node', label: '删除节点', defaultSequence: ['Delete'], aliases: [['Backspace']] },
+    { id: 'node:context-menu', mode: 'node', label: '节点菜单', defaultSequence: ['m'] },
+    { id: 'node:clear-focus', mode: 'node', label: '取消聚焦（回布局模式）', defaultSequence: ['Escape'] },
     { id: 'node:undo', mode: 'node', label: '撤销', defaultSequence: ['Ctrl+z'] },
     { id: 'node:redo', mode: 'node', label: '重做', defaultSequence: ['Ctrl+y'], aliases: [['Ctrl+Shift+z']] },
     { id: 'node:copy', mode: 'node', label: '复制节点', defaultSequence: ['Ctrl+c'] },
@@ -45,6 +58,33 @@ export const KEYMAP_ACTIONS: KeymapActionDef[] = [
 ]
 
 const STORAGE_KEY = 'onelook:keymaps'
+
+// ---------- 键盘状态（vim 式状态栏数据源；画布写、状态栏读） ----------
+
+export interface KeyboardStatus {
+    mode: 'layout' | 'node' | 'editing'
+    pendingKeys: string[]
+    hints: Array<{ key: string; label: string }>
+    message: string
+}
+
+export const keyboardStatus = reactive<KeyboardStatus>({
+    mode: 'layout',
+    pendingKeys: [],
+    hints: [],
+    message: '',
+})
+
+let messageTimer: number | null = null
+
+/** 状态栏回显一条消息（如 vim 的 echo line），5 秒后淡出 */
+export function setKeymapMessage(text: string) {
+    keyboardStatus.message = text
+    if (messageTimer) clearTimeout(messageTimer)
+    messageTimer = window.setTimeout(() => {
+        keyboardStatus.message = ''
+    }, 5000)
+}
 
 function loadOverrides(): Record<string, string[]> {
     try {

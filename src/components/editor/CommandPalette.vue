@@ -40,13 +40,15 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted, markRaw, type Component } from 'vue'
-import { 
+import {
   Search, Plus, Trash2, Undo2, Redo2, Copy, Clipboard,
   Download, FilePlus, Maximize, Moon, Sun,
-  CornerDownRight, ZoomIn, ZoomOut, GitBranch, Network
+  CornerDownRight, ZoomIn, ZoomOut, GitBranch, Network,
+  SidebarClose, Keyboard, Check
 } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'
 import { exportService } from '@/services/export'
+import { documentService } from '@/services/db'
 
 interface Command {
   id: string
@@ -220,6 +222,50 @@ const commands = computed<Command[]>(() => [
       document.documentElement.setAttribute('data-theme', 'dark')
     },
     category: '主题',
+  },
+  // ---------- 全键盘操作：面板与设置经事件直达 ----------
+  {
+    id: 'toggle-properties',
+    name: '切换属性面板',
+    description: '节点属性与反向引用',
+    icon: markRaw(SidebarClose),
+    action: () => window.dispatchEvent(new CustomEvent('onelook:toggle-panel', { detail: 'properties' })),
+    category: '面板',
+  },
+  {
+    id: 'toggle-outline',
+    name: '切换大纲面板',
+    icon: markRaw(GitBranch),
+    action: () => window.dispatchEvent(new CustomEvent('onelook:toggle-panel', { detail: 'outline' })),
+    category: '面板',
+  },
+  {
+    id: 'toggle-files',
+    name: '切换导图列表面板',
+    icon: markRaw(FilePlus),
+    action: () => window.dispatchEvent(new CustomEvent('onelook:toggle-panel', { detail: 'files' })),
+    category: '面板',
+  },
+  {
+    id: 'open-keymap',
+    name: '快捷键映射设置',
+    icon: markRaw(Keyboard),
+    action: () => window.dispatchEvent(new CustomEvent('onelook:toggle-panel', { detail: 'keymap' })),
+    category: '设置',
+  },
+  {
+    id: 'open-settings',
+    name: '打开设置菜单',
+    icon: markRaw(Sun),
+    action: () => window.dispatchEvent(new CustomEvent('onelook:toggle-panel', { detail: 'settings' })),
+    category: '设置',
+  },
+  {
+    id: 'save-now',
+    name: '立即保存当前导图',
+    icon: markRaw(Check),
+    action: () => { documentService.save(JSON.parse(JSON.stringify(mapStore.document))) },
+    category: '文档',
   },
 ])
 

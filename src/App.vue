@@ -178,16 +178,24 @@
     
     
     <footer class="status-bar">
+      <span class="status-mode" :class="`mode-${keyboardStatus.mode}`">-- {{ modeLabel }} --</span>
+      <span v-if="keyboardStatus.pendingKeys.length" class="status-pending">
+        <span class="status-pending-keys">{{ formatSequence(keyboardStatus.pendingKeys) }} ›</span>
+        <span v-for="h in keyboardStatus.hints" :key="h.key" class="status-hint">
+          <kbd>{{ h.key }}</kbd>{{ h.label }}
+        </span>
+      </span>
+      <span v-else-if="keyboardStatus.mode === 'layout'" class="status-static-hints">
+        t 表格 · c 代码 · f 聚焦 · : 命令 · 方向键 平移 · +/− 缩放
+      </span>
+      <span v-if="keyboardStatus.message" class="status-message">{{ keyboardStatus.message }}</span>
+      <span class="status-flex"></span>
       <span class="status-item">节点数: {{ mapStore.nodeCount }}</span>
       <span class="status-item">布局: {{ layoutLabel }}</span>
       <span class="status-item">
         <button class="status-btn" @click="showShortcutsHelp?.open()" title="快捷键帮助">
           <Keyboard :size="14" />
         </button>
-      </span>
-      <span class="status-item status-saved">
-        <Check :size="14" />
-        就绪
       </span>
     </footer>
     <Transition name="zen-float">
@@ -241,7 +249,6 @@ import {
   Maximize,
   Search,
   Settings,
-  Check,
   Trash2,
   FilePlus,
   Download,
@@ -255,6 +262,11 @@ import {
   GitBranch
 } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'
+import { keyboardStatus, formatSequence } from '@/services/keymap'
+
+const modeLabel = computed(() =>
+  keyboardStatus.mode === 'editing' ? '编辑' : keyboardStatus.mode === 'node' ? '节点' : '布局',
+)
 import { exportService, importService } from '@/services/export'
 import MindMapCanvas from '@/components/editor/MindMapCanvas.vue'
 import NodeProperties from '@/components/editor/NodeProperties.vue'
@@ -503,6 +515,13 @@ function toggleFullscreen() {
 }
 
 function handleGlobalKeydown(event: KeyboardEvent) {
+  // 命令面板：Ctrl+K（全模式）——全键盘操作的主入口
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    commandPaletteRef.value?.open()
+    return
+  }
+
   if (event.key !== 'Escape' || event.isComposing || event.defaultPrevented) return
 
   const activeElement = document.activeElement
@@ -549,9 +568,18 @@ function handleGlobalClick(event: MouseEvent) {
   }
 }
 
+function handlePanelToggle(event: Event) {
+  const panel = (event as CustomEvent<'properties' | 'outline' | 'settings'>).detail
+  if (panel === 'properties') showSidePanel.value = !showSidePanel.value
+  else if (panel === 'outline') showOutlinePanel.value = !showOutlinePanel.value
+  else if (panel === 'settings') showSettingsMenu.value = !showSettingsMenu.value
+}
+
 onMounted(() => {
   document.addEventListener('click', handleGlobalClick)
   window.addEventListener('keydown', handleGlobalKeydown)
+  window.addEventListener('onelook:open-palette', () => commandPaletteRef.value?.open())
+  window.addEventListener('onelook:toggle-panel', handlePanelToggle as EventListener)
 })
 
 onUnmounted(() => {
@@ -789,6 +817,71 @@ onUnmounted(() => {
   overflow: hidden;
   max-height: 28px;
   transition: max-height 0.3s ease, opacity 0.25s ease, transform 0.25s ease, border-width 0.25s ease;
+}
+
+.status-mode {
+  flex: none;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  color: #fff;
+  background: var(--color-text-tertiary, #9ca3af);
+}
+
+.status-mode.mode-layout { background: #6b7280; }
+.status-mode.mode-node { background: var(--color-primary); }
+.status-mode.mode-editing { background: #16a34a; }
+
+.status-pending {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-pending-keys {
+  font-family: 'SF Mono', Menlo, monospace;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.status-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--color-text-secondary);
+}
+
+.status-hint kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 4px;
+  border: 1px solid var(--color-border);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  background: var(--color-bg);
+  font-family: inherit;
+  font-size: 10px;
+  text-align: center;
+  color: var(--color-text);
+}
+
+.status-static-hints {
+  flex: none;
+  color: var(--color-text-secondary);
+  opacity: 0.85;
+}
+
+.status-message {
+  flex: none;
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.status-flex {
+  flex: 1;
 }
 
 .zen-active .tab-bar,

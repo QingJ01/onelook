@@ -126,6 +126,11 @@ const emit = defineEmits<{
 
 const mapStore = useMapStore()
 const showKeymap = ref(false)
+
+// 全键盘：命令面板直达快捷键映射
+window.addEventListener('onelook:toggle-panel', (e) => {
+  if ((e as CustomEvent).detail === 'keymap') showKeymap.value = true
+})
     const showAbout = ref(false)
 
 const themes = [
