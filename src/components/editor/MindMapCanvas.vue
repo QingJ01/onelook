@@ -198,8 +198,9 @@
                   v-html="getRenderedMarkdown(node.node.text)"
                 ></div>
                 <div
-                  v-else-if="hasNodePhoto(node) && hasNodeText(node)"
-                  class="node-rich-text-body with-image node-photo-text"
+                  v-else-if="hasNodeText(node)"
+                  class="node-rich-text-body"
+                  :class="{ 'with-image': hasNodePhoto(node), 'node-photo-text': hasNodePhoto(node) }"
                 >
                   {{ node.node.text }}
                 </div>
@@ -335,7 +336,7 @@ import { createRefNode } from '@/services/vault'
 import { highlightCode, CODE_LANGUAGES } from '@/utils/highlight'
 
 import { renderMarkdown } from '@/utils/markdown'
-import { estimateNodeImageHeight, getNodeContentSpacing, hasMarkdownImage, normalizeNodeImageWidth } from '@/utils/nodeContentMetrics'
+import { estimateNodeImageHeight, getNodeContentSpacing, hasMarkdownImage, normalizeNodeImageWidth, willTextWrap } from '@/utils/nodeContentMetrics'
 import NodeEditor from './NodeEditor.vue'
 import ContextMenu from './ContextMenu.vue'
 
@@ -875,7 +876,8 @@ function getNodeImageStyle(node: LayoutNode): Record<string, string> {
 }
 
 function shouldRenderRichContent(node: LayoutNode): boolean {
-  return hasMarkdownFormat(node.node.text) || hasNodePhoto(node)
+  // 长文本（估宽超框）也走 foreignObject 分支：SVG <text> 不会换行会溢出
+  return hasMarkdownFormat(node.node.text) || hasNodePhoto(node) || willTextWrap(node.node.text)
 }
 
 function getRenderedMarkdown(text: string): string {
@@ -1397,9 +1399,26 @@ function dispatchKeymapAction(actionId: string) {
     case 'layout:redo':
       mapStore.redo()
       return
-    case 'layout:copy':
-      if (focusedId) mapStore.copyNode(focusedId)
+    case 'layout:copy': {
+      if (!focusedId) return
+      mapStore.copyNode(focusedId)
+      const node = mapStore.findNode(focusedId)
+      if (node) {
+        addToShelf(mapStore.document.id, node.id, mapStore.document.name, node.text)
+        setKeymapMessage(`已复制并放入缓存栏（第 ${shelf.items.length} 项）`)
+      }
       return
+    }
+    case 'layout:cut': {
+      if (!focusedId) return
+      const node = mapStore.findNode(focusedId)
+      if (!node) return
+      mapStore.copyNode(focusedId)
+      addToShelf(mapStore.document.id, node.id, mapStore.document.name, node.text)
+      mapStore.deleteNode(focusedId)
+      setKeymapMessage(`已剪切进缓存栏（第 ${shelf.items.length} 项）`)
+      return
+    }
     case 'layout:paste':
       if (focusedId) mapStore.pasteNode(focusedId)
       return
@@ -1730,6 +1749,12 @@ onUnmounted(() => {
   margin: 0 auto;
   object-fit: contain;
   border-radius: 4px;
+}
+
+.node-rich-text-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .node-rich-text-body.with-image {

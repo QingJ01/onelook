@@ -58,7 +58,8 @@ export const KEYMAP_ACTIONS: KeymapActionDef[] = [
     { id: 'layout:clear-focus', mode: 'layout', label: '取消选中（回观察模式）', defaultSequence: ['Escape'] },
     { id: 'layout:undo', mode: 'layout', label: '撤销', defaultSequence: ['Ctrl+z'] },
     { id: 'layout:redo', mode: 'layout', label: '重做', defaultSequence: ['Ctrl+y'], aliases: [['Ctrl+Shift+Z']] },
-    { id: 'layout:copy', mode: 'layout', label: '复制节点', defaultSequence: ['Ctrl+c'] },
+    { id: 'layout:copy', mode: 'layout', label: '复制节点（并放入缓存栏）', defaultSequence: ['Ctrl+c'] },
+    { id: 'layout:cut', mode: 'layout', label: '剪切节点（放入缓存栏后删除）', defaultSequence: ['Ctrl+x'] },
     { id: 'layout:paste', mode: 'layout', label: '粘贴节点', defaultSequence: ['Ctrl+v'] },
 ]
 

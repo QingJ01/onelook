@@ -116,6 +116,12 @@ function estimateWrappedLineCount(text: string, contentWidth: number, fontScale:
     return Math.max(1, total)
 }
 
+/** 估算文本是否超出单行宽度（需走可换行的富文本渲染分支） */
+export function willTextWrap(text: string): boolean {
+    const longestLine = (text || '').split('\n').reduce((a, b) => (estimateTextWidth(b) > estimateTextWidth(a) ? b : a), '')
+    return estimateTextWidth(longestLine) > MAX_TEXT_NODE_WIDTH - 28
+}
+
 export function hasMarkdownImage(text: string): boolean {
     return /!\[[^\]]*\]\(([^)]+)\)/.test(text)
 }

@@ -51,8 +51,13 @@
         <div class="menu-divider"></div>
         <button class="menu-item" @click="handleCopy">
           <Copy :size="14" />
-          <span>复制</span>
+          <span>复制（放入缓存栏）</span>
           <span class="shortcut">Ctrl+C</span>
+        </button>
+        <button class="menu-item" @click="handleCut">
+          <Scissors :size="14" />
+          <span>剪切（放入缓存栏）</span>
+          <span class="shortcut">Ctrl+X</span>
         </button>
         <button class="menu-item" @click="handlePaste">
           <Clipboard :size="14" />
@@ -95,7 +100,7 @@
 import { ref, computed, nextTick } from 'vue'
 import {
   Edit3, Plus, CornerDownRight, Copy, Clipboard,
-  ChevronRight, Trash2, Braces, Table, Code2, Link, Link2, Inbox
+  ChevronRight, Trash2, Braces, Table, Code2, Link, Link2, Inbox, Scissors
 } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'
 import { defaultCodeData, defaultCodeText, defaultTableData } from '@/utils/specialNodes'
@@ -257,6 +262,20 @@ async function handlePasteRef() {
 function handleCopy() {
   if (nodeId.value) {
     mapStore.copyNode(nodeId.value)
+    const node = mapStore.findNode(nodeId.value)
+    if (node) addToShelf(mapStore.document.id, node.id, mapStore.document.name, node.text)
+  }
+  close()
+}
+
+function handleCut() {
+  if (nodeId.value) {
+    const node = mapStore.findNode(nodeId.value)
+    if (node && node.parentId) {
+      mapStore.copyNode(nodeId.value)
+      addToShelf(mapStore.document.id, node.id, mapStore.document.name, node.text)
+      mapStore.deleteNode(nodeId.value)
+    }
   }
   close()
 }
