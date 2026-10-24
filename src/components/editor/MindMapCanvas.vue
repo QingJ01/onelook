@@ -1729,6 +1729,16 @@ onUnmounted(() => {
   color: var(--color-text);
 }
 
+/* KaTeX display 公式自带上下 1em 外边距；v-html 内容需 :deep 才能命中 */
+.md-content :deep(.katex-display) {
+  margin: 0;
+}
+
+.md-content :deep(.katex-block) {
+  display: inline-block;
+  max-width: 100%;
+}
+
 .md-content.md-content-image {
   display: flex;
   flex-direction: column;

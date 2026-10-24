@@ -4,13 +4,22 @@ import katex from 'katex'
  * 渲染文本中的 LaTeX 公式
  * 支持 $...$ 行内公式和 $$...$$ 块级公式
  */
+function decodeEntities(input: string): string {
+    return input
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, '&')
+}
+
 export function renderLatex(text: string): string {
     if (!text) return text
 
     // 先处理块级公式 $$...$$
     let result = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, formula) => {
         try {
-            return `<span class="katex-block">${katex.renderToString(formula.trim(), {
+            return `<span class="katex-block">${katex.renderToString(decodeEntities(formula).trim(), {
                 displayMode: true,
                 throwOnError: false
             })}</span>`
@@ -22,7 +31,7 @@ export function renderLatex(text: string): string {
     // 再处理行内公式 $...$
     result = result.replace(/\$([^$\n]+?)\$/g, (_, formula) => {
         try {
-            return katex.renderToString(formula.trim(), {
+            return katex.renderToString(decodeEntities(formula).trim(), {
                 displayMode: false,
                 throwOnError: false
             })

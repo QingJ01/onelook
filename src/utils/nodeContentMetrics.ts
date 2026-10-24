@@ -122,6 +122,36 @@ export function willTextWrap(text: string): boolean {
     return estimateTextWidth(longestLine) > MAX_TEXT_NODE_WIDTH - 28
 }
 
+const TALL_LATEX = /\\(frac|dfrac|tfrac|sqrt|sum|prod|int|iint|iiint|lim|binom|matrix|array|cases|aligned|substack|over|underbrace)/
+
+/**
+ * 估算文本中 LaTeX 公式的渲染高度（px）。
+ * KaTeX 的 display 公式自带上下留白，且分式/求和/积分/矩阵等结构更高——
+ * 节点高度必须容纳它们，否则 overflow:hidden 会裁掉公式（看起来像没渲染）。
+ */
+export function estimateLatexHeight(text: string, fontSize = 14): number {
+    if (!text || !text.includes('$')) return 0
+    const lineHeight = fontSize * LINE_HEIGHT_RATIO
+    let maxHeight = 0
+
+    const measure = (formula: string, display: boolean): number => {
+        let h = lineHeight
+        if (display) h += fontSize * 0.45
+        if (TALL_LATEX.test(formula)) h += fontSize * 1.15
+        if (/\\(matrix|array|cases|aligned|substack)/.test(formula)) h += fontSize * 0.9
+        if (/(\\sum|\\prod|\\int)/.test(formula) && /[_^]/.test(formula)) h += fontSize * 0.55
+        return h
+    }
+
+    for (const match of text.matchAll(/\$\$([\s\S]+?)\$\$/g)) {
+        maxHeight = Math.max(maxHeight, measure(match[1], true))
+    }
+    for (const match of text.matchAll(/\$([^$\n]+?)\$/g)) {
+        maxHeight = Math.max(maxHeight, measure(match[1], false))
+    }
+    return maxHeight
+}
+
 export function hasMarkdownImage(text: string): boolean {
     return /!\[[^\]]*\]\(([^)]+)\)/.test(text)
 }
@@ -184,9 +214,12 @@ export function calculateNodeSize(node: MindMapNode): { width: number; height: n
         : 0
 
     const gapBetweenTextAndImage = textHeight > 0 && imageHeight > 0 ? imageTextGap : 0
+    // 公式可能比纯文本更高：节点高度需容纳 KaTeX 的真实排版
+    const latexHeight = estimateLatexHeight(node.text, fontSize)
+    const contentHeight = Math.max(textHeight, latexHeight)
     const height = Math.max(
         MIN_NODE_HEIGHT,
-        Math.ceil(textHeight + imageHeight + gapBetweenTextAndImage + totalPaddingY)
+        Math.ceil(contentHeight + imageHeight + gapBetweenTextAndImage + totalPaddingY)
     )
 
     return { width, height }
