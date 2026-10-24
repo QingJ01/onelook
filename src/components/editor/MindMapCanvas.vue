@@ -319,8 +319,9 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useMapStore } from '@/stores/mapStore'
 import type { MindMapNode } from '@/types'
-import { MindMapLayout, generateConnectionPath, type LayoutNode } from '@/core/layout/mindLayout'
-import { TreeLayout, OrgLayout, FishboneLayout } from '@/core/layout/layouts'
+import { isMindMapDocument } from '@/types'
+import { generateConnectionPath, type LayoutNode } from '@/core/layout/mindLayout'
+import { layoutMindMap } from '@/core/layout/mindmapEngine'
 import { documentService } from '@/services/db'
 import { isInternalReference, openInternalReference } from '@/services/references'
 import { refreshClusters } from '@/services/vault'
@@ -412,19 +413,7 @@ watch(() => mapStore.focusedId, (nodeId) => {
 
 const layoutOptions = { horizontalGap: 80, verticalGap: 24 }
 
-function getLayoutInstance() {
-  const layoutType = mapStore.document.layout
-  switch (layoutType) {
-    case 'tree':
-      return new TreeLayout(layoutOptions)
-    case 'org':
-      return new OrgLayout(layoutOptions)
-    case 'fishbone':
-      return new FishboneLayout(layoutOptions)
-    default:
-      return new MindMapLayout(layoutOptions)
-  }
-}
+
 
 const layoutRoot = ref<LayoutNode | null>(null)
 const layoutNodes = ref<LayoutNode[]>([])
@@ -715,10 +704,14 @@ const summaries = computed<SummaryData[]>(() => {
 })
 
 function updateLayout() {
-  const root = mapStore.document.root
-  const layoutInstance = getLayoutInstance()
-  layoutRoot.value = layoutInstance.layout(root, 0, 0)
-  layoutNodes.value = layoutInstance.flatten(layoutRoot.value)
+  const result = layoutMindMap(
+    mapStore.document.root,
+    mapStore.document.layout,
+    layoutOptions,
+    mapStore.document.connectionStyle || 'curve',
+  )
+  layoutRoot.value = result.tree
+  layoutNodes.value = result.flat
 }
 
 let saveTimer: number | null = null
@@ -1266,6 +1259,8 @@ function extendPendingKeys(tokens: string[]) {
 }
 
 function handleKeyDown(event: KeyboardEvent) {
+  // 流程图视图打开时，导图侧不消费键盘
+  if (document.body.dataset.surface === 'flow') return
   if (editingNodeId.value) {
     clearPendingKeys()
     return
@@ -1544,9 +1539,10 @@ function updateViewBox() {
 
 async function loadSavedDocument() {
   try {
-    const docs = await documentService.getRecent(1)
-    if (docs.length > 0) {
-      mapStore.loadDocument(docs[0])
+    const docs = await documentService.getRecent(20)
+    const latestMindMap = docs.find(isMindMapDocument)
+    if (latestMindMap) {
+      mapStore.loadDocument(latestMindMap)
     }
   } finally {
     initialLoadDone.value = true

@@ -122,6 +122,7 @@ async function selectTab(tabId: string) {
 
 // ---------- 全键盘：Ctrl+Alt+←/→ 切换标签，Alt+数字直达 ----------
 function handleTabKeydown(event: KeyboardEvent) {
+  if (document.body.dataset.surface === 'flow') return
   if (event.isComposing) return
   const activeElement = document.activeElement
   const isInputFocused = activeElement instanceof HTMLInputElement ||

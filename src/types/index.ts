@@ -77,6 +77,8 @@ export type ConnectionStyle = 'curve' | 'straight' | 'polyline'
 // 思维导图文档
 export interface MindMapDocument {
     id: string
+    // 文档类型标记：缺省/`mindmap` 均为导图（向后兼容旧 .olook）
+    type?: 'mindmap'
     name: string
     root: MindMapNode
     layout: LayoutType
@@ -99,4 +101,58 @@ export interface ViewState {
 export interface SelectionState {
     selectedIds: string[]
     focusedId?: string
+}
+
+// ==================== 流程图（独立文档类型） ====================
+//
+// 流程图与思维导图是两种独立文档：节点模型不同（图 vs 树）、布局器不同，
+// 不共享绑定关系（vault 只扫导图），也不提供任何类型互转。
+
+export type FlowNodeKind = 'start' | 'end' | 'process' | 'decision' | 'io' | 'note'
+
+/** 流程图节点：图节点（无 children，连接由 FlowEdge 表达） */
+export interface FlowNode {
+    id: string
+    kind: FlowNodeKind
+    text: string
+    /** 手动位置（可选）；未指定时由分层布局器计算 */
+    position?: { x: number; y: number }
+    style?: NodeStyle
+    // 运行时字段（不持久化）
+    _x?: number
+    _y?: number
+    _width?: number
+    _height?: number
+}
+
+/** 流程图边：有向连接 */
+export interface FlowEdge {
+    id: string
+    from: string
+    to: string
+    label?: string
+}
+
+/** 流程图文档 */
+export interface FlowDocument {
+    id: string
+    type: 'flowchart'
+    name: string
+    nodes: FlowNode[]
+    edges: FlowEdge[]
+    theme?: ThemeType
+    createdAt: number
+    updatedAt: number
+    version: string
+}
+
+/** 存储层的文档联合类型 */
+export type AnyDocument = MindMapDocument | FlowDocument
+
+export function isFlowDocument(doc: AnyDocument): doc is FlowDocument {
+    return (doc as FlowDocument).type === 'flowchart'
+}
+
+export function isMindMapDocument(doc: AnyDocument): doc is MindMapDocument {
+    return !isFlowDocument(doc)
 }

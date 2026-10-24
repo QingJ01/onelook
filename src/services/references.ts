@@ -1,5 +1,6 @@
 import { nextTick } from 'vue'
 import { documentService } from './db'
+import { isMindMapDocument } from '@/types'
 import type { useMapStore } from '@/stores/mapStore'
 
 export type ReferenceOpenResult =
@@ -70,6 +71,9 @@ export async function openInternalReference(
     // A failed pre-save should not block navigation.
   }
 
+  if (!isMindMapDocument(target)) {
+    return 'missing-document'
+  }
   mapStore.loadDocument(JSON.parse(JSON.stringify(target)))
   await nextTick()
 

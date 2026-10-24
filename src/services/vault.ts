@@ -1,4 +1,5 @@
 import type { MindMapDocument, MindMapNode, NodeData } from '@/types'
+import { isMindMapDocument } from '@/types'
 import { documentService } from './db'
 import { applyClusterState, computeClusterGroups } from './clusters'
 
@@ -71,11 +72,13 @@ const syncing = new Set<string>()
 
 /** 保存 doc 后执行：cluster 内负载扇出（写穿 + 传播统一为一次） */
 export async function syncVaultReferences(doc: MindMapDocument): Promise<void> {
+    // 防御：流程图文档不参与绑定（调用方已按类型过滤）
+    if (!isMindMapDocument(doc)) return
     if (syncing.has(doc.id)) return
     syncing.add(doc.id)
     try {
         const all = await documentService.getAll()
-        const docs = all.filter(d => d.id !== doc.id)
+        const docs = all.filter(d => isMindMapDocument(d) && d.id !== doc.id) as MindMapDocument[]
         docs.push(doc) // 以刚保存的副本为准
         applyClusterState(docs)
         await fanOutClusters(docs, doc.id)
@@ -89,7 +92,8 @@ export async function syncVaultReferences(doc: MindMapDocument): Promise<void> {
 /** 供 UI 启动/切换文档时刷新 cluster 着色 */
 export async function refreshClusters(): Promise<void> {
     try {
-        applyClusterState(await documentService.getAll())
+        const docs = (await documentService.getAll()).filter(d => isMindMapDocument(d)) as MindMapDocument[]
+        applyClusterState(docs)
     } catch (err) {
         console.warn('[vault] cluster 刷新失败', err)
     }
@@ -202,7 +206,7 @@ function findNodeIn(doc: MindMapDocument, nodeId: string): MindMapNode | null {
 
 export async function backlinksOf(docId: string, nodeId: string): Promise<Backlink[]> {
     const result: Backlink[] = []
-    const docs = await documentService.getAll()
+    const docs = (await documentService.getAll()).filter(d => isMindMapDocument(d)) as MindMapDocument[]
     for (const doc of docs) {
         for (const { node } of collectRefNodes(doc)) {
             const ref = refOf(node)!
@@ -222,7 +226,7 @@ export async function backlinksOf(docId: string, nodeId: string): Promise<Backli
 /** 源是否可达（用于徽标断链态判断） */
 export async function refAlive(ref: NodeRef): Promise<boolean> {
     const doc = await documentService.get(ref.docId)
-    if (!doc) return false
+    if (!doc || !isMindMapDocument(doc)) return false
     return findNodeIn(doc, ref.nodeId) !== null
 }
 
@@ -253,7 +257,8 @@ export async function createRefNode(
     ref: NodeRef,
     parentId: string,
 ): Promise<{ node: MindMapNode; alive: boolean } | null> {
-    const sourceDoc = await documentService.get(ref.docId)
+    const loaded = await documentService.get(ref.docId)
+    const sourceDoc = loaded && isMindMapDocument(loaded) ? loaded : null
     const source = sourceDoc ? findNodeIn(sourceDoc, ref.nodeId) : null
     const data: NodeData = {
         ref: { ...ref, docName: sourceDoc?.name ?? ref.docName ?? '未知导图' },

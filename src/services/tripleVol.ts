@@ -1,4 +1,4 @@
-import type { MindMapDocument } from '@/types'
+import type { AnyDocument } from '@/types'
 
 /**
  * triple 卷存储后端
@@ -16,11 +16,11 @@ interface OLookFile {
     app: string
     created: number
     modified: number
-    document: MindMapDocument
+    document: AnyDocument
 }
 
 interface VolIndex {
-    byId: Map<string, MindMapDocument>
+    byId: Map<string, AnyDocument>
 }
 
 let active = false
@@ -59,7 +59,7 @@ export const tripleVol = {
         return Array.isArray(data.maps) ? data.maps.map((m: { file: string }) => m.file) : []
     },
 
-    async read(file: string): Promise<MindMapDocument> {
+    async read(file: string): Promise<AnyDocument> {
         const res = await fetch(`${API_BASE}/maps/${encodeURIComponent(file)}`)
         if (!res.ok) throw new Error(`vol read failed: ${file} (${res.status})`)
         const wrapper: OLookFile = await res.json()
@@ -69,7 +69,7 @@ export const tripleVol = {
         return wrapper.document
     },
 
-    async write(doc: MindMapDocument): Promise<string> {
+    async write(doc: AnyDocument): Promise<string> {
         const file = filenameFor(doc)
         const wrapper: OLookFile = {
             version: '1.0.0',
@@ -107,7 +107,7 @@ export const tripleVol = {
     async index(): Promise<VolIndex> {
         if (!indexPromise) {
             indexPromise = (async () => {
-                const byId = new Map<string, MindMapDocument>()
+                const byId = new Map<string, AnyDocument>()
                 const files = await this.list()
                 await Promise.all(files.map(async file => {
                     try {
@@ -123,7 +123,7 @@ export const tripleVol = {
         return indexPromise
     },
 
-    async get(id: string): Promise<MindMapDocument | undefined> {
+    async get(id: string): Promise<AnyDocument | undefined> {
         const index = await this.index()
         const doc = index.byId.get(id)
         if (doc) return doc
@@ -132,7 +132,7 @@ export const tripleVol = {
         return (await this.index()).byId.get(id)
     },
 
-    async getAll(): Promise<MindMapDocument[]> {
+    async getAll(): Promise<AnyDocument[]> {
         const docs = Array.from((await this.index()).byId.values())
         return docs.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))
     },
@@ -156,7 +156,7 @@ function slug(name: string): string {
     return cleaned || 'map'
 }
 
-function filenameFor(doc: MindMapDocument): string {
+function filenameFor(doc: AnyDocument): string {
     const id8 = (doc.id || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 8) || 'doc'
     return `${slug(doc.name)}-${id8}.olook`
 }

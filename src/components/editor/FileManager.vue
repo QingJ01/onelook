@@ -19,6 +19,9 @@
         <button class="new-btn" @click="handleNewDocument" title="新建导图">
           <Plus :size="16" />
         </button>
+        <button class="new-btn" @click="handleNewFlowDocument" title="新建流程图">
+          <GitBranch :size="16" />
+        </button>
       </div>
       
       <div class="file-list">
@@ -31,7 +34,7 @@
           v-for="doc in documents"
           :key="doc.id"
           class="file-item"
-          :class="{ active: doc.id === currentDocId }"
+          :class="{ active: isMindMapDocument(doc) && doc.id === currentDocId }"
           tabindex="0"
           @click="handleSelectDocument(doc)"
           @keydown.enter="handleSelectDocument(doc)"
@@ -39,6 +42,9 @@
         >
           <div class="file-info">
             <span class="file-title">{{ doc.name }}</span>
+            <span class="file-kind" :class="isFlowDocument(doc) ? 'kind-flow' : 'kind-mind'">
+              {{ isFlowDocument(doc) ? '流程图' : '导图' }}
+            </span>
             <span class="file-date">{{ formatDate(doc.updatedAt) }}</span>
           </div>
           <div class="file-actions">
@@ -145,10 +151,12 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
-import { FolderOpen, ChevronDown, Plus, Trash2, Save, Edit3, Copy } from 'lucide-vue-next'
+import { FolderOpen, ChevronDown, Plus, Trash2, Save, Edit3, Copy, GitBranch } from 'lucide-vue-next'
 import { useMapStore } from '@/stores/mapStore'
 import { documentService } from '@/services/db'
-import type { MindMapDocument } from '@/types'
+import type { AnyDocument, MindMapDocument } from '@/types'
+import { isFlowDocument, isMindMapDocument } from '@/types'
+import { createFlowDocument } from '@/stores/flowStore'
 
 const mapStore = useMapStore()
 
@@ -163,13 +171,13 @@ function onTogglePanel(e: Event) {
 }
 window.addEventListener('onelook:toggle-panel', onTogglePanel as EventListener)
 const loading = ref(false)
-const documents = ref<MindMapDocument[]>([])
+const documents = ref<AnyDocument[]>([])
 
 // 右键菜单状态
 const showContextMenu = ref(false)
 const contextMenuX = ref(0)
 const contextMenuY = ref(0)
-const contextMenuDoc = ref<MindMapDocument | null>(null)
+const contextMenuDoc = ref<AnyDocument | null>(null)
 
 // 重命名对话框
 const showRenameDialog = ref(false)
@@ -235,16 +243,39 @@ async function handleNewDocument() {
   isOpen.value = false
 }
 
-// 选择文档
-async function handleSelectDocument(doc: MindMapDocument) {
+// 选择文档：导图进标签页；流程图打开独立视图
+async function handleSelectDocument(doc: AnyDocument) {
+  if (isFlowDocument(doc)) {
+    isOpen.value = false
+    window.dispatchEvent(new CustomEvent('onelook:open-flow', { detail: JSON.parse(JSON.stringify(doc)) }))
+    return
+  }
   if (doc.id === currentDocId.value) {
     isOpen.value = false
     return
   }
-  
+
   await handleSave()
-  mapStore.loadDocument(doc)
+  mapStore.loadDocument(doc as MindMapDocument)
   isOpen.value = false
+}
+
+/** 新建流程图：独立类型文档，不与导图共享节点/绑定 */
+async function handleNewFlowDocument() {
+  await handleSave()
+  const allDocs = await documentService.getAll()
+  const used = new Set<number>()
+  for (const d of allDocs) {
+    const m = d.name.match(/^未命名流程图 (\d+)$/)
+    if (m) used.add(parseInt(m[1], 10))
+  }
+  let n = 1
+  while (used.has(n)) n += 1
+  const doc = createFlowDocument(`未命名流程图 ${n}`)
+  await documentService.save(doc)
+  await loadDocuments()
+  isOpen.value = false
+  window.dispatchEvent(new CustomEvent('onelook:open-flow', { detail: JSON.parse(JSON.stringify(doc)) }))
 }
 
 // 删除文档 - 显示确认对话框
@@ -260,15 +291,17 @@ async function confirmDelete() {
   
   try {
     const deletingCurrentDoc = deleteDocId.value === currentDocId.value
-    
-    await documentService.delete(deleteDocId.value)
+    const deletingId = deleteDocId.value
+
+    await documentService.delete(deletingId)
+    window.dispatchEvent(new CustomEvent('onelook:flow-deleted', { detail: deletingId }))
     await loadDocuments()
-    
+
     // 如果删除的是当前导图，需要切换
     if (deletingCurrentDoc) {
-      if (documents.value.length > 0) {
-        // 还有其他导图，切换到第一个
-        mapStore.loadDocument(JSON.parse(JSON.stringify(documents.value[0])))
+      const nextMindMap = documents.value.find(d => isMindMapDocument(d)) as MindMapDocument | undefined
+      if (nextMindMap) {
+        mapStore.loadDocument(JSON.parse(JSON.stringify(nextMindMap)))
       } else {
         // 所有导图都删完了，新建一个
         const newName = mapStore.getNextAvailableName([])
@@ -311,7 +344,7 @@ function handleHeaderContextMenu(_event: MouseEvent) {
   startRename({ id: currentDocId.value, name: mapStore.document.name } as MindMapDocument)
 }
 
-function handleItemContextMenu(event: MouseEvent, doc: MindMapDocument) {
+function handleItemContextMenu(event: MouseEvent, doc: AnyDocument) {
   showContextMenu.value = true
   contextMenuX.value = event.clientX
   contextMenuY.value = event.clientY
@@ -324,7 +357,7 @@ function closeContextMenu() {
 }
 
 // 重命名相关
-function startRename(doc: MindMapDocument) {
+function startRename(doc: AnyDocument) {
   renameDocId.value = doc.id
   renameValue.value = doc.name
   showRenameDialog.value = true
@@ -349,13 +382,16 @@ async function confirmRename() {
     mapStore.document.name = renameValue.value.trim()
     await handleSave()
   } else {
-    // 其他文档需要获取并修改
-    const doc = documents.value.find(d => d.id === renameDocId.value)
+    // 其他文档：先取最新副本再改名（列表快照可能已过期）
+    const doc = (await documentService.get(renameDocId.value)) ?? documents.value.find(d => d.id === renameDocId.value)
     if (doc) {
       doc.name = renameValue.value.trim()
       doc.updatedAt = Date.now()
       await documentService.save(doc)
       await loadDocuments()
+      if (isFlowDocument(doc)) {
+        window.dispatchEvent(new CustomEvent('onelook:flow-renamed', { detail: { id: doc.id, name: doc.name } }))
+      }
     }
   }
   
@@ -865,5 +901,23 @@ onUnmounted(() => {
 
 .dialog-delete-btn:hover {
   background: #dc2626 !important;
+}
+
+.file-kind {
+  flex: none;
+  font-size: 10px;
+  padding: 0 6px;
+  border-radius: 8px;
+  line-height: 16px;
+}
+
+.file-kind.kind-mind {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+}
+
+.file-kind.kind-flow {
+  background: color-mix(in srgb, #d97706 14%, transparent);
+  color: #b45309;
 }
 </style>

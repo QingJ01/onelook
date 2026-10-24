@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie'
-import type { MindMapDocument } from '@/types'
+import type { AnyDocument } from '@/types'
+import { isMindMapDocument } from '@/types'
 import { tripleVol } from './tripleVol'
 import { syncVaultReferences } from './vault'
 
@@ -7,7 +8,7 @@ import { syncVaultReferences } from './vault'
  * OneLook 数据库（浏览器本地后端）
  */
 class OneLookDB extends Dexie {
-    documents!: Table<MindMapDocument, string>
+    documents!: Table<AnyDocument, string>
 
     constructor() {
         super('OneLookDB')
@@ -67,7 +68,7 @@ export const documentService = {
     /**
      * 保存文档
      */
-    async save(doc: MindMapDocument): Promise<void> {
+    async save(doc: AnyDocument): Promise<void> {
         doc.updatedAt = Date.now()
         try {
             if (await useVol()) {
@@ -79,14 +80,16 @@ export const documentService = {
             console.error('[onelook] 保存失败', err)
             await db.documents.put(doc)
         }
-        // vault 引用同步：写穿本图引用负载 + 刷新他图快照（内部防循环）
-        await syncVaultReferences(doc)
+        // 绑定同步只作用于导图文档；流程图是独立类型，永不参与绑定
+        if (isMindMapDocument(doc)) {
+            await syncVaultReferences(doc)
+        }
     },
 
     /**
      * 获取文档
      */
-    async get(id: string): Promise<MindMapDocument | undefined> {
+    async get(id: string): Promise<AnyDocument | undefined> {
         try {
             if (await useVol()) {
                 const doc = await tripleVol.get(id)
@@ -101,7 +104,7 @@ export const documentService = {
     /**
      * 获取所有文档
      */
-    async getAll(): Promise<MindMapDocument[]> {
+    async getAll(): Promise<AnyDocument[]> {
         try {
             if (await useVol()) {
                 return await tripleVol.getAll()
@@ -130,7 +133,7 @@ export const documentService = {
     /**
      * 获取最近的文档
      */
-    async getRecent(limit = 10): Promise<MindMapDocument[]> {
+    async getRecent(limit = 10): Promise<AnyDocument[]> {
         const all = await this.getAll()
         return all.slice(0, limit)
     },
@@ -138,14 +141,14 @@ export const documentService = {
     /**
      * 导出为 JSON
      */
-    exportToJSON(doc: MindMapDocument): string {
+    exportToJSON(doc: AnyDocument): string {
         return JSON.stringify(doc, null, 2)
     },
 
     /**
      * 从 JSON 导入
      */
-    importFromJSON(json: string): MindMapDocument {
+    importFromJSON(json: string): AnyDocument {
         return JSON.parse(json)
     },
 }

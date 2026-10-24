@@ -205,6 +205,13 @@
         </button>
       </span>
     </footer>
+    <FlowCanvas
+      v-if="flowDoc"
+      :key="flowDoc.id"
+      :document="flowDoc"
+      @close="closeFlowView"
+    />
+
     <Transition name="zen-float">
       <div v-if="mapStore.zenMode" class="zen-floating-controls">
         <span class="zen-badge">禅 · {{ zenLevelLabel }} · {{ zenFocusModeLabel }}</span>
@@ -281,6 +288,10 @@ import SearchDialog from '@/components/editor/SearchDialog.vue'
 import SettingsDropdown from '@/components/editor/SettingsDropdown.vue'
 import FileManager from '@/components/editor/FileManager.vue'
 import NodeShelf from '@/components/editor/NodeShelf.vue'
+import FlowCanvas from '@/components/flow/FlowCanvas.vue'
+import { createFlowDocument } from '@/stores/flowStore'
+import { documentService } from '@/services/db'
+import type { FlowDocument } from '@/types'
 import { toggleShelf } from '@/services/shelf'
 import CommandPalette from '@/components/editor/CommandPalette.vue'
 import ShortcutsHelp from '@/components/editor/ShortcutsHelp.vue'
@@ -296,6 +307,31 @@ const showShortcutsHelp = ref<InstanceType<typeof ShortcutsHelp> | null>(null)
 
 const showExportMenu = ref(false)
 const showSidePanel = ref(false)
+
+// 流程图是独立视图（独立文档类型），不进入导图标签页
+const flowDoc = ref<FlowDocument | null>(null)
+
+function openFlowView(doc: FlowDocument) {
+  flowDoc.value = doc
+}
+
+function closeFlowView() {
+  flowDoc.value = null
+}
+
+async function createAndOpenFlow() {
+  const all = await documentService.getAll()
+  const used = new Set<number>()
+  for (const d of all) {
+    const m = d.name.match(/^未命名流程图 (\d+)$/)
+    if (m) used.add(parseInt(m[1], 10))
+  }
+  let n = 1
+  while (used.has(n)) n += 1
+  const doc = createFlowDocument(`未命名流程图 ${n}`)
+  await documentService.save(doc)
+  openFlowView(doc)
+}
 const showSettingsMenu = ref(false)
 const showOutlinePanel = ref(false)
 const showPitchMode = ref(false)
@@ -524,6 +560,14 @@ function toggleFullscreen() {
 }
 
 function handleGlobalKeydown(event: KeyboardEvent) {
+  // 流程图视图有自己的键盘处理；此处只保留 Ctrl+K
+  if (document.body.dataset.surface === 'flow') {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault()
+      commandPaletteRef.value?.open()
+    }
+    return
+  }
   // 命令面板：Ctrl+K（全模式）——全键盘操作的主入口
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
     event.preventDefault()
@@ -589,6 +633,15 @@ onMounted(() => {
   document.addEventListener('click', handleGlobalClick)
   window.addEventListener('keydown', handleGlobalKeydown)
   window.addEventListener('onelook:open-palette', () => commandPaletteRef.value?.open())
+  window.addEventListener('onelook:open-flow', (e) => openFlowView((e as CustomEvent<FlowDocument>).detail))
+  window.addEventListener('onelook:new-flow', () => { void createAndOpenFlow() })
+  window.addEventListener('onelook:flow-deleted', (e) => {
+    if (flowDoc.value?.id === (e as CustomEvent<string>).detail) flowDoc.value = null
+  })
+  window.addEventListener('onelook:flow-renamed', (e) => {
+    const detail = (e as CustomEvent<{ id: string; name: string }>).detail
+    if (flowDoc.value?.id === detail.id) flowDoc.value.name = detail.name
+  })
   window.addEventListener('onelook:toggle-panel', handlePanelToggle as EventListener)
 })
 

@@ -247,6 +247,14 @@ const commands = computed<Command[]>(() => [
     category: '面板',
   },
   {
+    id: 'new-flow',
+    name: '新建流程图',
+    description: '独立文档类型（不与导图绑定/互转）',
+    icon: markRaw(GitBranch),
+    action: () => window.dispatchEvent(new CustomEvent('onelook:new-flow')),
+    category: '文档',
+  },
+  {
     id: 'toggle-shelf',
     name: '切换缓存栏',
     description: '批量收集节点、依次建立绑定',
