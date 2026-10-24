@@ -275,9 +275,9 @@
         </button>
       </div>
 
-      <!-- 引用集群（无向关系：任意成员编辑都会同步到全簇） -->
+      <!-- 绑定集群（无向关系：任意成员编辑都会同步到全簇） -->
       <div class="property-group" v-if="clusterNodes > 0">
-        <label>引用集群（{{ clusterNodes }} 个节点）</label>
+        <label>绑定集群（{{ clusterNodes }} 个节点）</label>
         <div class="cluster-info">
           <span class="cluster-dot" :style="{ background: clusterColorValue }"></span>
           <span class="cluster-note">簇内节点双向同步；子节点各自独立</span>
@@ -286,7 +286,7 @@
 
       <!-- vault 引用 -->
       <div class="property-group" v-if="isVaultRef">
-        <label>引用自</label>
+        <label>绑定自</label>
         <div class="vault-ref-info">
           <span>{{ node.data!.ref!.docName || '未知导图' }}</span>
           <button class="vault-ref-jump" @click="jumpToSource" title="跳到源节点">
@@ -297,9 +297,9 @@
         <p class="vault-ref-hint">负载与源节点双向同步；子节点各自本地。</p>
       </div>
 
-      <!-- 反向引用（谁引用了这个节点） -->
+      <!-- 反向绑定（谁绑定了这个节点） -->
       <div class="property-group" v-if="backlinks.length > 0">
-        <label>反向引用 ({{ backlinks.length }})</label>
+        <label>反向绑定 ({{ backlinks.length }})</label>
         <div
           v-for="link in backlinks"
           :key="link.docId + ':' + link.nodeId"
@@ -351,7 +351,7 @@ const mapStore = useMapStore()
 const showNotePreview = ref(false)
 const imageLoadError = ref(false)
 
-// ---------- vault 引用 / 反向引用 ----------
+// ---------- vault 绑定 / 反向绑定 ----------
 
 const isVaultRef = computed(() => (props.node ? refOf(props.node) !== null : false))
 const clusterNodes = computed(() =>
@@ -561,8 +561,8 @@ async function openLink() {
     if (result !== 'ok') {
       window.alert(
         result === 'missing-document'
-          ? '目标导图尚未导入到当前浏览器。请先导入被引用的 .olook 文件。'
-          : '引用无效或目标节点不存在。',
+          ? '目标导图尚未导入到当前浏览器。请先导入被绑定的 .olook 文件。'
+          : '绑定无效或目标节点不存在。',
       )
     }
     return
@@ -1101,7 +1101,7 @@ function handleSummaryTextChange(event: Event) {
   color: var(--color-text-secondary);
 }
 
-/* ---------- vault 引用 / 反向引用 ---------- */
+/* ---------- vault 绑定 / 反向绑定 ---------- */
 
 .vault-ref-info {
   display: flex;

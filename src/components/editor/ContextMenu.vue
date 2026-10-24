@@ -41,11 +41,11 @@
         </button>
         <button class="menu-item" @click="handleCopyRef">
           <Link :size="14" />
-          <span>复制节点引用</span>
+          <span>复制节点绑定</span>
         </button>
         <button class="menu-item" @click="handlePasteRef" :disabled="!canPasteRef">
           <Link2 :size="14" />
-          <span>粘贴为引用节点</span>
+          <span>粘贴为绑定节点</span>
           <span class="shortcut" v-if="lastCopiedRefName">{{ lastCopiedRefName }}</span>
         </button>
         <div class="menu-divider"></div>
@@ -214,7 +214,7 @@ function handleAddCode() {
   close()
 }
 
-// ---------- vault 引用 ----------
+// ---------- vault 绑定 ----------
 
 const canPasteRef = ref(false)
 const lastCopiedRefName = ref('')

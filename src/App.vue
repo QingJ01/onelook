@@ -190,7 +190,7 @@
         f 聚焦 · : 命令（新建/设置/重命名）· 方向键 平移 · +/− 缩放
       </span>
       <span v-else-if="keyboardStatus.mode === 'layout'" class="status-static-hints">
-        hjkl 移动 · ⇥/⏎ 子级/同级 · t/c 表格/代码 · y 收集 · p 引用 · space 编辑 · m 菜单 · Esc 观察
+        hjkl 移动 · ⇥/⏎ 子级/同级 · t/c 表格/代码 · y 收集 · p 绑定 · space 编辑 · m 菜单 · Esc 观察
       </span>
       <span v-else class="status-static-hints">
         Enter 保存 · Esc 取消 · ⌘/Ctrl+Enter 代码块内保存

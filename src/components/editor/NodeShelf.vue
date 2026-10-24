@@ -9,8 +9,8 @@
     <div class="shelf-body">
       <div v-if="shelf.items.length === 0" class="shelf-empty">
         布局模式下按 <kbd>y</kbd> 收集节点<br/>
-        选中目标后按 <kbd>p</kbd> 依次建立引用<br/>
-        （引用 = 实时更新的复制）
+        选中目标后按 <kbd>p</kbd> 依次建立绑定<br/>
+        （绑定 = 实时更新的复制）
       </div>
       <div
         v-for="(item, index) in shelf.items"

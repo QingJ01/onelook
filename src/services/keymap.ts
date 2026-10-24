@@ -7,7 +7,7 @@ import { reactive } from 'vue'
  * - observe 观察模式：未选中节点——新建页面/设置/重命名（经命令面板）、
  *   平移缩放画布、f 聚焦根节点进入布局模式
  * - layout 布局模式：已选中节点——hjkl/方向键导航、t/c 序列插块、
- *   y 收集进缓存栏、p 依次建立引用、space 进入编辑模式
+ *   y 收集进缓存栏、p 依次建立绑定、space 进入编辑模式
  * - editing 编辑模式：节点编辑器内部按键（v1 固定，不参与重绑定）
  *
  * 绑定持久化在 localStorage（onelook:keymaps），覆盖默认值；
@@ -53,8 +53,8 @@ export const KEYMAP_ACTIONS: KeymapActionDef[] = [
     { id: 'layout:delete', mode: 'layout', label: '删除节点', defaultSequence: ['Delete'], aliases: [['Backspace']] },
     { id: 'layout:context-menu', mode: 'layout', label: '节点菜单', defaultSequence: ['m'] },
     { id: 'layout:yank-shelf', mode: 'layout', label: '收集节点进缓存栏', defaultSequence: ['y'] },
-    { id: 'layout:paste-ref-child', mode: 'layout', label: '缓存栏活跃项→引用（子级）', defaultSequence: ['p'] },
-    { id: 'layout:paste-ref-sibling', mode: 'layout', label: '缓存栏活跃项→引用（同级）', defaultSequence: ['P'] },
+    { id: 'layout:paste-ref-child', mode: 'layout', label: '缓存栏活跃项→绑定（子级）', defaultSequence: ['p'] },
+    { id: 'layout:paste-ref-sibling', mode: 'layout', label: '缓存栏活跃项→绑定（同级）', defaultSequence: ['P'] },
     { id: 'layout:clear-focus', mode: 'layout', label: '取消选中（回观察模式）', defaultSequence: ['Escape'] },
     { id: 'layout:undo', mode: 'layout', label: '撤销', defaultSequence: ['Ctrl+z'] },
     { id: 'layout:redo', mode: 'layout', label: '重做', defaultSequence: ['Ctrl+y'], aliases: [['Ctrl+Shift+Z']] },

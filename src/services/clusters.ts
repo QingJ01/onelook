@@ -106,8 +106,36 @@ export function computeClusterGroups(docs: MindMapDocument[]): Map<string, strin
     return groups
 }
 
+/**
+ * 拓扑签名：只包含"文档集合 + 绑定边"。
+ * 纯文本/样式修改不改变签名 ⇒ 跳过并查集与整表替换，
+ * 避免每次自动保存都让全部节点重渲染。
+ */
+function topologySignature(docs: MindMapDocument[]): string {
+    const docIds = docs.map(d => d.id).sort().join(',')
+    const edges: string[] = []
+    for (const doc of docs) {
+        const walk = (node: MindMapNode) => {
+            const ref = node.data?.ref
+            if (ref?.docId && ref?.nodeId) {
+                edges.push(`${doc.id}:${node.id}>${ref.docId}:${ref.nodeId}`)
+            }
+            node.children.forEach(walk)
+        }
+        walk(doc.root)
+    }
+    return `${docIds}#${edges.join('|')}`
+}
+
+let lastTopology = ''
+let lastColors = ''
+
 /** 由文档集合刷新颜色/规模（成员数 <2 的分量不算 cluster） */
 export function applyClusterState(docs: MindMapDocument[]): void {
+    const topology = topologySignature(docs)
+    if (topology === lastTopology) return
+    lastTopology = topology
+
     const groups = computeClusterGroups(docs)
     const colors: Record<string, string> = {}
     const sizes: Record<string, number> = {}
@@ -121,6 +149,13 @@ export function applyClusterState(docs: MindMapDocument[]): void {
         }
     }
 
+    // 颜色表未变则不替换（保留引用，避免下游无谓失效）
+    const colorSignature = Object.keys(colors)
+        .sort()
+        .map(key => `${key}=${colors[key]}`)
+        .join('|')
+    if (colorSignature === lastColors) return
+    lastColors = colorSignature
     clusterState.colors = colors
     clusterState.sizes = sizes
 }

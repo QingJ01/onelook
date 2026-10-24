@@ -227,7 +227,7 @@ const commands = computed<Command[]>(() => [
   {
     id: 'toggle-properties',
     name: '切换属性面板',
-    description: '节点属性与反向引用',
+    description: '节点属性与反向绑定',
     icon: markRaw(SidebarClose),
     action: () => window.dispatchEvent(new CustomEvent('onelook:toggle-panel', { detail: 'properties' })),
     category: '面板',
@@ -249,7 +249,7 @@ const commands = computed<Command[]>(() => [
   {
     id: 'toggle-shelf',
     name: '切换缓存栏',
-    description: '批量收集节点、依次建立引用',
+    description: '批量收集节点、依次建立绑定',
     icon: markRaw(GitBranch),
     action: () => window.dispatchEvent(new CustomEvent('onelook:toggle-panel', { detail: 'shelf' })),
     category: '面板',

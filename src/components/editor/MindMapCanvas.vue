@@ -57,9 +57,22 @@
         </g>
         
         
+        <!-- 绑定集群外框：按颜色合并为 ≤ 调色板大小的 path 数 -->
+        <g class="cluster-frames-layer">
+          <path
+            v-for="frame in clusterFramePaths"
+            :key="frame.color"
+            :d="frame.d"
+            fill="none"
+            :stroke="frame.color"
+            stroke-width="2"
+            opacity="0.9"
+          />
+        </g>
+
         <g class="nodes-layer">
           <g
-            v-for="node in layoutNodes"
+            v-for="node in visibleNodes"
             :key="node.id"
             class="node"
             :class="{
@@ -77,21 +90,6 @@
             @mousedown.stop="handleNodeMouseDown(node, $event)"
             @contextmenu.prevent="handleNodeContextMenu(node, $event)"
           >
-            <!-- 引用集群外框：同 cluster 成员共用一种颜色 -->
-            <rect
-              v-if="getClusterColor(node)"
-              :x="-node.width / 2 - 5"
-              :y="-node.height / 2 - 5"
-              :width="node.width + 10"
-              :height="node.height + 10"
-              :rx="getNodeRadius(node) + 4"
-              fill="none"
-              :stroke="getClusterColor(node)"
-              stroke-width="2"
-              opacity="0.9"
-              class="cluster-frame"
-            />
-
             <rect
               v-if="!isTableNode(node.node) && !isCodeNode(node.node)"
               :x="-node.width / 2"
@@ -258,18 +256,6 @@
               <text text-anchor="middle" dominant-baseline="middle" class="ref-btn-text">↗</text>
             </g>
 
-            <!-- vault 引用徽标：镜像自哪张导图，点击跳到源节点 -->
-            <g
-              v-if="getVaultRef(node)"
-              class="vault-ref-badge"
-              :transform="`translate(${node.width / 2 - 4}, ${-node.height / 2 + 4})`"
-              @mousedown.stop
-              @click.stop="handleOpenVaultRef(node)"
-            >
-              <title>{{ vaultBadgeTitle(node) }}</title>
-              <rect x="-10" y="-9" width="20" height="18" rx="9" class="vault-ref-bg" :fill="getClusterColor(node) || undefined"/>
-              <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" class="vault-ref-text">⛓️‍💥</text>
-            </g>
           </g>
         </g>
         
@@ -336,9 +322,9 @@ import type { MindMapNode } from '@/types'
 import { MindMapLayout, generateConnectionPath, type LayoutNode } from '@/core/layout/mindLayout'
 import { TreeLayout, OrgLayout, FishboneLayout } from '@/core/layout/layouts'
 import { documentService } from '@/services/db'
-import { isInternalReference, openInternalReference, makeInternalReference } from '@/services/references'
-import { refOf, refreshClusters } from '@/services/vault'
-import { clusterColor, clusterSize } from '@/services/clusters'
+import { isInternalReference, openInternalReference } from '@/services/references'
+import { refreshClusters } from '@/services/vault'
+import { clusterColor } from '@/services/clusters'
 import {
   isTableNode, isCodeNode, getCellAnchor, getTableGeometry, clampCellAnchors, hasAutoLayoutOnly,
   defaultTableData, defaultCodeData, defaultCodeText,
@@ -442,6 +428,54 @@ function getLayoutInstance() {
 
 const layoutRoot = ref<LayoutNode | null>(null)
 const layoutNodes = ref<LayoutNode[]>([])
+
+// ---------- 视口裁剪（1000+ 节点时只渲染可见范围） ----------
+
+const VIEWPORT_MARGIN = 260
+
+const viewportBounds = computed(() => {
+  const parts = viewBox.value.split(' ').map(Number)
+  const width = parts[2] || 1200
+  const height = parts[3] || 800
+  const m = VIEWPORT_MARGIN
+  return {
+    x0: -panX.value / scale.value - m,
+    y0: -panY.value / scale.value - m,
+    x1: (width - panX.value) / scale.value + m,
+    y1: (height - panY.value) / scale.value + m,
+  }
+})
+
+function intersectsViewport(node: LayoutNode): boolean {
+  const b = viewportBounds.value
+  return (
+    node.x + node.width / 2 >= b.x0 &&
+    node.x - node.width / 2 <= b.x1 &&
+    node.y + node.height / 2 >= b.y0 &&
+    node.y - node.height / 2 <= b.y1
+  )
+}
+
+const visibleNodes = computed(() => layoutNodes.value.filter(intersectsViewport))
+
+/** 绑定集群外框：按颜色分组合并成少量 path（每色一条，元素数 ≤ 调色板大小） */
+const clusterFramePaths = computed(() => {
+  const docId = mapStore.document.id
+  const groups = new Map<string, string[]>()
+  for (const node of visibleNodes.value) {
+    const color = clusterColor(docId, node.id)
+    if (!color) continue
+    const x = node.x - node.width / 2 - 5
+    const y = node.y - node.height / 2 - 5
+    const w = node.width + 10
+    const h = node.height + 10
+    const seg = `M${x.toFixed(1)} ${y.toFixed(1)}h${w.toFixed(1)}v${h.toFixed(1)}h${(-w).toFixed(1)}Z`
+    const list = groups.get(color)
+    if (list) list.push(seg)
+    else groups.set(color, [seg])
+  }
+  return Array.from(groups, ([color, segs]) => ({ color, d: segs.join('') }))
+})
 
 const selectedIds = computed(() => mapStore.selectedIds)
 const isTemporarilyRevealing = ref(false)
@@ -568,17 +602,20 @@ const connections = computed<ConnectionData[]>(() => {
         ? (!node.node.parentId ? RAINBOW_COLORS[i % RAINBOW_COLORS.length] : branchColor)
         : defaultColor
       colorMap.set(child.id, color)
-      result.push({
-        id: `${node.id}-${child.id}`,
-        fromId: node.id,
-        toId: child.id,
-        path: generateConnectionPath(
-          connectionFrom(node, child),
-          { x: child.x, y: child.y, width: child.width },
-          connectionStyle
-        ),
-        color,
-      })
+      // 视口裁剪：两端都不可见则不生成路径（颜色映射仍全树遍历）
+      if (intersectsViewport(node) && intersectsViewport(child)) {
+        result.push({
+          id: `${node.id}-${child.id}`,
+          fromId: node.id,
+          toId: child.id,
+          path: generateConnectionPath(
+            connectionFrom(node, child),
+            { x: child.x, y: child.y, width: child.width },
+            connectionStyle
+          ),
+          color,
+        })
+      }
       traverse(child, color)
     }
   }
@@ -733,37 +770,9 @@ async function handleOpenReference(node: LayoutNode) {
   if (result !== 'ok') {
     window.alert(
       result === 'missing-document'
-        ? '目标导图尚未导入到当前浏览器。请先导入被引用的 .olook 文件。'
-        : '引用无效或目标节点不存在。',
+        ? '目标导图尚未导入到当前浏览器。请先导入被绑定的 .olook 文件。'
+        : '绑定无效或目标节点不存在。',
     )
-  }
-}
-
-// ---------- vault 引用徽标 ----------
-
-function getVaultRef(node: LayoutNode) {
-  return refOf(node.node)
-}
-
-function getClusterColor(node: LayoutNode): string | undefined {
-  return clusterColor(mapStore.document.id, node.id)
-}
-
-function vaultBadgeTitle(node: LayoutNode): string {
-  const ref = getVaultRef(node)
-  const size = clusterSize(mapStore.document.id, node.id)
-  return `引用集群（${size} 个节点，双向同步）· 来源：${ref?.docName || '未知导图'}`
-}
-
-async function handleOpenVaultRef(node: LayoutNode) {
-  const ref = getVaultRef(node)
-  if (!ref) return
-  const result = await openInternalReference(
-    makeInternalReference(ref.docId, ref.nodeId),
-    mapStore,
-  )
-  if (result !== 'ok') {
-    window.alert('源导图或源节点已不存在（引用断链）。')
   }
 }
 
@@ -1455,7 +1464,7 @@ function dispatchKeymapAction(actionId: string) {
   }
 }
 
-/** 缓存栏活跃项 → 在选中节点处建立引用（实时更新的复制），消费后队列前进 */
+/** 缓存栏活跃项 → 在选中节点处建立绑定（实时更新的复制），消费后队列前进 */
 async function insertShelfRef(item: ShelfItem, relation: 'child' | 'sibling') {
   const targetId = mapStore.focusedId ?? mapStore.document.root.id
   const targetNode = mapStore.findNode(targetId)
@@ -1480,12 +1489,12 @@ async function insertShelfRef(item: ShelfItem, relation: 'child' | 'sibling') {
   mapStore.document.updatedAt = Date.now()
   mapStore.selectNode(created.node.id)
   advanceShelf()
-  // 立即持久化：触发 cluster 扇出与着色，且切标签/关窗不丢新引用
+  // 立即持久化：触发 cluster 扇出与着色，且切标签/关窗不丢新绑定
   await documentService.save(JSON.parse(JSON.stringify(mapStore.document)))
   const next = activeShelfItem()
   setKeymapMessage(next
-    ? `已建立引用，下一项：${next.text.slice(0, 12)}（剩 ${shelf.items.length - shelf.activeIndex - 1} 项）`
-    : '已建立引用')
+    ? `已建立绑定，下一项：${next.text.slice(0, 12)}（剩 ${shelf.items.length - shelf.activeIndex - 1} 项）`
+    : '已建立绑定')
 }
 
 function insertSpecialNode(kind: 'table' | 'code', relation: 'sibling' | 'child') {
@@ -1988,11 +1997,6 @@ onUnmounted(() => {
 .code-node-body :deep(.hljs-type),
 .code-node-body :deep(.hljs-class .hljs-title) { color: #953800; }
 
-/* ---------- vault 引用徽标 ---------- */
-
-.vault-ref-badge {
-  cursor: pointer;
-}
 
 .vault-ref-bg {
   fill: var(--color-primary);
