@@ -413,12 +413,17 @@ export const useMapStore = defineStore('map', () => {
         recordHistory()
 
         function cloneWithNewIds(node: MindMapNode, newParentId: string): MindMapNode {
-            const newNode: MindMapNode = {
-                ...node,
-                id: uuidv4(),
-                parentId: newParentId,
-                children: [],
-            }
+            const newNode: MindMapNode = JSON.parse(JSON.stringify(node))
+            newNode.id = uuidv4()
+            newNode.parentId = newParentId
+            newNode.children = []
+            // 副本由自动布局接管：自由坐标与运行时字段不得随克隆继承
+            // （继承 position 会让粘贴出的节点永久脱离布局，拖动也只是改自由坐标）
+            delete newNode.position
+            delete newNode._x
+            delete newNode._y
+            delete newNode._width
+            delete newNode._height
             newNode.children = node.children.map(child => cloneWithNewIds(child, newNode.id))
             return newNode
         }

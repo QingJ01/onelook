@@ -77,6 +77,21 @@
             @mousedown.stop="handleNodeMouseDown(node, $event)"
             @contextmenu.prevent="handleNodeContextMenu(node, $event)"
           >
+            <!-- 引用集群外框：同 cluster 成员共用一种颜色 -->
+            <rect
+              v-if="getClusterColor(node)"
+              :x="-node.width / 2 - 5"
+              :y="-node.height / 2 - 5"
+              :width="node.width + 10"
+              :height="node.height + 10"
+              :rx="getNodeRadius(node) + 4"
+              fill="none"
+              :stroke="getClusterColor(node)"
+              stroke-width="2"
+              opacity="0.9"
+              class="cluster-frame"
+            />
+
             <rect
               v-if="!isTableNode(node.node) && !isCodeNode(node.node)"
               :x="-node.width / 2"
@@ -251,8 +266,9 @@
               @mousedown.stop
               @click.stop="handleOpenVaultRef(node)"
             >
-              <rect x="-4" y="-8" :width="vaultBadgeWidth(node)" height="16" rx="8" class="vault-ref-bg"/>
-              <text :x="-4 + vaultBadgeWidth(node) / 2" y="0" text-anchor="middle" dominant-baseline="middle" class="vault-ref-text">{{ vaultBadgeText(node) }}</text>
+              <title>{{ vaultBadgeTitle(node) }}</title>
+              <rect x="-10" y="-9" width="20" height="18" rx="9" class="vault-ref-bg" :fill="getClusterColor(node) || undefined"/>
+              <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" class="vault-ref-text">⛓️‍💥</text>
             </g>
           </g>
         </g>
@@ -321,7 +337,8 @@ import { MindMapLayout, generateConnectionPath, type LayoutNode } from '@/core/l
 import { TreeLayout, OrgLayout, FishboneLayout } from '@/core/layout/layouts'
 import { documentService } from '@/services/db'
 import { isInternalReference, openInternalReference, makeInternalReference } from '@/services/references'
-import { refOf } from '@/services/vault'
+import { refOf, refreshClusters } from '@/services/vault'
+import { clusterColor, clusterSize } from '@/services/clusters'
 import {
   isTableNode, isCodeNode, getCellAnchor, getTableGeometry, clampCellAnchors, hasAutoLayoutOnly,
   defaultTableData, defaultCodeData, defaultCodeText,
@@ -668,7 +685,12 @@ function updateLayout() {
 }
 
 let saveTimer: number | null = null
+// 初次加载（从存储取回文档）完成前不落盘：冷启动慢时 immediate watch
+// 会把临时默认文档先保存，产生重复的「未命名导图 1」
+const initialLoadDone = ref(false)
+
 function scheduleAutoSave() {
+  if (!initialLoadDone.value) return
   if (saveTimer) {
     clearTimeout(saveTimer)
   }
@@ -723,18 +745,14 @@ function getVaultRef(node: LayoutNode) {
   return refOf(node.node)
 }
 
-function vaultBadgeText(node: LayoutNode): string {
-  const ref = getVaultRef(node)
-  const name = ref?.docName || '源导图'
-  const trimmed = name.length > 6 ? name.slice(0, 6) + '…' : name
-  return `🔗 ${trimmed}`
+function getClusterColor(node: LayoutNode): string | undefined {
+  return clusterColor(mapStore.document.id, node.id)
 }
 
-function vaultBadgeWidth(node: LayoutNode): number {
-  const text = vaultBadgeText(node)
-  let w = 20
-  for (const ch of text) w += /[\u4e00-\u9fff]/.test(ch) ? 10 : 6
-  return Math.round(w)
+function vaultBadgeTitle(node: LayoutNode): string {
+  const ref = getVaultRef(node)
+  const size = clusterSize(mapStore.document.id, node.id)
+  return `引用集群（${size} 个节点，双向同步）· 来源：${ref?.docName || '未知导图'}`
 }
 
 async function handleOpenVaultRef(node: LayoutNode) {
@@ -1462,6 +1480,8 @@ async function insertShelfRef(item: ShelfItem, relation: 'child' | 'sibling') {
   mapStore.document.updatedAt = Date.now()
   mapStore.selectNode(created.node.id)
   advanceShelf()
+  // 立即持久化：触发 cluster 扇出与着色，且切标签/关窗不丢新引用
+  await documentService.save(JSON.parse(JSON.stringify(mapStore.document)))
   const next = activeShelfItem()
   setKeymapMessage(next
     ? `已建立引用，下一项：${next.text.slice(0, 12)}（剩 ${shelf.items.length - shelf.activeIndex - 1} 项）`
@@ -1514,15 +1534,20 @@ function updateViewBox() {
 }
 
 async function loadSavedDocument() {
-  const docs = await documentService.getRecent(1)
-  if (docs.length > 0) {
-    mapStore.loadDocument(docs[0])
+  try {
+    const docs = await documentService.getRecent(1)
+    if (docs.length > 0) {
+      mapStore.loadDocument(docs[0])
+    }
+  } finally {
+    initialLoadDone.value = true
   }
 }
 
 onMounted(() => {
   updateViewBox()
   loadSavedDocument()
+  refreshClusters()
   window.addEventListener('resize', updateViewBox)
   window.addEventListener('keydown', handleKeyDown)
   window.addEventListener('keyup', handleKeyUp)

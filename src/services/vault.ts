@@ -1,5 +1,6 @@
 import type { MindMapDocument, MindMapNode, NodeData } from '@/types'
 import { documentService } from './db'
+import { applyClusterState, computeClusterGroups } from './clusters'
 
 /**
  * vault 引用（节点级共享镜像）
@@ -49,7 +50,7 @@ function copyPayload(source: MindMapNode, target: MindMapNode): boolean {
     }
     const sourceData = source.data ?? {}
     const targetData = (target.data ?? {})
-    for (const key of ['note', 'hyperlink', 'image', 'imageWidth', 'imageAspectRatio', 'icon', 'code', 'table'] as const) {
+    for (const key of ['note', 'hyperlink', 'image', 'imageWidth', 'imageAspectRatio', 'icon', 'priority', 'progress', 'tags', 'code', 'table'] as const) {
         if (JSON.stringify(sourceData[key]) !== JSON.stringify(targetData[key])) {
             if (sourceData[key] === undefined) delete targetData[key]
             else targetData[key] = sourceData[key] as never
@@ -68,13 +69,16 @@ function copyPayload(source: MindMapNode, target: MindMapNode): boolean {
 
 const syncing = new Set<string>()
 
-/** 保存 doc 后执行：写穿本图引用 + 刷新他图快照。单跳，防循环。 */
+/** 保存 doc 后执行：cluster 内负载扇出（写穿 + 传播统一为一次） */
 export async function syncVaultReferences(doc: MindMapDocument): Promise<void> {
     if (syncing.has(doc.id)) return
     syncing.add(doc.id)
     try {
-        await writeThrough(doc)
-        await propagateToReferrers(doc)
+        const all = await documentService.getAll()
+        const docs = all.filter(d => d.id !== doc.id)
+        docs.push(doc) // 以刚保存的副本为准
+        applyClusterState(docs)
+        await fanOutClusters(docs, doc.id)
     } catch (err) {
         console.warn('[vault] 引用同步失败（不影响本文档保存）', err)
     } finally {
@@ -82,53 +86,92 @@ export async function syncVaultReferences(doc: MindMapDocument): Promise<void> {
     }
 }
 
-/** 写穿：本文档中引用节点的最新负载写回源文档 */
-async function writeThrough(doc: MindMapDocument): Promise<void> {
-    const refNodes = collectRefNodes(doc)
-    if (refNodes.length === 0) return
-
-    const dirtyDocs = new Map<string, MindMapDocument>()
-    for (const { node } of refNodes) {
-        const ref = refOf(node)!
-        if (ref.docId === doc.id) {
-            // 同文档引用：直接写回本文档内的源节点
-            const source = findNodeIn(doc, ref.nodeId)
-            if (source && copyPayload(node, source)) doc.updatedAt = Date.now()
-            continue
-        }
-        const sourceDoc = dirtyDocs.get(ref.docId) ?? (await documentService.get(ref.docId))
-        if (!sourceDoc) continue // 源文档已删除：快照保留，徽标显示断链
-        const source = findNodeIn(sourceDoc, ref.nodeId)
-        if (source && copyPayload(node, source)) {
-            sourceDoc.updatedAt = Date.now()
-            dirtyDocs.set(ref.docId, sourceDoc)
-        }
-    }
-    for (const sourceDoc of dirtyDocs.values()) {
-        await documentService.save(sourceDoc)
+/** 供 UI 启动/切换文档时刷新 cluster 着色 */
+export async function refreshClusters(): Promise<void> {
+    try {
+        applyClusterState(await documentService.getAll())
+    } catch (err) {
+        console.warn('[vault] cluster 刷新失败', err)
     }
 }
 
-/** 传播：其它文档中指向本文档节点的引用快照刷新并回存 */
-async function propagateToReferrers(doc: MindMapDocument): Promise<void> {
-    const others = (await documentService.getAll()).filter(d => d.id !== doc.id)
-    for (const other of others) {
-        let changed = false
-        for (const { node } of collectRefNodes(other)) {
-            const ref = refOf(node)!
-            if (ref.docId !== doc.id) continue
-            const source = findNodeIn(doc, ref.nodeId)
-            if (!source) continue // 源节点已删除
-            if (copyPayload(source, node)) {
-                ref.docName = doc.name
-                changed = true
-            }
+function nodeAt(docs: MindMapDocument[], key: string): MindMapNode | null {
+    const sep = key.lastIndexOf(':')
+    if (sep <= 0) return null
+    const docId = key.slice(0, sep)
+    const nodeId = key.slice(sep + 1)
+    const doc = docs.find(d => d.id === docId)
+    return doc ? findNodeIn(doc, nodeId) : null
+}
+
+function payloadSignature(node: MindMapNode): string {
+    const data = node.data ?? {}
+    return JSON.stringify([
+        node.text,
+        data.note, data.hyperlink, data.image, data.imageWidth, data.imageAspectRatio,
+        data.icon, data.priority, data.progress, data.tags, data.code, data.table,
+        node.style,
+    ])
+}
+
+/**
+ * 在作者的 cluster 内选权威节点：
+ * - 作者文档内该分量只有 1 个成员 → 它；
+ * - 多个成员（同文档自引用）→ 选「与其它成员不同」的那个（被编辑的一方）；
+ *   都相同/都不同时优先非引用节点（原始源）。
+ */
+function pickAuthoritative(members: string[], authorDocId: string, docs: MindMapDocument[]): string | null {
+    const inAuthor = members.filter(m => m.startsWith(`${authorDocId}:`))
+    if (inAuthor.length === 0) return null
+    if (inAuthor.length === 1) return inAuthor[0]
+
+    const nodes = inAuthor.map(k => nodeAt(docs, k))
+    const sigs = nodes.map(n => (n ? payloadSignature(n) : ''))
+    for (let i = 0; i < nodes.length; i++) {
+        if (!nodes[i]) continue
+        const sameAsMe = sigs.filter((sig, j) => j !== i && sig === sigs[i]).length
+        if (sameAsMe === 0 && new Set(sigs).size > 1) return inAuthor[i]
+    }
+    const nonRefIndex = nodes.findIndex(n => n && !n.data?.ref)
+    return nonRefIndex >= 0 ? inAuthor[nonRefIndex] : inAuthor[0]
+}
+
+/** cluster 内扇出：作者成员为权威，其余成员（同/跨文档）全部刷新 */
+async function fanOutClusters(docs: MindMapDocument[], authorDocId: string): Promise<void> {
+    const groups = computeClusterGroups(docs)
+    const dirty = new Set<string>()
+
+    for (const members of groups.values()) {
+        if (members.length < 2) continue
+        const authorKey = pickAuthoritative(members, authorDocId, docs)
+        if (!authorKey) continue
+        const author = nodeAt(docs, authorKey)
+        if (!author) continue
+
+        for (const memberKey of members) {
+            if (memberKey === authorKey) continue
+            const target = nodeAt(docs, memberKey)
+            if (!target) continue
+            if (!copyPayload(author, target)) continue
+            const sep = memberKey.lastIndexOf(':')
+            dirty.add(memberKey.slice(0, sep))
         }
-        if (changed) {
-            other.updatedAt = Date.now()
-            await documentService.save(other) // syncing 守卫阻断级联
+        // 断链成员保留快照即可（源节点不存在时 nodeAt 返回 null）
+    }
+
+    for (const docId of dirty) {
+        const target = docs.find(d => d.id === docId)
+        if (!target) continue
+        target.updatedAt = Date.now()
+        syncing.add(docId) // 阻断扇出级联
+        try {
+            await documentService.save(target)
+        } finally {
+            syncing.delete(docId)
         }
     }
+
+    if (dirty.size > 0) applyClusterState(docs)
 }
 
 function collectRefNodes(doc: MindMapDocument): Array<{ node: MindMapNode }> {

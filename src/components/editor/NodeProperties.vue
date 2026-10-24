@@ -275,6 +275,15 @@
         </button>
       </div>
 
+      <!-- 引用集群（无向关系：任意成员编辑都会同步到全簇） -->
+      <div class="property-group" v-if="clusterNodes > 0">
+        <label>引用集群（{{ clusterNodes }} 个节点）</label>
+        <div class="cluster-info">
+          <span class="cluster-dot" :style="{ background: clusterColorValue }"></span>
+          <span class="cluster-note">簇内节点双向同步；子节点各自独立</span>
+        </div>
+      </div>
+
       <!-- vault 引用 -->
       <div class="property-group" v-if="isVaultRef">
         <label>引用自</label>
@@ -326,6 +335,7 @@ import type { MindMapNode, NodeStyle } from '@/types'
 import { useMapStore } from '@/stores/mapStore'
 import { isInternalReference, openInternalReference, makeInternalReference } from '@/services/references'
 import { backlinksOf, refOf, type Backlink } from '@/services/vault'
+import { clusterColor, clusterSize } from '@/services/clusters'
 
 const props = defineProps<{
   node: MindMapNode | null
@@ -344,6 +354,12 @@ const imageLoadError = ref(false)
 // ---------- vault 引用 / 反向引用 ----------
 
 const isVaultRef = computed(() => (props.node ? refOf(props.node) !== null : false))
+const clusterNodes = computed(() =>
+  props.node ? clusterSize(mapStore.document.id, props.node.id) : 0,
+)
+const clusterColorValue = computed(() =>
+  props.node ? clusterColor(mapStore.document.id, props.node.id) : undefined,
+)
 const backlinks = ref<Backlink[]>([])
 
 watch(
@@ -1150,5 +1166,27 @@ function handleSummaryTextChange(event: Event) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.cluster-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--color-bg-secondary);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.cluster-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+}
+
+.cluster-note {
+  color: var(--color-text-secondary);
 }
 </style>
