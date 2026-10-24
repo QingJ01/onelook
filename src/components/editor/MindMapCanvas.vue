@@ -206,7 +206,7 @@
                 />
                 <div
                   v-if="hasMarkdownFormat(node.node.text)"
-                  class="node-rich-text-body"
+                  class="node-rich-text-body node-markdown-body"
                   :class="{ 'with-image': hasNodePhoto(node) }"
                   v-html="getRenderedMarkdown(node.node.text)"
                 ></div>
@@ -1831,6 +1831,16 @@ onUnmounted(() => {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+/* Markdown 富文本：v-html 中的换行/缩进是排版空白，不能按 pre 保留，
+   否则 <p> 外的空白会生成额外行，把公式挤离垂直中心 */
+.node-rich-text-body.node-markdown-body {
+  white-space: normal;
+}
+
+.node-rich-text-body.node-markdown-body :deep(p) {
+  margin: 0;
 }
 
 .node-rich-text-body.with-image {
