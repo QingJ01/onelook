@@ -900,8 +900,14 @@ function shouldRenderRichContent(node: LayoutNode): boolean {
   return hasMarkdownFormat(node.node.text) || hasNodePhoto(node) || willTextWrap(node.node.text)
 }
 
+// WebKit（WKWebView/Safari）不绘制 SVG foreignObject 内的 KaTeX HTML 子树，
+// 节点必须改用原生 MathML；Chromium 下保留 KaTeX HTML 以获得完整排版（矩阵等）。
+const IS_WEBKIT = typeof navigator !== 'undefined'
+  && /AppleWebKit/i.test(navigator.userAgent)
+  && !/(Chrome|Chromium|Edg|OPR)\//i.test(navigator.userAgent)
+
 function getRenderedMarkdown(text: string): string {
-  return renderMarkdown(text)
+  return renderMarkdown(text, { mathOutput: IS_WEBKIT ? 'mathml' : 'html' })
 }
 
 function getExpandBtnX(node: LayoutNode): number {
@@ -1727,6 +1733,23 @@ onUnmounted(() => {
   font-size: 13px;
   line-height: 1.4;
   color: var(--color-text);
+}
+
+/* 节点内 MathML 模式：KaTeX 默认把 .katex-mathml 视觉隐藏，这里要显示 */
+.md-content :deep(.katex-mathml-node .katex-mathml) {
+  position: static;
+  clip: auto;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  display: inline-block;
+  font-size: 1.02em;
+}
+
+.md-content :deep(math[display="block"]) {
+  margin: 0;
 }
 
 /* KaTeX display 公式自带上下 1em 外边距；v-html 内容需 :deep 才能命中 */

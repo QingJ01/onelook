@@ -102,7 +102,10 @@ export function getAttachmentPreviewType(href: string): AttachmentPreviewType | 
     return 'file'
 }
 
-export function renderMarkdown(text: string): string {
+export function renderMarkdown(
+    text: string,
+    options: { mathOutput?: 'html' | 'mathml' } = {},
+): string {
     if (!text) return ''
 
     let html = marked(text, {
@@ -111,7 +114,7 @@ export function renderMarkdown(text: string): string {
         gfm: true
     }) as string
 
-    html = renderLatex(html)
+    html = renderLatex(html, { output: options.mathOutput })
 
     return html
 }
