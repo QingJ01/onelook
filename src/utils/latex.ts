@@ -65,6 +65,39 @@ export function renderLatex(text: string, options: LatexRenderOptions = {}): str
 }
 
 /**
+ * 渲染单个公式片段（含定界符），供 Markdown 预处理阶段使用。
+ * 直接作用于原始 LaTeX 文本，避免 marked 把 `\\` 等转义吃掉。
+ */
+export function renderMathSpan(raw: string, options: LatexRenderOptions = {}): string {
+    const output = options.output ?? 'html'
+    const block = /^\$\$([\s\S]+?)\$\$$/.exec(raw)
+    if (block) {
+        try {
+            return `<span class="katex-block">${katex.renderToString(decodeEntities(block[1]).trim(), {
+                displayMode: true,
+                throwOnError: false,
+                output
+            })}</span>`
+        } catch {
+            return `<span class="katex-error">${raw}</span>`
+        }
+    }
+    const inline = /^\$([\s\S]+?)\$$/.exec(raw)
+    if (inline) {
+        try {
+            return katex.renderToString(decodeEntities(inline[1]).trim(), {
+                displayMode: false,
+                throwOnError: false,
+                output
+            })
+        } catch {
+            return `<span class="katex-error">${raw}</span>`
+        }
+    }
+    return raw
+}
+
+/**
  * 检查文本是否包含 LaTeX 公式
  */
 export function hasLatex(text: string): boolean {

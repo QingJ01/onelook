@@ -1,5 +1,5 @@
 import { marked } from 'marked'
-import { renderLatex } from './latex'
+import { renderMathSpan } from './latex'
 
 export type AttachmentPreviewType = 'image' | 'video' | 'audio' | 'pdf' | 'text' | 'file'
 
@@ -102,19 +102,33 @@ export function getAttachmentPreviewType(href: string): AttachmentPreviewType | 
     return 'file'
 }
 
+const MATH_TOKEN_PREFIX = 'MATHSPANTOKEN'
+
 export function renderMarkdown(
     text: string,
     options: { mathOutput?: 'html' | 'mathml' } = {},
 ): string {
     if (!text) return ''
 
-    let html = marked(text, {
+    // 公式必须先于 Markdown 处理：marked 会把 LaTeX 的 `\\`（矩阵/换行）
+    // 当成 Markdown 转义吃掉，也会转义 & < >。这里用占位符保护原始公式，
+    // 排版完成后再替换成 KaTeX 输出。
+    const spans: string[] = []
+    const protectedText = text.replace(/\$\$[\s\S]+?\$\$|\$[^$\n]+?\$/g, (raw) => {
+        const index = spans.push(raw) - 1
+        return `${MATH_TOKEN_PREFIX}${index}X`
+    })
+
+    let html = marked(protectedText, {
         renderer,
         breaks: true,
         gfm: true
     }) as string
 
-    html = renderLatex(html, { output: options.mathOutput })
+    html = html.replace(new RegExp(`${MATH_TOKEN_PREFIX}(\\d+)X`, 'g'), (_, index) => {
+        const raw = spans[Number(index)]
+        return raw ? renderMathSpan(raw, { output: options.mathOutput }) : ''
+    })
 
     return html
 }

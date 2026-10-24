@@ -1752,14 +1752,27 @@ onUnmounted(() => {
   margin: 0;
 }
 
+/* 公式居中：块级公式独占一行并居中（行内公式保持随文） */
+.md-content :deep(.katex-block) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  text-align: center;
+}
+
 /* KaTeX display 公式自带上下 1em 外边距；v-html 内容需 :deep 才能命中 */
 .md-content :deep(.katex-display) {
   margin: 0;
+  text-align: center;
 }
 
-.md-content :deep(.katex-block) {
-  display: inline-block;
-  max-width: 100%;
+.md-content :deep(.katex-mathml-node) {
+  display: block;
+  text-align: center;
+}
+
+.md-content :deep(math[display="block"]) {
+  margin: 0 auto;
 }
 
 .md-content.md-content-image {
