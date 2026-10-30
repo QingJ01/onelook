@@ -33,6 +33,12 @@ async function change(page: Page, label: string | RegExp, value: string) {
 
 async function noPageOverflow(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+  const footer = page.locator('.workbench-nav .nav-bottom')
+  if (await footer.isVisible()) {
+    const listBottom = await page.locator('.workbench-nav .node-list').evaluate(element => element.getBoundingClientRect().bottom)
+    const footerTop = await footer.evaluate(element => element.getBoundingClientRect().top)
+    expect(footerTop).toBeGreaterThanOrEqual(listBottom)
+  }
 }
 
 function textPdf() {
@@ -68,6 +74,10 @@ test('architecture keeps ordered normal/failure paths, evidence labels and decis
   await page.getByRole('button', { name: /一次登录请求/ }).first().click()
   await page.getByRole('button', { name: '请求链路与决策', exact: true }).click()
   await expect(page.getByLabel('消息 / 操作')).toHaveValue('提交登录信息（已人工整理）')
+  await page.setViewportSize({ width: 1600, height: 1022 })
+  await noPageOverflow(page)
+  await page.locator('.workbench-nav .node-list-item').last().scrollIntoViewIfNeeded()
+  await expect(page.locator('.workbench-nav .node-list-item').last()).toBeInViewport()
 })
 
 test('product separates claims and requires evidence before passing acceptance', async ({ page }) => {

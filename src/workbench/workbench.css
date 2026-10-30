@@ -836,6 +836,10 @@
   overflow: auto;
 }
 
+.ol-app .workbench-nav > * {
+  flex-shrink: 0;
+}
+
 .ol-app .back-home {
   display: flex;
   align-items: center;
