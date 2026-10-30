@@ -10,17 +10,19 @@ async function run(args) {
 }
 
 try {
+  const port = Number(process.env.PORT || '3000')
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new TypeError('PORT must be an integer from 1 to 65535.')
   await run(['install', '--frozen-lockfile'])
   await run(['setup:archify'])
   await run(['build'])
-  const port = process.env.PORT || '3000'
-  process.stdout.write(`OneLook is available at http://localhost:${port}\n`)
+  process.stdout.write(`Starting OneLook at http://localhost:${port}\n`)
   const child = spawn(process.execPath, ['server/index.mjs'], {
     stdio: 'inherit',
-    env: { ...process.env, PORT: port },
+    env: { ...process.env, PORT: String(port) },
   })
   process.on('SIGINT', () => child.kill('SIGINT'))
   process.on('SIGTERM', () => child.kill('SIGTERM'))
+  child.once('error', error => { process.stderr.write(`${error.message}\n`); process.exitCode = 1 })
   child.once('exit', code => process.exit(code ?? 1))
 } catch (error) {
   process.stderr.write(`${error.message}\n`)

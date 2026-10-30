@@ -19,5 +19,8 @@ describe('local material reader', () => {
   it('rejects absolute and parent-traversal paths', async () => {
     const traversal = new File(['text'], '../secret.md')
     await expect(readMaterialFile(traversal)).rejects.toThrow(/relative path/)
+    const absolute = new File(['text'], 'safe.md')
+    Object.defineProperty(absolute, 'webkitRelativePath', { value: '/Users/example/private/safe.md' })
+    await expect(readMaterialFile(absolute)).rejects.toThrow(/relative path/)
   })
 })

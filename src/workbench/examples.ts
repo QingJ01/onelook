@@ -140,7 +140,21 @@ export function exampleWorkspace(scenario: Scenario): Workspace {
           },
         ],
       }]
-    : []
+    : scenario === 'architecture' ? [{
+        id: 'demo-login-flow', title: '登录正常与失败链路（教学模型，非运行证据）',
+        steps: [
+          [0, 1, '提交登录信息', '用户主动提交', 'main', 0],
+          [1, 2, '查询账号与哈希', '输入合法且未触发限流', 'main', 2],
+          [1, 3, '校验提交的凭据', '已取得账号凭据', 'main', 3],
+          [1, 0, '返回统一认证失败', '凭据不匹配，不建立会话', 'failure', 3],
+          [3, 4, '建立服务端会话', '凭据匹配', 'main', 4],
+          [1, 5, '设置会话 Cookie', '会话建立成功', 'main', 5],
+          [5, 0, '后续请求携带会话标识', '符合 Cookie 属性约束', 'main', 5],
+        ].map(([from, to, message, condition, branch, evidence], index) => ({
+          id: `demo-login-step-${index + 1}`, from: nodes[from as number]!.id, to: nodes[to as number]!.id,
+          message, condition, branch, evidence: 'unverified', citations: [cite(sample.nodes[evidence as number]![2])],
+        })),
+      }] : []
   const demoDecisions = scenario === 'product'
     ? [{
         id: 'demo-decision-1',
@@ -152,7 +166,14 @@ export function exampleWorkspace(scenario: Scenario): Workspace {
         nodeIds: [nodes[5]!.id],
         citations: [cite(sample.nodes[5]![2])],
       }]
-    : []
+    : scenario === 'architecture' ? [{
+        id: 'demo-login-decision', title: '服务端会话的取舍（演示，待确认）',
+        context: '教学模型需要展示登录与后续认证的区别；不是对真实系统的评审结论。',
+        choice: '演示采用服务端保存会话，Cookie 只传递会话标识；实际策略仍需安全评审。',
+        alternatives: '签名令牌与轮换机制；需另行设计失效、撤销与客户端存储边界。',
+        consequences: '需要管理会话过期、注销和存储可用性；会话身份不能替代资源授权。',
+        nodeIds: [nodes[4]!.id, nodes[5]!.id], citations: [cite(sample.nodes[4]![2]), cite(sample.nodes[5]![2])],
+      }] : []
   const demoProductItems = scenario === 'product'
     ? [
         {

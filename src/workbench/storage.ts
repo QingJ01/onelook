@@ -41,7 +41,7 @@ class WorkbenchDB extends Dexie {
             snapshot: structuredClone(raw),
           })
         }
-        await workspaces.put(canonical)
+        await workspaces.put({ ...canonical, revision: Math.max(1, canonical.revision) })
       }
       for (const raw of await revisions.toArray()) {
         await revisions.put(cleanRevision(raw))

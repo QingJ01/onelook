@@ -99,7 +99,8 @@ export function makeView(workspace: Workspace, scenario: Scenario, title: string
     path: [...defaultView.path],
     positions: {},
   }
-  return validateWorkspace({ ...current, views: [...current.views, view] }).views.at(-1)!
+  const views = validateWorkspace({ ...current, views: [...current.views, view] }).views
+  return views[views.length - 1]!
 }
 
 export function applyGenerated(workspace: Workspace, generated: unknown): Workspace {

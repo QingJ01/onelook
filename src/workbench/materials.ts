@@ -11,7 +11,8 @@ const MAX_CHARACTERS = 300_000
 
 function safeRelativePath(file: File): string {
   const value = file.webkitRelativePath || file.name
-  const path = value.replaceAll('\\', '/').replace(/^\/+|^[A-Za-z]:\/+/, '')
+  if (/^[\\/]|^[A-Za-z]:/.test(value)) throw new TypeError('The selected file must have a relative path.')
+  const path = value.replace(/\\/g, '/')
   const segments = path.split('/').filter(segment => segment && segment !== '.')
   if (!segments.length || segments.some(segment => segment === '..')) {
     throw new TypeError('The selected file must have a relative path.')
@@ -22,14 +23,13 @@ function safeRelativePath(file: File): string {
 export async function readMaterialFile(file: File): Promise<{ text: string; filePath?: string }> {
   if (!(file instanceof File)) throw new TypeError('Select a local file to read.')
   const filePath = safeRelativePath(file)
-  const extension = filePath.split('.').at(-1)?.toLowerCase()
+  const extension = filePath.split('.').pop()?.toLowerCase()
   if (extension === 'pdf') {
     if (file.size > MAX_PDF_BYTES) throw new TypeError('PDF files must be no larger than 10 MiB.')
     const pdfjs = await import('pdfjs-dist')
     pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
     const task = pdfjs.getDocument({
       data: new Uint8Array(await file.arrayBuffer()),
-      isEvalSupported: false,
       useWorkerFetch: false,
       disableAutoFetch: true,
       disableStream: true,
@@ -43,7 +43,7 @@ export async function readMaterialFile(file: File): Promise<{ text: string; file
         const page = await document.getPage(pageNumber)
         const content = await page.getTextContent()
         const text = content.items.map(item => 'str' in item ? item.str : '').join(' ').trim()
-        characters += text.length
+        characters += text.length + (pages.length ? 2 : 0)
         if (characters > MAX_CHARACTERS) throw new TypeError('Extracted PDF text exceeds 300,000 characters.')
         pages.push(text)
         page.cleanup()

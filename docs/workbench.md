@@ -146,6 +146,13 @@ The suite includes domain validation and review timing, revision persistence
 and restore, a legacy database compatibility smoke test, same-origin/API
 security checks with a labeled mock provider, and actual Archify validation,
 rendering, and delivery. It does not make a live paid AI request or claim
-  browser/UI visual acceptance. `pnpm build` runs the repository TypeScript and
-Vite production build; no full UI test or project-wide lint migration is
-configured by this work.
+browser/UI visual acceptance. `pnpm build` runs the repository TypeScript and
+Vite production build. No project-wide lint command is configured.
+
+Browser regressions run with `pnpm test:e2e:install` then `pnpm test:e2e`.
+The runner starts `pnpm dev:all` when needed and covers Chromium and WebKit at
+375, 768 and 1440 pixels. CI installs browsers with system dependencies before
+running the same suite. `E2E_BASE_URL=http://localhost:3002 pnpm test:e2e
+--project=chromium-1440` targets an already running production server instead.
+AI cases use explicitly controlled responses; these do not validate a live
+paid model. Viewports and WebKit automation are not physical-device tests.

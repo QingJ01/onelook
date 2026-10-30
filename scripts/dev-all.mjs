@@ -24,6 +24,7 @@ let stopping = false
 function stop(code = 0) {
   if (stopping) return
   stopping = true
+  process.exitCode = code
   for (const child of children) if (child.exitCode === null) child.kill('SIGTERM')
   setTimeout(() => {
     for (const child of children) if (child.exitCode === null) child.kill('SIGKILL')
@@ -41,7 +42,7 @@ try {
   })
   const vite = spawn(process.execPath, [
     path.join(root, 'node_modules/vite/bin/vite.js'), '--host', 'localhost', '--port',
-    String(vitePort), '--strictPort', '--open', 'false',
+    String(vitePort), '--strictPort',
   ], { cwd: root, env: process.env, stdio: 'inherit' })
   children.push(server, vite)
   for (const child of children) child.once('exit', code => {

@@ -235,6 +235,7 @@ describe('canonical V2 validation and V1 migration', () => {
       end: 19,
     })
     expect(generated.nodes[0]).toMatchObject({ x: 7, y: 8 })
+    expect(validateGeneratedContentData(validateGeneratedContentData(generated, base), base)).toEqual(generated)
     expect(generated.questions[0].relatedNodeIds).toEqual([])
     expect(() => validateWorkspaceData({
       ...base,

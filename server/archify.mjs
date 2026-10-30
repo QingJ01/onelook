@@ -61,9 +61,9 @@ function descriptiveItems(node, workspace) {
       ? source
       : source.versions.find(item => item.version === citation.version)
     const freshness = citation.version === source.version ? 'current' : 'stale'
-    const filePath = version.filePath || source.filePath
+    const filePath = version.filePath
     const lineStart = version.text.slice(0, citation.start).split('\n').length
-    const lineEnd = version.text.slice(0, citation.end).split('\n').length
+    const lineEnd = version.text.slice(0, Math.max(citation.start, citation.end - 1)).split('\n').length
     const location = `${filePath ? ` · ${filePath}` : ''} · lines ${lineStart}–${lineEnd}`
     return `Citation from ${source.title} (v${citation.version}, ${freshness}${location}): ${citation.quote}`
   })

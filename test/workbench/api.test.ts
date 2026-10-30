@@ -3,9 +3,33 @@ import { generateContent } from '../../src/workbench/api'
 import { createWorkspace } from '../../src/workbench/model'
 import { generatedFixture } from './fixtures'
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers() })
 
 describe('same-origin workbench API client', () => {
+  function pendingFetch() {
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>((_url, init) => new Promise((_resolve, reject) => {
+      const abort = () => reject(new DOMException('Aborted', 'AbortError'))
+      if (init?.signal?.aborted) abort()
+      else init?.signal?.addEventListener('abort', abort, { once: true })
+    })))
+  }
+
+  it('distinguishes user cancellation from a request timeout', async () => {
+    pendingFetch()
+    const controller = new AbortController()
+    const result = generateContent(createWorkspace('course', 'Cancel'), { baseUrl: 'https://api.openai.com/v1', model: 'mock', apiKey: 'not-a-real-key' }, controller.signal)
+    const assertion = expect(result).rejects.toThrow('cancelled')
+    controller.abort()
+    await assertion
+  })
+
+  it('reports the bounded client timeout separately', async () => {
+    vi.useFakeTimers(); pendingFetch()
+    const result = generateContent(createWorkspace('course', 'Timeout'), { baseUrl: 'https://api.openai.com/v1', model: 'mock', apiKey: 'not-a-real-key' })
+    const assertion = expect(result).rejects.toThrow('timed out')
+    await vi.advanceTimersByTimeAsync(95001)
+    await assertion
+  })
   it('sends the workspace and memory-only settings, then validates the generated result', async () => {
     const fetchMock = vi.fn<typeof fetch>(async () => new Response(
       JSON.stringify({ generated: generatedFixture() }),

@@ -428,8 +428,16 @@ function validateSourceVersion(value, path) {
     text: text(item.text, `${path}.text`, 300000),
     createdAt: finite(item.createdAt, `${path}.createdAt`),
   }
-  if (item.filePath !== undefined) result.filePath = text(item.filePath, `${path}.filePath`, 2000)
+  if (item.filePath !== undefined) result.filePath = relativeFilePath(item.filePath, `${path}.filePath`)
   if (item.revision !== undefined) result.revision = text(item.revision, `${path}.revision`, 200)
+  return result
+}
+
+function relativeFilePath(value, path) {
+  const result = text(value, path, 2000, true)
+  if (/^[\\/]|^[A-Za-z]:|[\u0000-\u001f]/.test(result) || result.split(/[\\/]/).some(segment => segment === '..')) {
+    fail(path, 'must be a relative file path without parent traversal')
+  }
   return result
 }
 
@@ -448,7 +456,7 @@ function validateSource(value, index) {
       .map((version, versionIndex) => validateSourceVersion(version, `${path}.versions[${versionIndex}]`)),
   }
   if (item.url !== undefined) result.url = validateUrl(item.url, `${path}.url`)
-  if (item.filePath !== undefined) result.filePath = text(item.filePath, `${path}.filePath`, 2000)
+  if (item.filePath !== undefined) result.filePath = relativeFilePath(item.filePath, `${path}.filePath`)
   if (item.revision !== undefined) result.revision = text(item.revision, `${path}.revision`, 200)
   const historicalVersions = result.versions.map(version => version.version)
   unique(historicalVersions, `${path}.versions`)
@@ -811,6 +819,13 @@ function normalizeGeneratedNode(value, index, base) {
     provenance: enumValue(item.provenance, `${path}.provenance`, new Set(['user', 'ai', 'demo'])),
     citations: boundedArray(item.citations, `${path}.citations`, 100).map((citation, citationIndex) => {
       const citationPath = `${path}.citations[${citationIndex}]`
+      if (citation && Object.hasOwn(citation, 'version')) {
+        const canonical = validateCitation(citation, citationPath)
+        const source = base.sources.find(candidate => candidate.id === canonical.sourceId)
+        if (!source || canonical.version !== source.version) fail(citationPath, 'must cite the current source version')
+        validateCitationSource(canonical, citationPath, new Map([[source.id, source]]))
+        return canonical
+      }
       const legacyCitation = record(citation, citationPath, ['sourceId', 'quote'])
       const sourceId = identifier(legacyCitation.sourceId, `${citationPath}.sourceId`)
       const quote = text(legacyCitation.quote, `${citationPath}.quote`, 20000, true)
