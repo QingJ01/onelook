@@ -3,7 +3,9 @@
 ## Local setup
 
 The workbench uses the existing OneLook frontend and a small Node.js service.
-Use Node.js 18 or newer and pnpm:
+The declared compatibility floors are Node.js 18 and pnpm 8; compatibility
+across the full ranges has not been verified. The workbench was verified with
+Node.js 24.21.0 and pnpm 12.8.1:
 
 ```sh
 pnpm install
@@ -14,9 +16,10 @@ pnpm setup:archify
 `f325d86230553e1dd15d3464324f1fcd01f02352` into the ignored
 `.cache/archify` directory. It checks the commit before accepting the checkout
 and does not overwrite an existing unpinned directory. To use a durable source
-checkout instead, set `ARCHIFY_ROOT` to its repository root. This setup is for
-the local CLI renderer only; it does not install an Archify Skill or modify any
-global agent configuration.
+checkout instead, set `ARCHIFY_ROOT` to its repository root; its Git `HEAD`
+must match the same pinned commit. This setup is for the local CLI renderer
+only; it does not install an Archify Skill or modify any global agent
+configuration.
 
 For development, start the API and frontend separately:
 
@@ -32,6 +35,8 @@ The API listens on `127.0.0.1:3001`; Vite listens on `localhost:3000` and proxie
 pnpm build
 npm start
 ```
+
+Open `http://localhost:3001` after starting the standalone server.
 
 The same Node process serves the built `dist` files and the API. `PORT` may
 change the local port, but the service remains bound to loopback. Do not expose
@@ -86,6 +91,16 @@ development. Archify's generated HTML also retains its upstream delivery
 notices and asset licenses.
 
 ## Verification
+
+The GitHub Actions workbench workflow runs on pull requests and pushes to
+`main` or `master`. It uses Node.js 24 and pnpm 12.8.1 and runs:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm setup:archify
+pnpm test
+pnpm build
+```
 
 Run the focused workbench suite:
 

@@ -13,6 +13,11 @@ const MAX_NODES = 60
 const MAX_ARTIFACT_BYTES = 16 * 1024 * 1024
 const RENDER_TIMEOUT_MS = 90_000
 const VISUAL_SUBLABEL_LENGTH = 30
+const PROVENANCE_LABELS = {
+  ai: 'AI draft; verify before use; not external evidence.',
+  demo: 'Demo content; not external evidence.',
+  user: 'User-supplied content.',
+}
 
 async function resolveCliPath(archifyRoot) {
   const root = path.resolve(archifyRoot || path.join(ROOT, '.cache', 'archify'))
@@ -50,7 +55,11 @@ function descriptiveItems(node, workspace) {
       const relationText = relation.label ? `: ${compactText(relation.label, 200)}` : ''
       return `${direction} ${relation.kind}${relationText}`
     })
-  return [
+  const citationItems = node.citations.map(citation => {
+    const source = workspace.sources.find(item => item.id === citation.sourceId)
+    return `Citation from ${source.title}: ${citation.quote}`
+  })
+  const fieldItems = [
     ['Description', node.body],
     ['Example', node.example],
     ['Pitfall', node.pitfall],
@@ -59,7 +68,12 @@ function descriptiveItems(node, workspace) {
   ]
     .filter(([, value]) => value.trim())
     .map(([label, value]) => `${label}: ${compactText(value, 2000)}`)
-    .concat(relationItems)
+  return [
+    `Provenance: ${PROVENANCE_LABELS[node.provenance]}`,
+    ...fieldItems,
+    ...relationItems,
+    ...citationItems,
+  ]
 }
 
 function visualSublabel(node) {

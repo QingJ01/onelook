@@ -76,6 +76,22 @@ describe('workbench domain model', () => {
     expect(() => applyGenerated(emptyWithSource, { ...generatedFixture(), unsupported: true })).toThrow(/unknown field/)
   })
 
+  it('rejects empty generation and nodes not marked as AI provenance', () => {
+    const base = createWorkspace('architecture', 'Draft')
+    expect(() => applyGenerated(base, {
+      ...generatedFixture(),
+      nodes: [],
+      path: [],
+      questions: [],
+    })).toThrow(/at least one generated node/)
+
+    for (const provenance of ['user', 'demo']) {
+      const generated = generatedFixture()
+      generated.nodes[0].provenance = provenance
+      expect(() => applyGenerated(base, generated)).toThrow(/provenance.*must be ai/)
+    }
+  })
+
   it('records exact review intervals and returns due questions from the latest attempt only', () => {
     const workspace = fixtureWorkspace()
     const againAt = 1_700_000_000_000

@@ -230,6 +230,8 @@ function validateGeneratedContentData(value, baseWorkspace) {
   const base = validateWorkspaceData(baseWorkspace)
   const fields = ['title', 'summary', 'nodes', 'relations', 'path', 'questions']
   const generated = record(value, 'generated content', fields)
+  const generatedNodes = boundedArray(generated.nodes, 'generated content.nodes', limits.nodes)
+  if (!generatedNodes.length) fail('generated content.nodes', 'must contain at least one generated node')
   const candidate = validateWorkspaceData({
     ...base,
     title: generated.title,
@@ -240,6 +242,11 @@ function validateGeneratedContentData(value, baseWorkspace) {
     questions: generated.questions,
     attempts: [],
   })
+  for (const [index, node] of candidate.nodes.entries()) {
+    if (node.provenance !== 'ai') {
+      fail(`generated content.nodes[${index}].provenance`, 'must be ai')
+    }
+  }
   return {
     title: candidate.title,
     summary: candidate.summary,
