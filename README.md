@@ -96,7 +96,7 @@ src/
 ## 📦 快速开始
 
 ### 环境要求
-- Node.js >= 16.0
+- Node.js >= 18.0
 - pnpm >= 8.0
 
 ### 安装运行
@@ -113,8 +113,39 @@ pnpm install
 
 # 4. 启动开发服务器
 pnpm dev
-# 访问 http://localhost:5173
+# 访问 http://localhost:3000
 ```
+
+## 🧭 本地知识工作台
+
+OneLook 也提供本地优先的架构、产品和课程工作台。新工作区与经典思维导图保存在独立的 IndexedDB 数据库中，不会迁移或覆盖已有导图。支持手动编辑、Markdown/文本资料、版本历史、主动回忆与 Archify HTML 导出；本次迭代不导入 PDF 或整个代码仓库。
+
+Archify 的实际渲染器按固定提交下载到忽略目录 `.cache/archify`：
+
+```bash
+pnpm install
+pnpm setup:archify
+```
+
+开发时在两个终端运行本地 API 服务和 Vite：
+
+```bash
+pnpm start
+pnpm dev
+```
+
+打开 `http://localhost:3000`。发布/独立本地运行时：
+
+```bash
+pnpm build
+npm start
+```
+
+API 默认只监听 `127.0.0.1:3001`。不要将本地服务暴露到公网，也不要将其放在未受保护的公共反向代理后。
+
+AI 是可选的，使用者自行提供兼容 OpenAI 的 HTTPS 服务地址、模型和 API Key。Key 只在当前页面内存中保留，并在主动请求时经本机服务发送给允许的主机；不会写入工作区、浏览器存储、服务端磁盘或日志。默认只允许 `api.openai.com`。如需额外主机，在启动服务前明确配置精确主机名，例如 `AI_ALLOWED_HOSTS=api.openai.com,ai.example.com pnpm start`。AI 提供商会收到用户主动提交的相关工作区内容。更多隐私、安全、设置和测试边界见[开发与隐私说明](docs/workbench.md)。
+
+Archify 的上游许可证、NOTICE 和第三方声明随本地站点提供于 [`/third-party/archify/`](public/third-party/archify/)，渲染结果保留上游交付内容。OneLook 与 Archify 没有官方背书关系。
 
 ### 文档预览
 
