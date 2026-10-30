@@ -124,6 +124,7 @@ test('views share content but keep drag positions independent, then render a sel
   const initial = (await state(page))[0]
   await page.getByRole('button', { name: '管理 / 新建视图' }).click()
   await page.getByLabel('视图名称', { exact: true }).fill('登录产品视角')
+  await page.getByLabel('视角', { exact: false }).selectOption('product')
   await page.getByRole('button', { name: '创建独立视图' }).click(); await saved(page)
   await page.getByRole('button', { name: '编辑', exact: true }).click()
   await change(page, '解释', '这段正文由两个视图共享。')
@@ -133,6 +134,7 @@ test('views share content but keep drag positions independent, then render a sel
   await page.mouse.move(box.x + 45, box.y + 40); await page.mouse.down()
   await page.mouse.move(box.x + 80, box.y + 65, { steps: 5 }); await page.mouse.up(); await saved(page)
   const doc = (await state(page))[0]
+  expect(doc.views[1].scenario).toBe('product')
   expect(doc.views[0].positions).toEqual(initial.views[0].positions)
   expect(doc.views[1].positions).not.toEqual(doc.views[0].positions)
   await page.getByLabel('当前视图', { exact: true }).selectOption(doc.views[0].id)
