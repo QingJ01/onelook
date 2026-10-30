@@ -23,7 +23,7 @@ describe('Archify upstream render integration', () => {
       const firstSource = workspace.sources.find(source => source.id === firstNode.citations[0]?.sourceId)!
       const firstCard = ir.cards.find(card => card.title === firstNode.title)!
       expect(firstCard.items).toContain('Provenance: Demo content; not external evidence.')
-      expect(firstCard.items).toContain(`Citation from ${firstSource.title}: ${firstNode.citations[0]!.quote}`)
+      expect(firstCard.items.some(item => item.includes(`Citation from ${firstSource.title} (v1, current`))).toBe(true)
       if (scenario === 'architecture') {
         expect(ir.connections).toHaveLength(workspace.relations.length)
       } else if (scenario === 'product') {
@@ -41,11 +41,12 @@ describe('Archify upstream render integration', () => {
     const quote = '<img src=x onerror=alert(1)>'
     source.title = 'Material <svg onload="alert(1)">'
     source.text += `\n${quote}`
-    node.citations = [{ sourceId: source.id, quote }]
+    const start = source.text.indexOf(quote)
+    node.citations = [{ sourceId: source.id, quote, version: source.version, start, end: start + quote.length }]
 
     const { html, ir } = await renderWorkspace(workspace, { archifyRoot })
     const card = ir.cards.find(item => item.title === node.title)!
-    expect(card.items).toContain(`Citation from ${source.title}: ${quote}`)
+    expect(card.items.some(item => item.includes(`Citation from ${source.title} (v1, current`))).toBe(true)
     expect(html).toContain('&lt;svg onload=&quot;alert(1)&quot;&gt;')
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
     expect(html).not.toContain('<img src=x onerror=alert(1)>')
@@ -59,5 +60,22 @@ describe('Archify upstream render integration', () => {
     expect(ir.connections.map(edge => [edge.from, edge.to])).toEqual(
       workspace.relations.map((relation, index) => [`node_${workspace.nodes.findIndex(node => node.id === relation.from) + 1}`, `node_${workspace.nodes.findIndex(node => node.id === relation.to) + 1}`]),
     )
+  })
+
+  it('maps only the selected view and rejects an unknown view id', () => {
+    const workspace = exampleWorkspace('architecture')
+    const secondView = {
+      ...workspace.views[0]!,
+      id: 'view-second',
+      title: 'Subset',
+      nodeIds: [workspace.nodes[0]!.id],
+      path: [workspace.nodes[0]!.id],
+      positions: { [workspace.nodes[0]!.id]: workspace.views[0]!.positions[workspace.nodes[0]!.id]! },
+    }
+    workspace.views.push(secondView)
+    const selected = mapWorkspaceToIR(workspace, secondView.id)
+    expect(selected.components).toHaveLength(1)
+    expect(selected.connections).toHaveLength(0)
+    expect(() => mapWorkspaceToIR(workspace, 'missing-view')).toThrow(/Unknown workspace view/)
   })
 })

@@ -169,9 +169,9 @@ function createApplicationServer({
       return
     }
     const endpoints = new Map([
-      ['/api/generate', payload => generate(payload, allowedHosts, fetchImpl)],
-      ['/api/explain', payload => explain(payload, allowedHosts, fetchImpl)],
-      ['/api/render', async payload => renderWorkspace(payload?.workspace, { archifyRoot })],
+      ['/api/generate', (payload, signal) => generate(payload, allowedHosts, fetchImpl, signal)],
+      ['/api/explain', (payload, signal) => explain(payload, allowedHosts, fetchImpl, signal)],
+      ['/api/render', async (payload, signal) => renderWorkspace(payload?.workspace, { archifyRoot, viewId: payload?.viewId, signal })],
     ])
     const operation = endpoints.get(url.pathname)
     if (!operation) {
@@ -187,16 +187,23 @@ function createApplicationServer({
       return
     }
     active += 1
+    const controller = new AbortController()
+    const cancelOnDisconnect = () => {
+      if (!res.writableEnded) controller.abort()
+    }
+    res.on('close', cancelOnDisconnect)
     void (async () => {
       try {
         const payload = await readJson(req)
-        const result = await operation(payload)
+        const result = await operation(payload, controller.signal)
         respond(res, 200, result)
       } catch (error) {
+        if (res.destroyed) return
         const status = Number.isInteger(error?.statusCode) ? error.statusCode : 400
         const message = error instanceof Error ? error.message : 'Request could not be completed.'
         respond(res, status, { error: { message } })
       } finally {
+        res.off('close', cancelOnDisconnect)
         active -= 1
       }
     })()

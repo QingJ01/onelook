@@ -58,12 +58,15 @@ async function readLimited(response) {
   return new TextDecoder().decode(buffer)
 }
 
-async function complete({ baseUrl, model, apiKey }, systemPrompt, userContent, fetchImpl) {
+async function complete({ baseUrl, model, apiKey }, systemPrompt, userContent, fetchImpl, signal) {
   const endpoint = new URL(baseUrl)
   endpoint.pathname = `${endpoint.pathname.replace(/\/+$/, '')}/chat/completions`
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS)
+  const relayAbort = () => controller.abort(signal.reason)
+  signal?.addEventListener('abort', relayAbort, { once: true })
   try {
+    if (signal?.aborted) relayAbort()
     const response = await fetchImpl(endpoint, {
       method: 'POST',
       redirect: 'error',
@@ -83,6 +86,9 @@ async function complete({ baseUrl, model, apiKey }, systemPrompt, userContent, f
         ],
       }),
     })
+    if (signal?.aborted) {
+      throw Object.assign(new Error('AI provider request was cancelled.'), { statusCode: 499 })
+    }
     if (!response.ok) {
       const message = response.status === 401 || response.status === 403
         ? 'AI provider rejected the supplied API key.'
@@ -108,6 +114,9 @@ async function complete({ baseUrl, model, apiKey }, systemPrompt, userContent, f
       throw Object.assign(new Error('AI provider did not return a valid JSON object.'), { statusCode: 502 })
     }
   } catch (error) {
+    if (signal?.aborted) {
+      throw Object.assign(new Error('AI provider request was cancelled.'), { statusCode: 499 })
+    }
     if (controller.signal.aborted) {
       throw Object.assign(new Error('AI provider request timed out after 90 seconds.'), { statusCode: 504 })
     }
@@ -121,29 +130,35 @@ async function complete({ baseUrl, model, apiKey }, systemPrompt, userContent, f
     throw Object.assign(new Error('AI provider request failed.'), { statusCode: 502 })
   } finally {
     clearTimeout(timeout)
+    signal?.removeEventListener('abort', relayAbort)
   }
 }
 
 function emptyGraph(workspace) {
-  if (workspace.nodes.length || workspace.relations.length || workspace.path.length || workspace.questions.length) {
+  if (workspace.nodes.length || workspace.relations.length || workspace.views.some(view => view.nodeIds.length || view.path.length) || workspace.questions.length) {
     throw Object.assign(new TypeError('AI generation is only available for an empty workspace.'), { statusCode: 400 })
   }
 }
 
-async function generate(payload, allowedHosts, fetchImpl) {
+function currentSources(workspace) {
+  return workspace.sources.map(({ id, title, text, url, version, provenance }) => ({ id, title, text, url, version, provenance }))
+}
+
+async function generate(payload, allowedHosts, fetchImpl, signal) {
   const workspace = validateWorkspaceData(payload?.workspace)
   emptyGraph(workspace)
   const settings = settingsFrom(payload?.settings, allowedHosts)
   const generated = await complete(
     settings,
     generatePrompt,
-    JSON.stringify({ scenario: workspace.scenario, title: workspace.title, summary: workspace.summary, sources: workspace.sources }),
+    JSON.stringify({ scenario: workspace.scenario, title: workspace.title, summary: workspace.summary, sources: currentSources(workspace) }),
     fetchImpl,
+    signal,
   )
   return { generated: validateGeneratedContentData(generated, workspace) }
 }
 
-async function explain(payload, allowedHosts, fetchImpl) {
+async function explain(payload, allowedHosts, fetchImpl, signal) {
   const workspace = validateWorkspaceData(payload?.workspace)
   if (typeof payload?.nodeId !== 'string' || !workspace.nodes.some(node => node.id === payload.nodeId)) {
     throw Object.assign(new TypeError('The requested node does not exist in this workspace.'), { statusCode: 400 })
@@ -156,8 +171,9 @@ async function explain(payload, allowedHosts, fetchImpl) {
   const response = await complete(
     settings,
     explainPrompt,
-    JSON.stringify({ workspace: { title: workspace.title, summary: workspace.summary, sources: workspace.sources }, node, question: payload.question }),
+    JSON.stringify({ workspace: { title: workspace.title, summary: workspace.summary, sources: currentSources(workspace) }, node, question: payload.question }),
     fetchImpl,
+    signal,
   )
   if (typeof response.body !== 'string' || !response.body.trim() || response.body.length > 20000) {
     throw Object.assign(new TypeError('AI explanation must contain 1–20000 characters.'), { statusCode: 502 })

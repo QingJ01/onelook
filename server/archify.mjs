@@ -57,7 +57,15 @@ function descriptiveItems(node, workspace) {
     })
   const citationItems = node.citations.map(citation => {
     const source = workspace.sources.find(item => item.id === citation.sourceId)
-    return `Citation from ${source.title}: ${citation.quote}`
+    const version = citation.version === source.version
+      ? source
+      : source.versions.find(item => item.version === citation.version)
+    const freshness = citation.version === source.version ? 'current' : 'stale'
+    const filePath = version.filePath || source.filePath
+    const lineStart = version.text.slice(0, citation.start).split('\n').length
+    const lineEnd = version.text.slice(0, citation.end).split('\n').length
+    const location = `${filePath ? ` · ${filePath}` : ''} · lines ${lineStart}–${lineEnd}`
+    return `Citation from ${source.title} (v${citation.version}, ${freshness}${location}): ${citation.quote}`
   })
   const fieldItems = [
     ['Description', node.body],
@@ -220,7 +228,19 @@ function mapCourseTree(workspace, ids) {
   }
 }
 
-function mapWorkspaceToIR(workspace) {
+function mapWorkspaceToIR(value, viewId) {
+  const workspace = validateWorkspaceData(value)
+  const view = viewId === undefined
+    ? workspace.views[0]
+    : workspace.views.find(candidate => candidate.id === viewId)
+  if (!view) throw new TypeError(`Unknown workspace view "${viewId}".`)
+  const visibleIds = new Set(view.nodeIds)
+  workspace.scenario = view.scenario
+  workspace.nodes = workspace.nodes.filter(node => visibleIds.has(node.id))
+  workspace.relations = workspace.relations.filter(
+    relation => visibleIds.has(relation.from) && visibleIds.has(relation.to),
+  )
+  workspace.path = view.path
   if (!workspace.nodes.length) throw new TypeError('Add at least one knowledge node before rendering.')
   if (workspace.nodes.length > MAX_NODES) throw new TypeError(`Archify supports at most ${MAX_NODES} nodes per render.`)
   const ids = idMap(workspace)
@@ -229,9 +249,9 @@ function mapWorkspaceToIR(workspace) {
   return mapArchitecture(workspace, ids)
 }
 
-async function renderWorkspace(value, { archifyRoot = process.env.ARCHIFY_ROOT } = {}) {
+async function renderWorkspace(value, { archifyRoot = process.env.ARCHIFY_ROOT, viewId, signal } = {}) {
   const workspace = validateWorkspaceData(value)
-  const ir = mapWorkspaceToIR(workspace)
+  const ir = mapWorkspaceToIR(workspace, viewId)
   const cliPath = await resolveCliPath(archifyRoot)
   const jobDir = await mkdtemp(path.join(os.tmpdir(), 'onelook-archify-'))
   const inputPath = path.join(jobDir, 'workspace.ir.json')
@@ -251,11 +271,13 @@ async function renderWorkspace(value, { archifyRoot = process.env.ARCHIFY_ROOT }
       ], {
         cwd: jobDir,
         timeout: RENDER_TIMEOUT_MS,
+        ...(signal ? { signal } : {}),
         maxBuffer: 1024 * 1024,
         windowsHide: true,
         env: { ...process.env, ARCHIFY_UPDATE_CHECK_DISABLED: '1' },
       })
     } catch (error) {
+      if (signal?.aborted) throw Object.assign(new Error('Archify render was cancelled.'), { statusCode: 499 })
       const detail = error?.killed
         ? `timed out after ${RENDER_TIMEOUT_MS / 1000} seconds`
         : `failed with exit code ${error?.code ?? 'unknown'}`

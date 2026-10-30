@@ -33,9 +33,9 @@ describe('workbench IndexedDB storage', () => {
     let timestamp = 10_000
     const now = vi.spyOn(Date, 'now').mockImplementation(() => timestamp++)
     try {
-      await saveWorkspace(workspace)
+      let saved = await saveWorkspace(workspace)
       for (let index = 1; index <= 22; index += 1) {
-        await saveWorkspace({ ...workspace, summary: `Version ${index}`, updatedAt: index + 1 }, `Edit ${index}`)
+        saved = await saveWorkspace({ ...saved, summary: `Version ${index}`, updatedAt: index + 1 }, `Edit ${index}`, saved.revision)
       }
       const revisions = await listRevisions(workspace.id)
       expect(revisions).toHaveLength(20)
@@ -47,6 +47,20 @@ describe('workbench IndexedDB storage', () => {
     }
   })
 
+  it('uses compare-and-swap to reject a stale concurrent client', async () => {
+    const workspace = fixtureWorkspace('architecture')
+    const saved = await saveWorkspace(workspace)
+    const left = { ...saved, summary: 'Client A' }
+    const right = { ...saved, summary: 'Client B' }
+    const results = await Promise.allSettled([
+      saveWorkspace(left, undefined, saved.revision),
+      saveWorkspace(right, undefined, saved.revision),
+    ])
+    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
+    expect(results.filter(result => result.status === 'rejected')).toHaveLength(1)
+    expect((await getWorkspace(workspace.id))?.revision).toBe(saved.revision + 1)
+  })
+
   it('restores a snapshot while retaining only still-valid attempts and backing up current content', async () => {
     const original = fixtureWorkspace('course')
     original.attempts = [{
@@ -56,26 +70,27 @@ describe('workbench IndexedDB storage', () => {
       rating: 'good',
       at: 1000,
       dueAt: 2000,
+      errorReason: '',
     }]
-    await saveWorkspace(original)
+    const first = await saveWorkspace(original)
 
     const current = {
       ...original,
       summary: 'Current content',
       questions: [
         ...original.questions,
-        { id: 'question-new', nodeId: 'node-b', prompt: 'New?', answer: 'New answer.' },
+        { id: 'question-new', nodeId: 'node-b', prompt: 'New?', answer: 'New answer.', relatedNodeIds: [] },
       ],
       attempts: [
         ...original.attempts,
-        { id: 'attempt-new', questionId: 'question-new', answer: 'New attempt', rating: 'again' as const, at: 3000, dueAt: 4000 },
+        { id: 'attempt-new', questionId: 'question-new', answer: 'New attempt', rating: 'again' as const, at: 3000, dueAt: 4000, errorReason: '' },
       ],
     }
-    await saveWorkspace(current, 'Current version')
+    const savedCurrent = await saveWorkspace({ ...current, revision: first.revision }, 'Current version', first.revision)
     const [snapshot] = await listRevisions(original.id)
     expect(snapshot).toBeDefined()
 
-    const restored = await restoreRevision(snapshot!)
+    const restored = await restoreRevision(snapshot!, savedCurrent.revision)
     expect(restored.summary).toBe(original.summary)
     expect(restored.createdAt).toBe(original.createdAt)
     expect(restored.attempts).toEqual(original.attempts)
@@ -85,22 +100,22 @@ describe('workbench IndexedDB storage', () => {
 
   it('deletes a workspace and its revisions together', async () => {
     const workspace = fixtureWorkspace('product')
-    await saveWorkspace(workspace)
-    await saveWorkspace({ ...workspace, summary: 'Edited' }, 'Edit')
-    await deleteWorkspace(workspace.id)
+    const first = await saveWorkspace(workspace)
+    const saved = await saveWorkspace({ ...first, summary: 'Edited' }, 'Edit', first.revision)
+    await deleteWorkspace(workspace.id, saved.revision)
     expect(await getWorkspace(workspace.id)).toBeUndefined()
     expect(await listRevisions(workspace.id)).toEqual([])
   })
 
   it('rejects corrupted stored rows without overwriting the good record', async () => {
     const workspace = fixtureWorkspace('architecture')
-    await saveWorkspace(workspace)
+    const saved = await saveWorkspace(workspace)
     await expect(saveWorkspace({
       ...workspace,
       title: 'Invalid replacement',
       relations: [{ ...workspace.relations[0], to: 'missing-node' }],
     })).rejects.toThrow()
-    expect(await getWorkspace(workspace.id)).toEqual(workspace)
+    expect(await getWorkspace(workspace.id)).toEqual(saved)
 
     const corruption = new Dexie('OneLookWorkbench')
     corruption.version(1).stores({

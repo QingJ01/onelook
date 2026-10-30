@@ -21,22 +21,28 @@ must match the same pinned commit. This setup is for the local CLI renderer
 only; it does not install an Archify Skill or modify any global agent
 configuration.
 
-For development, start the API and frontend separately:
+For development, start both local processes together:
 
 ```sh
-pnpm start
-pnpm dev
+pnpm dev:all
 ```
 
 The API listens on `127.0.0.1:3001`; Vite listens on `localhost:3000` and proxies
-`/api` to that local service. For a standalone build:
+`/api` to that local service. `pnpm local` performs a frozen install, pinned
+Archify setup, production build, and starts the local production server on port
+3000 by default; `PORT` can override it. It does not open a browser.
 
 ```sh
-pnpm build
-npm start
+pnpm local
 ```
 
-Open `http://localhost:3001` after starting the standalone server.
+Open `http://localhost:3000`. When starting a built server manually with
+`pnpm start`, its default is `http://localhost:3001`.
+
+Browser storage is scoped to the exact origin (scheme, hostname, and port).
+For example, `localhost:3000` and `127.0.0.1:3000` are separate stores. Use
+workspace export/import to move data between origins; never assume a host or
+port change carries data over.
 
 The same Node process serves the built `dist` files and the API. `PORT` may
 change the local port, but the service remains bound to loopback. Do not expose
@@ -49,7 +55,19 @@ it through a public interface or an unprotected reverse proxy.
   Dexie database. There is no destructive migration.
 - Workspace data, sources, edits, attempts, and revision history remain in the
   browser's IndexedDB. Invalid data is rejected before it can replace a saved
-  workspace; the API validates the same structured contract.
+  workspace; the API validates the same structured contract. Canonical
+  workspaces are limited to 20 MiB of UTF-8 JSON, and each source retains at
+  most 50 older versions. A Dexie v1 workbench upgrade stores each raw legacy
+  workspace in a separate migration-backups table before conversion; a failed
+  conversion rolls back the database upgrade. Backups survive workspace
+  deletion and should be exported before clearing browser data.
+- Saves use compare-and-swap revisions. A stale edit or deletion raises a
+  conflict instead of overwriting newer work. Revision snapshots are capped
+  at 20 per workspace; migration backups are not part of that cap.
+- File reading is local-only: supported plain text is limited to 1 MiB and
+  PDFs to 10 MiB, 200 pages, and 300,000 extracted characters. Encrypted,
+  scanned-empty, malformed, and binary inputs are rejected. No file bytes are
+  uploaded by the reader.
 - AI is optional. The user supplies an OpenAI-compatible HTTPS base URL, model,
   and API key. The key is held by the current page session and sent in the
   request to the loopback service; it is not stored in IndexedDB, local
@@ -70,8 +88,7 @@ it through a public interface or an unprotected reverse proxy.
   configure hosts you trust; custom host allowlisting is an operator decision.
 - Server request bodies, provider responses, render output, render time, and
   active work are bounded. The service does not execute workspace or
-  model-generated JavaScript, and it does not ingest PDFs or whole repositories
-  in this iteration.
+  model-generated JavaScript, and it does not ingest whole repositories.
 
 ## Archify rendering and attribution
 
@@ -129,6 +146,6 @@ The suite includes domain validation and review timing, revision persistence
 and restore, a legacy database compatibility smoke test, same-origin/API
 security checks with a labeled mock provider, and actual Archify validation,
 rendering, and delivery. It does not make a live paid AI request or claim
-browser/UI visual acceptance. `pnpm build` runs the repository TypeScript and
+  browser/UI visual acceptance. `pnpm build` runs the repository TypeScript and
 Vite production build; no full UI test or project-wide lint migration is
 configured by this work.
