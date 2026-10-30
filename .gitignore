@@ -10,3 +10,4 @@ native-support/archive/upload/
 ui/theme/default/css/*.css
 ui/theme/default/css/*.css.map
 lib/bower/
+.cache/archify/
