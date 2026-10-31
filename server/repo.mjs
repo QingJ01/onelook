@@ -53,21 +53,31 @@ async function limited(response, maximum, label) {
   return buffer
 }
 
-async function githubFetch(path, fetchImpl, signal, { binary = false, maximum = MAX_META_BYTES } = {}) {
+async function githubFetch(path, fetchImpl, signal, { binary = false, maximum = MAX_META_BYTES, followArchiveRedirect = false } = {}) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REPO_TIMEOUT_MS)
   const relayAbort = () => controller.abort(signal.reason)
   signal?.addEventListener('abort', relayAbort, { once: true })
   try {
     if (signal?.aborted) relayAbort()
-    const response = await fetchImpl(`https://api.github.com${path}`, {
-      redirect: 'error',
+    const request = (url, redirect) => fetchImpl(url, {
+      redirect,
       signal: controller.signal,
       headers: {
         Accept: 'application/vnd.github+json',
         'User-Agent': 'onelook-local-workbench',
       },
     })
+    let response = await request(`https://api.github.com${path}`, followArchiveRedirect ? 'manual' : 'error')
+    if (followArchiveRedirect && response.status === 302) {
+      const location = response.headers.get('location') ?? ''
+      let target
+      try { target = new URL(location) } catch { target = undefined }
+      if (!target || target.protocol !== 'https:' || target.hostname !== 'codeload.github.com' || target.username || target.password) {
+        fail('GitHub redirected the archive to an unexpected host.', 502)
+      }
+      response = await request(target.href, 'error')
+    }
     if (signal?.aborted) fail('The repository import was cancelled.', 499)
     if (response.status === 404) fail('Repository not found, or it is private (unauthenticated access only).', 404)
     if (response.status === 403 || response.status === 429) fail('GitHub rate limited this request. Try again later.', 502)
@@ -96,6 +106,7 @@ async function importRepo(payload, fetchImpl, signal) {
   const zip = await githubFetch(`/repos/${owner}/${repo}/zipball/${sha}`, fetchImpl, signal, {
     binary: true,
     maximum: MAX_ZIP_BYTES,
+    followArchiveRedirect: true,
   })
   let archive
   try {

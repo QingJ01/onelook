@@ -21,7 +21,10 @@ function githubStub(zip: Uint8Array) {
     const href = String(url)
     if (href.endsWith('/repos/o/r')) return jsonResponse({ default_branch: 'main' })
     if (href.includes('/commits/')) return jsonResponse({ sha })
-    if (href.includes('/zipball/')) return new Response(zip)
+    if (href.includes('/zipball/')) {
+      return new Response(null, { status: 302, headers: { location: 'https://codeload.github.com/o/r/legacy.zip' } })
+    }
+    if (href.startsWith('https://codeload.github.com/')) return new Response(zip)
     return jsonResponse({ message: 'unexpected' }, 500)
   })
 }
@@ -63,6 +66,20 @@ describe('github repository import', () => {
     const fetcher = vi.fn<typeof fetch>(async () => jsonResponse({}, 403))
     await expect(importRepo({ url: 'https://github.com/o/r' }, fetcher, new AbortController().signal))
       .rejects.toThrow(/rate/i)
+  })
+
+  it('refuses archive redirects to hosts outside codeload.github.com', async () => {
+    const fetcher = vi.fn<typeof fetch>(async (url) => {
+      const href = String(url)
+      if (href.endsWith('/repos/o/r')) return jsonResponse({ default_branch: 'main' })
+      if (href.includes('/commits/')) return jsonResponse({ sha })
+      if (href.includes('/zipball/')) {
+        return new Response(null, { status: 302, headers: { location: 'https://evil.example/steal.zip' } })
+      }
+      return jsonResponse({ message: 'unexpected' }, 500)
+    })
+    await expect(importRepo({ url: 'https://github.com/o/r' }, fetcher, new AbortController().signal))
+      .rejects.toThrow(/unexpected host/)
   })
 
   it('fails when no supported text files exist', async () => {
