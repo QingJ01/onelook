@@ -131,4 +131,48 @@ describe('loopback API and provider boundary', () => {
     holding = false
     await expect.poll(async () => (await request()).status).toBe(200)
   })
+
+  it('serves a validated understanding report and requires sources', async () => {
+    const provider = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({
+      choices: [{ message: { content: JSON.stringify({
+        documentType: 'article',
+        summary: 'A short article.',
+        coverage: { analyzedSourceIds: ['source-a'], skippedSourceIds: [], omissions: [] },
+        entities: [{
+          id: 'entity-a', title: 'Idea', kind: 'concept', description: 'Main idea.',
+          certainty: 'supported', citations: [{ sourceId: 'source-a', quote: 'material text' }],
+        }],
+        relations: [],
+        suggestedViews: [],
+        gaps: [],
+        questions: [],
+      }) } }],
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    const { server, origin } = await startServer(provider)
+    servers.push(server)
+    const workspace = createWorkspace('architecture', 'With material')
+    workspace.sources.push({
+      id: 'source-a', title: 'Material', text: 'the material text is here',
+      version: 1, createdAt: 1, versions: [],
+    })
+    const response = await fetch(`${origin}/api/understand`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+      body: JSON.stringify({ workspace, settings }),
+    })
+    const result = await response.json()
+    expect(response.status).toBe(200)
+    expect(result.understanding.entities[0].citations[0]).toMatchObject({
+      quote: 'material text', start: 4, end: 17,
+    })
+    expect(JSON.stringify(result)).not.toContain(apiKey)
+
+    const empty = await fetch(`${origin}/api/understand`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+      body: JSON.stringify({ workspace: createWorkspace('course', 'No sources'), settings }),
+    })
+    expect(empty.status).toBe(400)
+    expect(await empty.json()).toMatchObject({ error: { message: expect.stringContaining('source') } })
+  })
 })

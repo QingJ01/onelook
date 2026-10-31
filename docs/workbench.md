@@ -68,6 +68,17 @@ it through a public interface or an unprotected reverse proxy.
   PDFs to 10 MiB, 200 pages, and 300,000 extracted characters. Encrypted,
   scanned-empty, malformed, and binary inputs are rejected. No file bytes are
   uploaded by the reader.
+- Folder and repository imports accept at most 100 supported text files and
+  300,000 total characters per import. Dependency directories, build output,
+  lockfiles, and binary files are skipped and listed in the import report.
+  GitHub imports call the public `api.github.com` endpoints through the
+  loopback service with no credentials, no redirects, and a 30 MB archive
+  cap; private repositories and rate limits return explicit errors.
+- `POST /api/understand` produces a structured material report (document type,
+  coverage, entities, semantic relations, suggested views, gaps, questions).
+  Entities and relations carry a certainty label — `supported` requires an
+  exact source quote, `inferred` and `unverified` are shown as such. The
+  report is preview-only and never written to the workspace.
 - AI is optional. The user supplies an OpenAI-compatible HTTPS base URL, model,
   and API key. The key is held by the current page session and sent in the
   request to the loopback service; it is not stored in IndexedDB, local

@@ -2,8 +2,9 @@ import { createServer as createHttpServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { explain, generate } from './ai.mjs'
+import { explain, generate, understand } from './ai.mjs'
 import { archifyAvailable, renderWorkspace } from './archify.mjs'
+import { importRepo } from './repo.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const JSON_LIMIT = 2 * 1024 * 1024
@@ -171,7 +172,9 @@ function createApplicationServer({
     }
     const endpoints = new Map([
       ['/api/generate', (payload, signal) => generate(payload, allowedHosts, fetchImpl, signal)],
+      ['/api/understand', (payload, signal) => understand(payload, allowedHosts, fetchImpl, signal)],
       ['/api/explain', (payload, signal) => explain(payload, allowedHosts, fetchImpl, signal)],
+      ['/api/repo', (payload, signal) => importRepo(payload, fetchImpl, signal)],
       ['/api/render', async (payload, signal) => renderWorkspace(payload?.workspace, { archifyRoot, viewId: payload?.viewId, signal })],
     ])
     const operation = endpoints.get(url.pathname)

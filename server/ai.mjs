@@ -1,5 +1,5 @@
-import { explainPrompt, generatePrompt } from './ai-prompts.mjs'
-import { validateGeneratedContentData, validateWorkspaceData } from '../shared/validation.mjs'
+import { explainPrompt, generatePrompt, understandPrompt } from './ai-prompts.mjs'
+import { validateGeneratedContentData, validateUnderstandingData, validateWorkspaceData } from '../shared/validation.mjs'
 
 const AI_TIMEOUT_MS = 90_000
 const RESPONSE_LIMIT = 2 * 1024 * 1024
@@ -144,6 +144,22 @@ function currentSources(workspace) {
   return workspace.sources.map(({ id, title, text, url, version, provenance }) => ({ id, title, text, url, version, provenance }))
 }
 
+async function understand(payload, allowedHosts, fetchImpl, signal) {
+  const workspace = validateWorkspaceData(payload?.workspace)
+  if (!workspace.sources.length) {
+    throw Object.assign(new TypeError('Add at least one source before asking AI to understand the material.'), { statusCode: 400 })
+  }
+  const settings = settingsFrom(payload?.settings, allowedHosts)
+  const understanding = await complete(
+    settings,
+    understandPrompt,
+    JSON.stringify({ scenario: workspace.scenario, title: workspace.title, summary: workspace.summary, sources: currentSources(workspace) }),
+    fetchImpl,
+    signal,
+  )
+  return { understanding: validateUnderstandingData(understanding, workspace) }
+}
+
 async function generate(payload, allowedHosts, fetchImpl, signal) {
   const workspace = validateWorkspaceData(payload?.workspace)
   emptyGraph(workspace)
@@ -181,4 +197,4 @@ async function explain(payload, allowedHosts, fetchImpl, signal) {
   return { explanation: response.body }
 }
 
-export { explain, generate, settingsFrom }
+export { explain, generate, settingsFrom, understand }

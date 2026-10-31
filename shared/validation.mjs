@@ -1,6 +1,8 @@
 const scenarios = new Set(['architecture', 'product', 'course'])
 const nodeKinds = new Set(['component', 'interface', 'requirement', 'actor', 'state', 'concept'])
-const relationKinds = new Set(['calls', 'depends', 'implements', 'next', 'prerequisite', 'compares'])
+const relationKinds = new Set(['calls', 'depends', 'implements', 'next', 'prerequisite', 'compares', 'supports', 'contradicts', 'partOf', 'causes', 'defines', 'evaluates'])
+const documentTypes = new Set(['article', 'paper', 'code', 'product', 'course', 'mixed', 'unknown'])
+const certaintyKinds = new Set(['supported', 'inferred', 'unverified'])
 const ratings = new Set(['again', 'good'])
 const viewKinds = new Set(['map', 'flow', 'learning'])
 const flowBranches = new Set(['main', 'failure', 'alternative'])
@@ -26,6 +28,8 @@ const limits = {
   alternatives: 100,
   questions: 300,
   attempts: 2000,
+  omissions: 50,
+  suggestedViews: 20,
 }
 
 function fail(path, reason) {
@@ -803,6 +807,24 @@ function validateWorkspaceData(value) {
   fail('workspace.schemaVersion', 'must equal 1 or 2')
 }
 
+function normalizeIncomingCitation(citation, citationPath, base) {
+  if (citation && Object.hasOwn(citation, 'version')) {
+    const canonical = validateCitation(citation, citationPath)
+    const source = base.sources.find(candidate => candidate.id === canonical.sourceId)
+    if (!source || canonical.version !== source.version) fail(citationPath, 'must cite the current source version')
+    validateCitationSource(canonical, citationPath, new Map([[source.id, source]]))
+    return canonical
+  }
+  const legacyCitation = record(citation, citationPath, ['sourceId', 'quote'])
+  const sourceId = identifier(legacyCitation.sourceId, `${citationPath}.sourceId`)
+  const quote = text(legacyCitation.quote, `${citationPath}.quote`, 20000, true)
+  const source = base.sources.find(candidate => candidate.id === sourceId)
+  if (!source) fail(citationPath, `references missing source "${sourceId}"`)
+  const start = source.text.indexOf(quote)
+  if (start < 0) fail(citationPath, 'quote must be an exact substring of its current source')
+  return { sourceId, quote, version: source.version, start, end: start + quote.length }
+}
+
 function normalizeGeneratedNode(value, index, base) {
   const path = `generated content.nodes[${index}]`
   const fields = ['id', 'title', 'kind', 'body', 'example', 'pitfall', 'notes', 'acceptance', 'citations', 'provenance', 'x', 'y']
@@ -817,24 +839,9 @@ function normalizeGeneratedNode(value, index, base) {
     notes: text(item.notes, `${path}.notes`, 10000),
     acceptance: text(item.acceptance, `${path}.acceptance`, 10000),
     provenance: enumValue(item.provenance, `${path}.provenance`, new Set(['user', 'ai', 'demo'])),
-    citations: boundedArray(item.citations, `${path}.citations`, 100).map((citation, citationIndex) => {
-      const citationPath = `${path}.citations[${citationIndex}]`
-      if (citation && Object.hasOwn(citation, 'version')) {
-        const canonical = validateCitation(citation, citationPath)
-        const source = base.sources.find(candidate => candidate.id === canonical.sourceId)
-        if (!source || canonical.version !== source.version) fail(citationPath, 'must cite the current source version')
-        validateCitationSource(canonical, citationPath, new Map([[source.id, source]]))
-        return canonical
-      }
-      const legacyCitation = record(citation, citationPath, ['sourceId', 'quote'])
-      const sourceId = identifier(legacyCitation.sourceId, `${citationPath}.sourceId`)
-      const quote = text(legacyCitation.quote, `${citationPath}.quote`, 20000, true)
-      const source = base.sources.find(candidate => candidate.id === sourceId)
-      if (!source) fail(citationPath, `references missing source "${sourceId}"`)
-      const start = source.text.indexOf(quote)
-      if (start < 0) fail(citationPath, 'quote must be an exact substring of its current source')
-      return { sourceId, quote, version: source.version, start, end: start + quote.length }
-    }),
+    citations: boundedArray(item.citations, `${path}.citations`, 100).map((citation, citationIndex) => (
+      normalizeIncomingCitation(citation, `${path}.citations[${citationIndex}]`, base)
+    )),
   }
   if (item.x !== undefined) node.x = finite(item.x, `${path}.x`)
   if (item.y !== undefined) node.y = finite(item.y, `${path}.y`)
@@ -919,4 +926,99 @@ function validateRevisionData(value) {
   return result
 }
 
-export { limits, validateGeneratedContentData, validateRevisionData, validateWorkspaceData }
+function validateUnderstandingData(value, baseWorkspace) {
+  const base = validateWorkspaceData(baseWorkspace)
+  const item = record(value, 'understanding', [
+    'documentType', 'summary', 'coverage', 'entities', 'relations', 'suggestedViews', 'gaps', 'questions',
+  ])
+  const coverage = record(item.coverage, 'understanding.coverage', ['analyzedSourceIds', 'skippedSourceIds', 'omissions'])
+  const sourceIds = new Set(base.sources.map(source => source.id))
+  const analyzed = stringIds(coverage.analyzedSourceIds, 'understanding.coverage.analyzedSourceIds', limits.sources)
+  const skipped = stringIds(coverage.skippedSourceIds, 'understanding.coverage.skippedSourceIds', limits.sources)
+  for (const id of analyzed) {
+    if (!sourceIds.has(id)) fail('understanding.coverage.analyzedSourceIds', `references missing source "${id}"`)
+  }
+  for (const id of skipped) {
+    if (!sourceIds.has(id)) fail('understanding.coverage.skippedSourceIds', `references missing source "${id}"`)
+  }
+  const omissions = boundedArray(coverage.omissions, 'understanding.coverage.omissions', limits.omissions)
+    .map((omission, index) => text(omission, `understanding.coverage.omissions[${index}]`, 500))
+  const entities = boundedArray(item.entities, 'understanding.entities', limits.nodes).map((entity, index) => {
+    const path = `understanding.entities[${index}]`
+    const value = record(entity, path, ['id', 'title', 'kind', 'description', 'certainty', 'citations'])
+    const citations = boundedArray(value.citations, `${path}.citations`, 100).map((citation, citationIndex) => (
+      normalizeIncomingCitation(citation, `${path}.citations[${citationIndex}]`, base)
+    ))
+    const certainty = enumValue(value.certainty, `${path}.certainty`, certaintyKinds)
+    if (certainty === 'supported' && !citations.length) {
+      fail(`${path}.citations`, 'a supported entity must cite source text')
+    }
+    return {
+      id: identifier(value.id, `${path}.id`),
+      title: text(value.title, `${path}.title`, 200, true),
+      kind: enumValue(value.kind, `${path}.kind`, nodeKinds),
+      description: text(value.description, `${path}.description`, 20000),
+      certainty,
+      citations,
+    }
+  })
+  if (!entities.length) fail('understanding.entities', 'must contain at least one entity')
+  const entityIds = new Set(entities.map(entity => entity.id))
+  if (entityIds.size !== entities.length) fail('understanding.entities', 'contains duplicate identifiers')
+  const relations = boundedArray(item.relations, 'understanding.relations', limits.relations).map((relation, index) => {
+    const path = `understanding.relations[${index}]`
+    const value = record(relation, path, ['id', 'from', 'to', 'semantic', 'label', 'certainty', 'citations'])
+    const citations = boundedArray(value.citations, `${path}.citations`, 100).map((citation, citationIndex) => (
+      normalizeIncomingCitation(citation, `${path}.citations[${citationIndex}]`, base)
+    ))
+    const certainty = enumValue(value.certainty, `${path}.certainty`, certaintyKinds)
+    if (certainty === 'supported' && !citations.length) {
+      fail(`${path}.citations`, 'a supported relation must cite source text')
+    }
+    if (!entityIds.has(value.from) || !entityIds.has(value.to)) {
+      fail(path, 'must reference existing entities')
+    }
+    return {
+      id: identifier(value.id, `${path}.id`),
+      from: value.from,
+      to: value.to,
+      semantic: enumValue(value.semantic, `${path}.semantic`, relationKinds),
+      label: text(value.label, `${path}.label`, 200),
+      certainty,
+      citations,
+    }
+  })
+  const suggestedViews = boundedArray(item.suggestedViews, 'understanding.suggestedViews', limits.suggestedViews)
+    .map((view, index) => {
+      const path = `understanding.suggestedViews[${index}]`
+      const value = record(view, path, ['title', 'scenario', 'kind', 'reason'])
+      return {
+        title: text(value.title, `${path}.title`, 200, true),
+        scenario: enumValue(value.scenario, `${path}.scenario`, scenarios),
+        kind: enumValue(value.kind, `${path}.kind`, viewKinds),
+        reason: text(value.reason, `${path}.reason`, 1000),
+      }
+    })
+  const gaps = boundedArray(item.gaps, 'understanding.gaps', limits.omissions)
+    .map((gap, index) => text(gap, `understanding.gaps[${index}]`, 1000))
+  const questions = boundedArray(item.questions, 'understanding.questions', limits.questions).map((question, index) => {
+    const path = `understanding.questions[${index}]`
+    const value = record(question, path, ['prompt', 'answer'])
+    return {
+      prompt: text(value.prompt, `${path}.prompt`, 3000, true),
+      answer: text(value.answer, `${path}.answer`, 20000),
+    }
+  })
+  return {
+    documentType: enumValue(item.documentType, 'understanding.documentType', documentTypes),
+    summary: text(item.summary, 'understanding.summary', 20000),
+    coverage: { analyzedSourceIds: analyzed, skippedSourceIds: skipped, omissions },
+    entities,
+    relations,
+    suggestedViews,
+    gaps,
+    questions,
+  }
+}
+
+export { limits, validateGeneratedContentData, validateUnderstandingData, validateRevisionData, validateWorkspaceData }

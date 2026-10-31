@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { makeSource, replaceSource, sourceVersion, citationLocation } from './evidence'
-import { readMaterialFile } from './materials'
+import { readMaterialFile, readMaterialFiles } from './materials'
+import { importRepo } from './api'
 import type { Citation, Workspace } from './types'
 
 const props = defineProps<{ workspace: Workspace; focus?: Citation; commit: (update: (doc: Workspace) => void, label: string) => boolean }>()
 const emit = defineEmits<{ remove: [id: string] }>()
 const selectedId = ref(''), version = ref(0), editing = ref(false), creating = ref(false)
 const title = ref(''), text = ref(''), url = ref(''), filePath = ref(''), revision = ref(''), error = ref(''), reading = ref(false)
-const input = ref<HTMLInputElement>(), highlight = ref<HTMLElement>()
+const input = ref<HTMLInputElement>(), folderInput = ref<HTMLInputElement>(), highlight = ref<HTMLElement>()
+const repoUrl = ref(''), importing = ref(''), importReport = ref<{ imported: number; skipped: { path: string; reason: string }[] }>()
 const selected = computed(() => props.workspace.sources.find(s => s.id === selectedId.value) ?? props.workspace.sources[0])
 const snapshot = computed(() => selected.value ? sourceVersion(selected.value, version.value || selected.value.version) : undefined)
 const activeQuote = computed(() => props.focus?.sourceId === selected.value?.id && props.focus.version === snapshot.value?.version ? props.focus : undefined)
@@ -37,6 +39,41 @@ async function importFile(event: Event) {
   catch (e) { error.value = (e as Error).message }
   finally { reading.value = false; (event.target as HTMLInputElement).value = '' }
 }
+async function importFolder(event: Event) {
+  const files = (event.target as HTMLInputElement).files
+  if (!files?.length) return
+  importing.value = 'folder'; error.value = ''
+  try {
+    const result = await readMaterialFiles(files)
+    if (!result.imported.length) { error.value = '文件夹中没有可导入的文本文件。'; return }
+    if (!props.commit(doc => {
+      for (const material of result.imported) {
+        doc.sources.push(makeSource(material.title, material.text, { filePath: material.filePath }))
+      }
+    }, `导入文件夹（${result.imported.length} 个文件）`)) return
+    importReport.value = { imported: result.imported.length, skipped: result.skipped }
+  } catch (e) { error.value = (e as Error).message }
+  finally { importing.value = ''; (event.target as HTMLInputElement).value = '' }
+}
+async function importGitHub() {
+  const url = repoUrl.value.trim()
+  if (!url || importing.value) return
+  importing.value = 'repo'; error.value = ''
+  const controller = new AbortController()
+  try {
+    const result = await importRepo(url, controller.signal)
+    if (!props.commit(doc => {
+      for (const file of result.files) {
+        doc.sources.push(makeSource(file.path, file.text, {
+          url: `https://github.com/${result.repo}`, filePath: file.path, revision: result.ref,
+        }))
+      }
+    }, `导入仓库 ${result.repo}（${result.files.length} 个文件）`)) return
+    importReport.value = { imported: result.files.length, skipped: result.skipped }
+    repoUrl.value = ''
+  } catch (e) { error.value = (e as Error).message }
+  finally { importing.value = '' }
+}
 function save() {
   if (!title.value.trim() || !text.value.trim()) return
   try {
@@ -57,6 +94,18 @@ function save() {
 <template>
   <div class="content-scroll sources-page">
     <div class="section-heading"><div><div class="document-eyebrow">EVIDENCE LIBRARY</div><h1>资料与依据</h1><p>原文、版本与位置一起保留。资料更新不会把旧引用冒充为新证据。</p></div><button class="ol-button primary" @click="edit(true)">添加资料</button></div>
+    <div class="import-row">
+      <input ref="folderInput" type="file" webkitdirectory hidden @change="importFolder" />
+      <button class="ol-button" :disabled="Boolean(importing)" @click="folderInput?.click()">{{ importing === 'folder' ? '正在导入文件夹…' : '导入源码文件夹' }}</button>
+      <label class="repo-field"><input v-model="repoUrl" type="url" placeholder="https://github.com/owner/repo" aria-label="GitHub 仓库地址" /><button class="ol-button" :disabled="Boolean(importing) || !repoUrl.trim()" @click="importGitHub">{{ importing === 'repo' ? '正在导入仓库…' : '从 GitHub 导入' }}</button></label>
+    </div>
+    <p class="small muted">文件夹与仓库导入只读取文本类文件（跳过 node_modules、构建产物、锁文件等），仅通过本地服务访问公开仓库，不发送 API 密钥。</p>
+    <div v-if="importReport" class="import-report" role="status">
+      <strong>已导入 {{ importReport.imported }} 个文件</strong>
+      <template v-if="importReport.skipped.length"><span>，跳过 {{ importReport.skipped.length }} 个：</span><ul><li v-for="item in importReport.skipped.slice(0, 8)" :key="item.path"><code>{{ item.path }}</code> · {{ item.reason }}</li></ul><p v-if="importReport.skipped.length > 8">…还有 {{ importReport.skipped.length - 8 }} 条未列出</p></template>
+      <button class="text-button" @click="importReport = undefined">关闭</button>
+    </div>
+    <p v-if="error && !editing" class="inline-error" role="alert">{{ error }}</p>
     <div class="source-layout">
       <nav class="source-index" aria-label="资料目录"><button v-for="item in workspace.sources" :key="item.id" :class="{ active: selected?.id === item.id }" @click="select(item.id)"><strong>{{ item.title }}</strong><span>v{{ item.version }} · {{ item.versions.length }} 个旧版本</span></button></nav>
       <section class="source-document">
