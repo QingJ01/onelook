@@ -1,3 +1,6 @@
+import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
 import type { Workspace } from '../../src/workbench/types'
 import { generatedFixture } from '../workbench/fixtures'
@@ -287,13 +290,21 @@ test('folder and GitHub imports keep manifests, and the AI understanding report 
   expect(repoSources).toHaveLength(2)
   expect(repoSources[0].revision).toBe('abc123def456')
 
-  await page.locator('input[type=file][webkitdirectory]').setInputFiles('/tmp/onelook-folder')
+  const fixtureDir = join(tmpdir(), `onelook-folder-${crypto.randomUUID()}`)
+  mkdirSync(join(fixtureDir, 'src'), { recursive: true })
+  mkdirSync(join(fixtureDir, 'node_modules', 'lib'), { recursive: true })
+  writeFileSync(join(fixtureDir, 'src', 'index.ts'), 'const entry = true')
+  writeFileSync(join(fixtureDir, 'README.md'), '# Demo')
+  writeFileSync(join(fixtureDir, 'node_modules', 'lib', 'index.js'), 'vendored')
+  writeFileSync(join(fixtureDir, 'logo.png'), 'img')
+  await page.locator('input[type=file][webkitdirectory]').setInputFiles(fixtureDir)
   await expect(page.locator('.import-report').last()).toContainText('已导入 2 个文件')
   await expect(page.locator('.import-report').last()).toContainText('node_modules')
   await saved(page)
   const all = (await state(page))[0].sources
-  expect(all.some(s => s.filePath === '/tmp/onelook-folder/src/index.ts' || s.filePath === 'onelook-folder/src/index.ts')).toBe(true)
+  expect(all.some(s => s.filePath?.endsWith('src/index.ts'))).toBe(true)
   expect(all.some(s => s.filePath?.includes('node_modules'))).toBe(false)
+  rmSync(fixtureDir, { recursive: true, force: true })
 
   await page.getByRole('button', { name: 'AI 设置', exact: true }).click()
   await page.getByLabel(/API Key/).fill('synthetic-test-not-a-real-secret')
