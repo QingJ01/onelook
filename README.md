@@ -119,7 +119,7 @@ pnpm dev
 
 ## 🧭 本地知识工作台
 
-OneLook 也提供本地优先的架构、产品和课程工作台。新工作区与经典思维导图保存在独立的 IndexedDB 数据库中，不会迁移或覆盖已有导图。支持手动编辑、Markdown/文本资料、版本历史、主动回忆与 Archify HTML 导出；本次迭代不导入 PDF 或整个代码仓库。
+OneLook 也提供本地优先的架构、产品和课程工作台。新工作区与经典思维导图保存在独立的 IndexedDB 数据库中，不会迁移或覆盖已有导图。支持多视图、资料版本、PDF 文本提取、源码引用、请求时序、产品验收、错因复习与 Archify HTML 导出。文件在浏览器提取文本；仅主动授权 AI 时发送相应资料文本，不自动分析整个仓库。
 
 Archify 的实际渲染器按固定提交下载到忽略目录 `.cache/archify`：
 
@@ -128,21 +128,21 @@ pnpm install
 pnpm setup:archify
 ```
 
-开发时在两个终端运行本地 API 服务和 Vite：
+开发时可一键运行本地 API 服务和 Vite：
 
 ```bash
-pnpm start
-pnpm dev
+pnpm dev:all
 ```
 
-打开 `http://localhost:3000`。发布/独立本地运行时：
+打开 `http://localhost:3000`。API 监听 `127.0.0.1:3001`。也可分别使用 `pnpm start` 和 `pnpm dev`。
+
+干净安装、准备 Archify、构建并启动本地生产版：
 
 ```bash
-pnpm build
-npm start
+pnpm local
 ```
 
-启动后打开 `http://localhost:3001`。
+默认打开 `http://localhost:3000`；`PORT=3002 pnpm local` 可使用其他端口。不同主机名或端口是不同浏览器 origin，因此 IndexedDB 数据互不相同；请通过工作台导出/导入在 origin 之间移动数据。
 
 API 默认只监听 `127.0.0.1:3001`。不要将本地服务暴露到公网，也不要将其放在未受保护的公共反向代理后。
 

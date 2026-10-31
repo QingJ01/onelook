@@ -12,6 +12,106 @@
   isolation: isolate;
 }
 
+.ol-app .service-status { flex-shrink: 0; border-bottom: 1px solid var(--line); background: #fff; font-size: 12px; }
+.ol-app .service-status summary { padding: 7px 24px; cursor: pointer; color: #63718a; }
+.ol-app .service-status > div { padding: 0 24px 14px; max-width: 1100px; }
+.ol-app .service-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 8px; background: #bd8550; }
+.ol-app .service-dot.ready { background: #258b78; }
+.ol-app .view-switchbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 10px 24px; border-bottom: 1px solid var(--line); background: #fff; flex-shrink: 0; }
+.ol-app .view-switchbar > label { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ol-app .view-switchbar select { max-width: 350px; min-width: 130px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 7px; background: #f7f8fc; }
+.ol-app .backup-reminder { margin-left: auto; font-size: 12px; color: #9b692f; }
+.ol-app .conflict-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 24px; background: #fff4db; border-bottom: 1px solid #ebd7ad; flex-shrink: 0; }
+.ol-app .studio-page { background: #fafbfe; }
+.ol-app .studio-page > h1, .ol-app .studio-page .section-heading h1, .ol-app .sources-page .section-heading h1 { font-size: 27px; line-height: 1.35; margin: 8px 0; letter-spacing: -.7px; }
+.ol-app .studio-page .section-heading h2, .ol-app .source-document h2 { font-size: 18px; margin: 0; }
+.ol-app .studio-section { margin-top: 28px; }
+.ol-app .studio-card { padding: 24px; background: white; border: 1px solid var(--line); border-radius: 14px; min-width: 0; }
+.ol-app .studio-form { display: flex; flex-direction: column; gap: 16px; align-items: stretch; }
+.ol-app .studio-form > .ol-button { align-self: flex-start; }
+.ol-app .studio-form .form-label { margin: 0; }
+.ol-app .studio-form .form-label input, .ol-app .studio-form .form-label textarea, .ol-app .studio-form .form-label select { min-width: 0; width: 100%; }
+.ol-app .studio-form h3 { margin: 12px 0 0; font-size: 15px; }
+.ol-app .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.ol-app .node-checks { border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px 20px; min-width: 0; }
+.ol-app .node-checks legend { padding: 0 6px; color: #64718a; font-size: 12px; }
+.ol-app .node-checks label { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.ol-app .node-checks input { flex-shrink: 0; accent-color: var(--accent); }
+.ol-app .status-chip { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 5px; background: #edf3f2; color: #3b7767; font-size: 11px; font-weight: 500; line-height: 1.5; }
+.ol-app .status-chip.warning { background: #fff3dd; color: #9a6b2b; }
+.ol-app .inline-error { color: #b24545; background: #fff1ef; border-radius: 6px; padding: 8px 12px; }
+.ol-app .citation-jump { text-align: left; overflow-wrap: anywhere; font-size: 12px; }
+.ol-app .evidence-editor details { background: #f8f9fd; padding: 12px; border: 1px dashed #dce2ed; border-radius: 8px; }
+.ol-app .evidence-editor summary { cursor: pointer; }
+.ol-app .source-layout, .ol-app .review-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: start; }
+.ol-app .source-index { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ol-app .source-index > button { display: flex; flex-direction: column; gap: 7px; padding: 14px; border-radius: 9px; border: 1px solid transparent; background: transparent; text-align: left; overflow-wrap: anywhere; }
+.ol-app .source-index > button.active { border-color: #ced8f3; background: #eef1fb; }
+.ol-app .source-index strong { font-size: 13px; font-weight: 550; line-height: 1.6; }
+.ol-app .source-index span { font-size: 11px; color: #7d899e; }
+.ol-app .source-document { min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 24px; background: #fff; }
+.ol-app .source-original { font: 13px/1.9 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 20px; padding: 18px; border-radius: 8px; background: #f8f9fc; tab-size: 2; }
+.ol-app .source-original mark { background: #ffdf78; color: #323b50; border-radius: 2px; scroll-margin: 100px; }
+.ol-app .sequence-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; margin-top: 20px; background: #fff; }
+.ol-app .sequence-scroll svg { display: block; max-width: none; }
+.ol-app .sequence-step { cursor: pointer; }
+.ol-app .sequence-step:focus { outline: none; }
+.ol-app .sequence-step:focus rect, .ol-app .sequence-step:hover rect { fill: #f1f4fc; stroke: #bcc9ee; }
+.ol-app .step-editor { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--line); }
+.ol-app .product-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.ol-app .product-column { padding: 16px; background: #f0f3f9; border-radius: 12px; min-width: 0; }
+.ol-app .product-column .section-heading { margin-bottom: 12px; gap: 8px; }
+.ol-app .product-column .section-heading h2 { font-size: 15px; white-space: nowrap; }
+.ol-app .product-record { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; width: 100%; padding: 16px; margin-top: 10px; border: 1px solid #e0e5ee; border-radius: 9px; background: #fff; text-align: left; overflow-wrap: anywhere; }
+.ol-app .product-record.active { border-color: #8198df; box-shadow: 0 3px 10px #5366d912; }
+.ol-app .product-record strong { font-size: 13px; }
+.ol-app .product-record small { color: #8590a3; font-size: 11px; }
+.ol-app .alternative-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+.ol-app .comparison-card, .ol-app .criterion-card { padding: 18px; background: #f7f9fc; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ol-app .review-summary { display: flex; flex-wrap: wrap; gap: 24px; margin: 10px 0 20px; }
+.ol-app .review-summary > span { padding: 15px 22px; background: white; border: 1px solid var(--line); border-radius: 10px; font-size: 12px; color: #758198; }
+.ol-app .review-summary strong { font-size: 26px; color: #5366d9; margin-right: 7px; font-variant-numeric: tabular-nums; }
+.ol-app .schedule-explanation { border-left: 3px solid #9aaddf; padding: 10px 16px; background: #f0f3fb; color: #61708b; font-size: 13px; margin-bottom: 20px; }
+.ol-app .schedule-explanation summary { cursor: pointer; }
+.ol-app .attempt-card { padding: 16px 0; border-top: 1px solid var(--line); }
+.ol-app .attempt-card > small { display: inline-block; font-size: 11px; color: #8b97aa; margin-left: 10px; }
+.ol-app .reflection { white-space: pre-wrap; padding: 12px; background: #fff7e8; border-radius: 6px; }
+.ol-app .import-summary { display: grid; grid-template-columns: 120px 1fr; gap: 10px; margin: 20px 0; }
+.ol-app .import-summary dt { color: #8590a3; }
+.ol-app .import-summary dd { margin: 0; }
+
+@media (max-width: 1200px) {
+  .ol-app .source-layout, .ol-app .review-layout { grid-template-columns: 170px minmax(0, 1fr); gap: 16px; }
+  .ol-app .product-board { gap: 8px; }
+  .ol-app .product-column { padding: 12px; }
+}
+@media (max-width: 980px) {
+  .ol-app .source-layout, .ol-app .review-layout { grid-template-columns: 1fr; }
+  .ol-app .source-index { flex-direction: row; overflow-x: auto; padding-bottom: 6px; }
+  .ol-app .source-index > button { min-width: 170px; max-width: 240px; flex-shrink: 0; }
+  .ol-app .view-switchbar select { max-width: 240px; }
+}
+@media (max-width: 600px) {
+  .ol-app .form-grid, .ol-app .product-board { grid-template-columns: 1fr; }
+  .ol-app .studio-card, .ol-app .source-document { padding: 16px; }
+  .ol-app .view-switchbar { padding: 8px 12px; gap: 4px 10px; }
+  .ol-app .view-switchbar > label { width: 100%; }
+  .ol-app .view-switchbar select { flex: 1; max-width: none; width: 0; }
+  .ol-app .view-switchbar > .small { display: none; }
+  .ol-app .backup-reminder { font-size: 11px; }
+  .ol-app .service-status summary { padding: 6px 12px; }
+  .ol-app .service-status > div { padding: 0 12px 12px; }
+  .ol-app .conflict-banner { padding: 10px 12px; }
+  .ol-app .review-summary { gap: 8px; }
+  .ol-app .review-summary > span { padding: 10px; }
+  .ol-app .review-summary strong { font-size: 22px; }
+  .ol-app .studio-page .section-heading { align-items: flex-start; flex-wrap: wrap; }
+  .ol-app .studio-page .section-heading h1 { font-size: 23px; }
+  .ol-app .alternative-grid { grid-template-columns: 1fr; }
+  .ol-app .studio-form .toolbar-actions { flex-wrap: wrap; }
+  .ol-app .studio-form .toolbar-actions > .form-label { width: 100%; }
+}
+
 .ol-app button,
 .ol-app input,
 .ol-app textarea,
@@ -734,6 +834,10 @@
   flex-direction: column;
   padding: 20px 13px 16px;
   overflow: auto;
+}
+
+.ol-app .workbench-nav > * {
+  flex-shrink: 0;
 }
 
 .ol-app .back-home {

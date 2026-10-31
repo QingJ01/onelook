@@ -106,4 +106,29 @@ describe('loopback API and provider boundary', () => {
     expect(JSON.stringify(result)).not.toContain(apiKey)
     expect(result.error.message).toContain('HTTP 500')
   })
+
+  it('cancels provider work on client disconnect, but not on normal body completion, and releases all slots', async () => {
+    const signals: AbortSignal[] = []
+    let holding = true
+    const provider = vi.fn<typeof fetch>(async (_input, init) => {
+      if (!holding) return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(generatedFixture()) } }] }))
+      signals.push(init!.signal!)
+      return new Promise((_resolve, reject) => init!.signal!.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true }))
+    })
+    const { server, origin } = await startServer(provider); servers.push(server)
+    const controllers = [new AbortController(), new AbortController(), new AbortController()]
+    const request = (signal?: AbortSignal) => fetch(`${origin}/api/generate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' }, signal,
+      body: JSON.stringify({ workspace: createWorkspace('course', 'Disconnect test'), settings }),
+    })
+    const pending = controllers.map(controller => request(controller.signal).catch(error => error))
+    await expect.poll(() => signals.length).toBe(3)
+    expect(signals.every(signal => !signal.aborted)).toBe(true)
+    expect((await request()).status).toBe(503)
+    controllers.forEach(controller => controller.abort())
+    await Promise.all(pending)
+    await expect.poll(() => signals.filter(signal => signal.aborted).length).toBe(3)
+    holding = false
+    await expect.poll(async () => (await request()).status).toBe(200)
+  })
 })

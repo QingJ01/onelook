@@ -10,25 +10,31 @@ export function fixtureWorkspace(
     id: 'source-1',
     title: 'Sample material',
     text: 'Foundation definition is stable and cited exactly.',
+    version: 1,
     createdAt: 100,
+    versions: [],
   }
+  const quote = 'Foundation definition'
   const first = {
     ...makeNode('Foundation'),
     id: 'node-a',
     body: 'A foundational idea.',
-    citations: [{ sourceId: source.id, quote: 'Foundation definition' }],
-    x: 10,
-    y: 20,
+    citations: [{
+      sourceId: source.id,
+      quote,
+      version: 1,
+      start: source.text.indexOf(quote),
+      end: source.text.indexOf(quote) + quote.length,
+    }],
   }
   const second = {
     ...makeNode('Application'),
     id: 'node-b',
     body: 'An applied idea.',
-    x: 30,
-    y: 40,
   }
   return validateWorkspace({
     ...base,
+    revision: 0,
     id,
     summary: 'A short fixture.',
     sources: [source],
@@ -40,10 +46,21 @@ export function fixtureWorkspace(
       kind: scenario === 'product' ? 'next' : scenario === 'course' ? 'prerequisite' : 'depends',
       label: 'extends',
     }],
-    path: [first.id, second.id],
+    views: [{
+      ...base.views[0],
+      nodeIds: [first.id, second.id],
+      path: [first.id, second.id],
+      positions: {
+        [first.id]: { x: 10, y: 20 },
+        [second.id]: { x: 30, y: 40 },
+      },
+    }],
+    flows: [],
+    decisions: [],
+    productItems: [],
     questions: [
-      { id: 'question-a', nodeId: first.id, prompt: 'What is the foundation?', answer: 'A base idea.' },
-      { id: 'question-b', nodeId: second.id, prompt: 'How is it applied?', answer: 'In a later context.' },
+      { id: 'question-a', nodeId: first.id, prompt: 'What is the foundation?', answer: 'A base idea.', relatedNodeIds: [] },
+      { id: 'question-b', nodeId: second.id, prompt: 'How is it applied?', answer: 'In a later context.', relatedNodeIds: [] },
     ],
     createdAt: 100,
     updatedAt: 200,

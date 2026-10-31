@@ -5,11 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:all": "node scripts/dev-all.mjs",
+    "local": "node scripts/local.mjs",
     "start": "node server/index.mjs",
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
     "setup:archify": "node scripts/setup-archify.mjs",
     "test": "vitest run test/workbench",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium webkit",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
@@ -21,10 +25,12 @@
     "katex": "^0.16.27",
     "lucide-vue-next": "^0.468.0",
     "marked": "^17.0.1",
+    "pdfjs-dist": "5.7.284",
     "pinia": "^2.3.0",
     "uuid": "^11.0.4"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@types/katex": "^0.16.8",
     "@types/marked": "^6.0.0",
     "@types/node": "^25.0.10",

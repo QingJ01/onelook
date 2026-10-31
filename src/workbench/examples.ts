@@ -1,4 +1,5 @@
 import type { KnowledgeNode, Scenario, Workspace } from './types'
+import { validateWorkspace } from './model'
 
 type ExampleNode = [string, KnowledgeNode['kind'], string, string, string]
 const examples: Record<Scenario, { title: string; summary: string; nodes: ExampleNode[]; edges: [number, number, string][]; questions: [number, string, string][] }> = {
@@ -50,17 +51,221 @@ export function exampleWorkspace(scenario: Scenario): Workspace {
   const sample = examples[scenario]
   const now = Date.now()
   const sourceId = 'demo-source'
-  const nodes: KnowledgeNode[] = sample.nodes.map(([title, kind, body, example, pitfall], i) => ({
-    id: `node-${i + 1}`, title, kind, body, example, pitfall, notes: '',
-    acceptance: scenario === 'product' ? ['待确认：用户能清楚说明预约结果。', '用户能看到日期、时区与可用状态。', '提交中防止重复操作，失败后允许重试。', '成功结果包含可再次查阅的预约编号。', '发生冲突时保留其他输入并允许重新选时段。', '待确认：取消截止时间和退款规则。'][i] : '',
-    citations: [{ sourceId, quote: body }], provenance: 'demo',
-    x: 60 + (i % 3) * 280, y: 70 + Math.floor(i / 3) * 230,
-  }))
-  return {
-    schemaVersion: 1, id: crypto.randomUUID(), title: sample.title, scenario, summary: sample.summary,
-    sources: [{ id: sourceId, title: '内置教学材料（示例，非外部证据）', text: sample.nodes.map(n => `${n[0]}\n${n[2]}`).join('\n\n'), createdAt: now }],
-    nodes, relations: sample.edges.map(([a, b, label], i) => ({ id: `edge-${i + 1}`, from: nodes[a]!.id, to: nodes[b]!.id, kind: scenario === 'course' ? 'prerequisite' : scenario === 'product' ? 'next' : 'calls', label })),
-    path: nodes.map(n => n.id), questions: sample.questions.map(([i, prompt, answer], j) => ({ id: `question-${j + 1}`, nodeId: nodes[i]!.id, prompt, answer })),
-    attempts: [], createdAt: now, updatedAt: now,
+  const sourceText = sample.nodes.map(node => `${node[0]}\n${node[2]}`).join('\n\n')
+  const cite = (quote: string) => {
+    const start = sourceText.indexOf(quote)
+    if (start < 0) throw new TypeError('Demo citation quote was not found in its source.')
+    return { sourceId, quote, version: 1, start, end: start + quote.length }
   }
+  const nodes: KnowledgeNode[] = sample.nodes.map(([title, kind, body, example, pitfall], i) => ({
+    id: `node-${i + 1}`,
+    title,
+    kind,
+    body,
+    example,
+    pitfall,
+    notes: '',
+    acceptance: scenario === 'product'
+      ? [
+          '待确认：用户能清楚说明预约结果。',
+          '用户能看到日期、时区与可用状态。',
+          '提交中防止重复操作，失败后允许重试。',
+          '成功结果包含可再次查阅的预约编号。',
+          '发生冲突时保留其他输入并允许重新选时段。',
+          '待确认：取消截止时间和退款规则。',
+        ][i]
+      : '',
+    citations: [cite(body)],
+    provenance: 'demo',
+  }))
+  const workspaceId = crypto.randomUUID()
+  const positions = Object.fromEntries(nodes.map((node, index) => [
+    node.id,
+    { x: 60 + (index % 3) * 280, y: 70 + Math.floor(index / 3) * 230 },
+  ]))
+  const demoFlow = scenario === 'product'
+    ? [{
+        id: 'demo-flow-1',
+        title: '预约主流程与失败分支（演示，未经验证）',
+        steps: [
+          {
+            id: 'demo-step-1',
+            from: nodes[0]!.id,
+            to: nodes[1]!.id,
+            message: '用户选择咨询时段',
+            condition: '演示主流程',
+            branch: 'main',
+            evidence: 'unverified',
+            citations: [cite(sample.nodes[0]![2])],
+          },
+          {
+            id: 'demo-step-2',
+            from: nodes[1]!.id,
+            to: nodes[2]!.id,
+            message: '核对信息并提交预约',
+            condition: '演示主流程',
+            branch: 'main',
+            evidence: 'unverified',
+            citations: [cite(sample.nodes[2]![2])],
+          },
+          {
+            id: 'demo-step-3',
+            from: nodes[2]!.id,
+            to: nodes[3]!.id,
+            message: '展示预约结果',
+            condition: '时段仍可用的演示路径',
+            branch: 'main',
+            evidence: 'unverified',
+            citations: [cite(sample.nodes[3]![2])],
+          },
+          {
+            id: 'demo-step-4',
+            from: nodes[2]!.id,
+            to: nodes[4]!.id,
+            message: '提示时段冲突',
+            condition: '提交时段已被占用的演示失败分支',
+            branch: 'failure',
+            evidence: 'unverified',
+            citations: [cite(sample.nodes[4]![2])],
+          },
+          {
+            id: 'demo-step-5',
+            from: nodes[4]!.id,
+            to: nodes[1]!.id,
+            message: '保留输入并重新选择',
+            condition: '演示恢复路径',
+            branch: 'failure',
+            evidence: 'unverified',
+            citations: [cite(sample.nodes[4]![2])],
+          },
+        ],
+      }]
+    : scenario === 'architecture' ? [{
+        id: 'demo-login-flow', title: '登录正常与失败链路（教学模型，非运行证据）',
+        steps: [
+          [0, 1, '提交登录信息', '用户主动提交', 'main', 0],
+          [1, 2, '查询账号与哈希', '输入合法且未触发限流', 'main', 2],
+          [1, 3, '校验提交的凭据', '已取得账号凭据', 'main', 3],
+          [1, 0, '返回统一认证失败', '凭据不匹配，不建立会话', 'failure', 3],
+          [3, 4, '建立服务端会话', '凭据匹配', 'main', 4],
+          [1, 5, '设置会话 Cookie', '会话建立成功', 'main', 5],
+          [5, 0, '后续请求携带会话标识', '符合 Cookie 属性约束', 'main', 5],
+        ].map(([from, to, message, condition, branch, evidence], index) => ({
+          id: `demo-login-step-${index + 1}`, from: nodes[from as number]!.id, to: nodes[to as number]!.id,
+          message, condition, branch, evidence: 'unverified', citations: [cite(sample.nodes[evidence as number]![2])],
+        })),
+      }] : []
+  const demoDecisions = scenario === 'product'
+    ? [{
+        id: 'demo-decision-1',
+        title: '取消规则待确认（演示记录）',
+        context: '示例材料指出取消边界尚待相关方确认；这不是已验证的产品规则。',
+        choice: '演示记录：在确认前保留待定状态，不把假设写成承诺。',
+        alternatives: '允许自助取消并确定截止时间；或由支持人员处理。',
+        consequences: '演示取舍需要产品、运营与退款政策共同确认。',
+        nodeIds: [nodes[5]!.id],
+        citations: [cite(sample.nodes[5]![2])],
+      }]
+    : scenario === 'architecture' ? [{
+        id: 'demo-login-decision', title: '服务端会话的取舍（演示，待确认）',
+        context: '教学模型需要展示登录与后续认证的区别；不是对真实系统的评审结论。',
+        choice: '演示采用服务端保存会话，Cookie 只传递会话标识；实际策略仍需安全评审。',
+        alternatives: '签名令牌与轮换机制；需另行设计失效、撤销与客户端存储边界。',
+        consequences: '需要管理会话过期、注销和存储可用性；会话身份不能替代资源授权。',
+        nodeIds: [nodes[4]!.id, nodes[5]!.id], citations: [cite(sample.nodes[4]![2]), cite(sample.nodes[5]![2])],
+      }] : []
+  const demoProductItems = scenario === 'product'
+    ? [
+        {
+          id: 'demo-product-1',
+          title: '清楚展示预约结果（演示假设）',
+          type: 'hypothesis',
+          status: 'unverified',
+          body: '演示假设：用户需要可再次查阅的预约结果；尚非研究结论。',
+          nodeIds: [nodes[0]!.id, nodes[3]!.id],
+          relatedIds: ['demo-product-2'],
+          citations: [cite(sample.nodes[0]![2]), cite(sample.nodes[3]![2])],
+          criteria: [{
+            id: 'demo-criterion-1',
+            text: '演示验收条件：结果包含日期、时区与预约编号。',
+            state: 'pending',
+            evidence: '',
+          }],
+          alternatives: [{
+            id: 'demo-alternative-1',
+            title: '在结果页展示并提供可再次访问的详情',
+            benefits: '演示预期：用户可回查关键信息。',
+            costs: '需要确认身份校验、链接有效期和隐私边界。',
+          }],
+        },
+        {
+          id: 'demo-product-2',
+          title: '时段冲突后的恢复（演示假设）',
+          type: 'hypothesis',
+          status: 'unverified',
+          body: '演示假设：冲突提示应保留其他已输入内容；需要通过研究与实现验证。',
+          nodeIds: [nodes[4]!.id],
+          relatedIds: ['demo-product-1'],
+          citations: [cite(sample.nodes[4]![2])],
+          criteria: [{
+            id: 'demo-criterion-2',
+            text: '演示验收条件：冲突后可重新选择时段。',
+            state: 'pending',
+            evidence: '',
+          }],
+          alternatives: [{
+            id: 'demo-alternative-2',
+            title: '刷新时段并继续编辑',
+            benefits: '演示预期：避免清空用户已填写内容。',
+            costs: '需要验证并发时段变化与表单状态恢复。',
+          }],
+        },
+      ]
+    : []
+  return validateWorkspace({
+    schemaVersion: 2,
+    revision: 0,
+    id: workspaceId,
+    title: sample.title,
+    scenario,
+    summary: sample.summary,
+    sources: [{
+      id: sourceId,
+      title: '内置教学材料（示例，非外部证据）',
+      text: sourceText,
+      version: 1,
+      createdAt: now,
+      versions: [],
+    }],
+    nodes,
+    relations: sample.edges.map(([a, b, label], i) => ({
+      id: `edge-${i + 1}`,
+      from: nodes[a]!.id,
+      to: nodes[b]!.id,
+      kind: scenario === 'course' ? 'prerequisite' : scenario === 'product' ? 'next' : 'calls',
+      label,
+    })),
+    views: [{
+      id: `view-${workspaceId}`,
+      title: sample.title,
+      scenario,
+      kind: scenario === 'course' ? 'learning' : scenario === 'product' ? 'flow' : 'map',
+      nodeIds: nodes.map(node => node.id),
+      path: nodes.map(node => node.id),
+      positions,
+    }],
+    flows: demoFlow,
+    decisions: demoDecisions,
+    productItems: demoProductItems,
+    questions: sample.questions.map(([i, prompt, answer], j) => ({
+      id: `question-${j + 1}`,
+      nodeId: nodes[i]!.id,
+      prompt,
+      answer,
+      relatedNodeIds: [],
+    })),
+    attempts: [],
+    createdAt: now,
+    updatedAt: now,
+  })
 }
