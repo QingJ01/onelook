@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Minus, Plus, LocateFixed, ArrowDownRight } from 'lucide-vue-next'
+import { Minus, Plus, LocateFixed } from 'lucide-vue-next'
 import { nodeKinds, type KnowledgeNode, type Relation } from './types'
 
 const props = defineProps<{ nodes: KnowledgeNode[]; relations: Relation[]; selectedId: string; highlighted: string[]; editable: boolean }>()
@@ -52,7 +52,7 @@ function end() {
 <template>
   <div class="graph-shell">
     <div class="graph-topline"><span><i class="live-dot" /> 关系地图</span><span>{{ nodes.length }} 个对象 · {{ relations.length }} 条关系</span></div>
-    <div v-if="!nodes.length" class="graph-empty"><ArrowDownRight :size="36" /><h3>从一个对象开始</h3><p>添加组件、需求或概念，也可以从资料生成地图。</p></div>
+    <div v-if="!nodes.length" class="graph-empty"><p>还没有对象。添加一个，或从资料生成。</p></div>
     <div v-else class="graph-scroll">
       <svg ref="canvas" :viewBox="`0 0 ${width} ${height}`" :style="{ width: `${width * zoom}px`, height: `${height * zoom}px` }" class="semantic-graph" aria-label="知识关系地图" @pointermove="move" @pointerup="end" @pointercancel="drag = undefined">
         <defs><marker id="edge-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#9ca7ba" /></marker></defs>
