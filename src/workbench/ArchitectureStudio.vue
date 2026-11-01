@@ -54,7 +54,7 @@ function removeDecision() {
 
 <template>
   <div class="content-scroll studio-page">
-    <div class="section-heading"><div><div class="document-eyebrow">REQUESTS & DECISIONS</div><h1>请求链路与架构决策</h1><p>显式记录消息顺序与条件。静态推断、运行证据和待核实假设分开呈现。</p></div><button class="ol-button primary" @click="addFlow">添加请求链路</button></div>
+    <div class="section-heading"><div><h1>请求链路与决策</h1><p class="muted">记录消息顺序与条件；推断、运行证据与待核实假设分开呈现。</p></div><button class="ol-button primary" @click="addFlow">添加请求链路</button></div>
     <div v-if="flow" class="studio-card">
       <div class="form-grid"><label class="form-label">请求链路<select :value="flow.id" @change="flowId = value($event); stepId = ''"><option v-for="f in workspace.flows" :key="f.id" :value="f.id">{{ f.title }}</option></select></label><label class="form-label">链路名称<input :value="flow.title" maxlength="200" @change="emit('change', d => { d.flows.find(f => f.id === flow!.id)!.title = value($event) }, '修改链路名称')" /></label></div>
       <div class="toolbar-actions"><button class="ol-button" :disabled="!workspace.nodes.length" @click="addStep">添加消息步骤</button><button class="text-button danger" @click="removeFlow">删除链路</button></div>
@@ -69,8 +69,8 @@ function removeDecision() {
         <button class="text-button" @click="emit('inspect', step.from)">回到发送方对象 ↗</button>
       </div>
     </div>
-    <div v-else class="empty-state"><h3>解释一条真实链路，而不是猜测箭头顺序</h3><p>先在关系地图添加组件，再创建链路。正常路径和失败条件都可以有独立证据。</p><button class="ol-button" @click="addFlow">创建第一条链路</button></div>
-    <div class="section-heading studio-section"><div><h2>架构决策记录</h2><p>保存为什么选择它，以及没有选择什么。</p></div><button class="ol-button" @click="addDecision">添加架构决策</button></div>
+    <div v-else class="empty-state"><h3>还没有链路</h3><p>先在地图添加组件，再创建链路。</p><button class="ol-button" @click="addFlow">创建链路</button></div>
+    <div class="section-heading studio-section"><div><h2>架构决策</h2><p class="muted">记录选择了什么、放弃了什么。</p></div><button class="ol-button" @click="addDecision">添加架构决策</button></div>
     <div v-if="decision" class="studio-card studio-form" :key="decision.id">
       <label class="form-label">选择决策<select :value="decision.id" @change="decisionId = value($event)"><option v-for="d in workspace.decisions" :key="d.id" :value="d.id">{{ d.title }}</option></select></label>
       <label class="form-label">决策标题<input :value="decision.title" @change="patchDecision({ title: value($event) })" /></label>

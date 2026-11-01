@@ -93,13 +93,13 @@ function save() {
 
 <template>
   <div class="content-scroll sources-page">
-    <div class="section-heading"><div><div class="document-eyebrow">EVIDENCE LIBRARY</div><h1>资料与依据</h1><p>原文、版本与位置一起保留。资料更新不会把旧引用冒充为新证据。</p></div><button class="ol-button primary" @click="edit(true)">添加资料</button></div>
+    <div class="section-heading"><div><h1>资料与依据</h1><p class="muted">原文、版本与位置一起保留；更新不会把旧引用冒充为新证据。</p></div><button class="ol-button primary" @click="edit(true)">添加资料</button></div>
     <div class="import-row">
       <input ref="folderInput" type="file" webkitdirectory hidden @change="importFolder" />
       <button class="ol-button" :disabled="Boolean(importing)" @click="folderInput?.click()">{{ importing === 'folder' ? '正在导入文件夹…' : '导入源码文件夹' }}</button>
       <label class="repo-field"><input v-model="repoUrl" type="url" placeholder="https://github.com/owner/repo" aria-label="GitHub 仓库地址" /><button class="ol-button" :disabled="Boolean(importing) || !repoUrl.trim()" @click="importGitHub">{{ importing === 'repo' ? '正在导入仓库…' : '从 GitHub 导入' }}</button></label>
     </div>
-    <p class="small muted">文件夹与仓库导入只读取文本类文件（跳过 node_modules、构建产物、锁文件等），仅通过本地服务访问公开仓库，不发送 API 密钥。</p>
+    <p class="small muted">只读取文本类文件（跳过 node_modules、构建产物、锁文件等）；仓库导入仅访问公开仓库，不发送密钥。</p>
     <div v-if="importReport" class="import-report" role="status">
       <strong>已导入 {{ importReport.imported }} 个文件</strong>
       <template v-if="importReport.skipped.length"><span>，跳过 {{ importReport.skipped.length }} 个：</span><ul><li v-for="item in importReport.skipped.slice(0, 8)" :key="item.path"><code>{{ item.path }}</code> · {{ item.reason }}</li></ul><p v-if="importReport.skipped.length > 8">…还有 {{ importReport.skipped.length - 8 }} 条未列出</p></template>
@@ -111,26 +111,26 @@ function save() {
       <section class="source-document">
         <form v-if="editing" class="studio-form" @submit.prevent="save">
           <h2>{{ creating ? '新资料' : '保存为新版本' }}</h2>
-          <p class="muted small">文件仅在浏览器读取，不自动上传。支持文本 PDF、TXT / Markdown 和所选源码文件；不含 OCR、整仓分析。路径和提交标记由你确认，不代表已验证运行行为。</p>
+          <p class="muted small">文件仅在浏览器读取。支持文本 PDF、TXT / Markdown 和源码文件，不含 OCR 与整仓分析。</p>
           <input ref="input" type="file" hidden @change="importFile" />
           <button class="ol-button" type="button" :disabled="reading" @click="input?.click()">{{ reading ? '正在提取文本…' : '选择 PDF / 文本 / 源码文件' }}</button>
           <label class="form-label">资料标题<input v-model="title" required maxlength="200" /></label>
           <label class="form-label">来源网址（可选）<input v-model="url" type="url" /></label>
           <div class="form-grid"><label class="form-label">文件相对路径<input v-model="filePath" placeholder="src/auth.ts" /></label><label class="form-label">版本 / Git 提交标记<input v-model="revision" placeholder="由你填写并核对" /></label></div>
           <label class="form-label">原文<textarea v-model="text" required rows="16" maxlength="300000" spellcheck="false" /></label>
-          <p v-if="!creating" class="privacy-box">当前原文会作为历史版本保留。已有引用标记为待核对，仍可跳回当时的准确原文。</p>
+          <p v-if="!creating" class="privacy-box">当前原文保留为历史版本；已有引用仍可跳回当时的原文。</p>
           <p v-if="error" class="inline-error" role="alert">{{ error }}</p>
           <div class="toolbar-actions"><button class="ol-button primary" :disabled="reading">保存资料</button><button class="text-button" type="button" @click="editing = false; creating = false">取消</button></div>
         </form>
         <template v-else-if="selected && snapshot">
           <div class="section-heading"><div><h2>{{ selected.title }}</h2><p class="small muted">{{ snapshot.filePath || '文本材料' }}{{ snapshot.revision ? ` · ${snapshot.revision}` : '' }}</p></div><div class="toolbar-actions"><button class="ol-button" @click="edit()">更新原文</button><button class="text-button danger" @click="emit('remove', selected.id)">删除资料</button></div></div>
           <label class="form-label">查看版本<select v-model="version"><option :value="0">v{{ selected.version }} · 当前原文</option><option v-for="old in [...selected.versions].reverse()" :key="old.version" :value="old.version">v{{ old.version }} · {{ new Date(old.createdAt).toLocaleString('zh-CN') }}</option></select></label>
-          <p v-if="snapshot.version !== selected.version" class="privacy-box">正在查看历史原文，不代表当前资料仍支持这个结论。</p>
+          <p v-if="snapshot.version !== selected.version" class="privacy-box">正在查看历史版本，不代表当前原文仍支持该结论。</p>
           <a v-if="selected.url" :href="selected.url" target="_blank" rel="noopener noreferrer">打开来源网址 ↗</a>
           <p v-if="activeQuote" class="status-chip">已定位：{{ citationLocation(selected, activeQuote) }}</p>
           <pre class="source-original"><template v-if="activeQuote">{{ snapshot.text.slice(0, activeQuote.start) }}<mark ref="highlight">{{ snapshot.text.slice(activeQuote.start, activeQuote.end) }}</mark>{{ snapshot.text.slice(activeQuote.end) }}</template><template v-else>{{ snapshot.text }}</template></pre>
         </template>
-        <div v-else class="empty-state"><h3>把理解建立在材料上</h3><p>导入文本、PDF 或精选源码，再将结论关联到原文位置。</p><button class="ol-button" @click="edit(true)">添加第一份资料</button></div>
+        <div v-else class="empty-state"><h3>还没有资料</h3><p>导入文本、PDF 或源码文件，再关联到原文位置。</p><button class="ol-button" @click="edit(true)">添加资料</button></div>
       </section>
     </div>
   </div>

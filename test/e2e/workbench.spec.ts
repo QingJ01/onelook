@@ -19,7 +19,7 @@ async function state(page: Page): Promise<Workspace[]> {
 
 async function sample(page: Page, index = 0) {
   await page.goto('/')
-  await page.getByRole('button', { name: '体验示例' }).nth(index).click()
+  await page.getByRole('button', { name: /示例$/ }).nth(index).click()
   await expect(page.getByLabel('工作空间标题')).toBeVisible()
   await saved(page)
 }
@@ -63,7 +63,7 @@ function textPdf() {
 test('architecture keeps ordered normal/failure paths, evidence labels and decisions', async ({ page }) => {
   await sample(page)
   await page.getByRole('button', { name: '请求链路与决策', exact: true }).click()
-  await expect(page.getByRole('heading', { name: '架构决策记录' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '架构决策', exact: true })).toBeVisible()
   await expect(page.locator('.sequence-scroll')).toContainText('返回统一认证失败')
   await expect(page.getByLabel('证据性质', { exact: false })).toHaveValue('unverified')
   await change(page, '消息 / 操作', '提交登录信息（已人工整理）')
@@ -125,7 +125,7 @@ test('course records independent answers, reflection, knowledge links and due re
 test('views share content but keep drag positions independent, then render a selected view', async ({ page }) => {
   await sample(page)
   const initial = (await state(page))[0]
-  await page.getByRole('button', { name: '管理 / 新建视图' }).click()
+  await page.getByRole('button', { name: '管理视图' }).click()
   await page.getByLabel('视图名称', { exact: true }).fill('登录产品视角')
   await page.getByLabel('视角', { exact: false }).selectOption('product')
   await page.getByRole('button', { name: '创建独立视图' }).click(); await saved(page)
@@ -143,7 +143,7 @@ test('views share content but keep drag positions independent, then render a sel
   await page.getByLabel('当前视图', { exact: true }).selectOption(doc.views[0].id)
   await expect(page.getByLabel('解释', { exact: true })).toHaveValue('这段正文由两个视图共享。')
   await page.getByRole('button', { name: 'Archify 视图', exact: true }).click()
-  await page.getByRole('button', { name: '生成 Archify 视图', exact: true }).click()
+  await page.getByRole('button', { name: '生成视图', exact: true }).click()
   await expect(page.getByTitle('Archify 隔离交互视图')).toBeVisible({ timeout: 30_000 })
   expect(await page.getByTitle('Archify 隔离交互视图').getAttribute('sandbox')).toBe('allow-scripts')
   await noPageOverflow(page)
@@ -214,7 +214,7 @@ test('import preflight rejects future schemas and preserves legacy entry', async
   await input.setInputFiles({ name: 'legacy.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) })
   await expect(page.getByRole('dialog', { name: '导入预检' })).toBeVisible()
   expect(await state(page)).toHaveLength(0)
-  await page.getByRole('button', { name: '确认导入独立副本' }).click(); await saved(page)
+  await page.getByRole('button', { name: '确认导入', exact: true }).click(); await saved(page)
   expect((await state(page))[0]).toMatchObject({ schemaVersion: 2, views: [expect.anything()] })
   expect((await state(page))[0].id).not.toBe(old.id)
   await page.getByRole('link', { name: /经典导图/ }).click()
@@ -259,10 +259,10 @@ test('controlled AI previews cannot overwrite edits; cancellation discards late 
   await page.getByLabel('空间名称', { exact: true }).fill('AI 初稿协议验收')
   await page.getByRole('button', { name: '创建工作空间', exact: false }).click(); await saved(page)
   await page.route('**/api/generate', route => route.fulfill({ json: { generated: generatedFixture() } }))
-  await page.getByRole('button', { name: 'AI 初稿', exact: true }).click()
-  await expect(page.getByRole('heading', { name: '先确认结构，再开始探索' })).toBeVisible()
+  await page.getByRole('button', { name: '生成初稿', exact: true }).click()
+  await expect(page.getByRole('heading', { name: '初稿预览' })).toBeVisible()
   await page.getByRole('button', { name: '采用这份初稿', exact: true }).click(); await saved(page)
-  await expect(page.locator('.detail-panel')).toContainText('AI 初稿 · 待核实')
+  await expect(page.locator('.detail-panel')).toContainText('AI 生成 · 待核实')
   await noPageOverflow(page)
 })
 
@@ -330,7 +330,7 @@ test('folder and GitHub imports keep manifests, and the AI understanding report 
     },
   }))
   await page.getByRole('button', { name: /关系地图/ }).first().click()
-  await page.getByRole('button', { name: 'AI 理解材料', exact: true }).click()
+  await page.getByRole('button', { name: '理解材料', exact: true }).click()
   await expect(page.getByRole('heading', { name: /材料理解报告/ })).toBeVisible()
   await expect(page.locator('.certainty-chip.supported')).toContainText('原文支持')
   await expect(page.locator('.certainty-chip.inferred').first()).toContainText('AI 推断')

@@ -35,7 +35,7 @@ function alternative(id: string, update: Partial<ProductAlternative>) {
 
 <template>
   <div class="content-scroll studio-page">
-    <div class="section-heading"><div><div class="document-eyebrow">FROM PROBLEM TO ACCEPTANCE</div><h1>产品方案与验收</h1><p>证据不是假设，假设不是决策。把问题、流程、取舍和验收项连起来。</p></div><span class="status-chip warning">{{ workspace.productItems.filter(i => i.status === 'unverified').length }} 项待核实</span></div>
+    <div class="section-heading"><div><h1>产品方案与验收</h1><p class="muted">区分证据、假设与决策，把问题、流程、取舍和验收项连起来。</p></div><span class="status-chip warning">{{ workspace.productItems.filter(i => i.status === 'unverified').length }} 项待核实</span></div>
     <div class="product-board">
       <section v-for="(label, type) in types" :key="type" class="product-column"><div class="section-heading"><h2>{{ label }}</h2><button class="text-button" @click="add(type)">+ 添加</button></div><button v-for="item in workspace.productItems.filter(i => i.type === type)" :key="item.id" :class="['product-record', { active: selected?.id === item.id }]" @click="selectedId = item.id"><span :class="['status-chip', { warning: item.status === 'unverified' }]">{{ statuses[item.status] }}</span><strong>{{ item.title }}</strong><small>{{ item.relatedIds.length }} 个关联 · {{ item.criteria.length }} 条验收</small></button><p v-if="!workspace.productItems.some(i => i.type === type)" class="muted small">从一条{{ label }}开始。</p></section>
     </div>
