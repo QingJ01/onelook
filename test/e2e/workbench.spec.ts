@@ -1,3 +1,6 @@
+import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
 import type { Workspace } from '../../src/workbench/types'
 import { generatedFixture } from '../workbench/fixtures'
@@ -260,5 +263,80 @@ test('controlled AI previews cannot overwrite edits; cancellation discards late 
   await expect(page.getByRole('heading', { name: '先确认结构，再开始探索' })).toBeVisible()
   await page.getByRole('button', { name: '采用这份初稿', exact: true }).click(); await saved(page)
   await expect(page.locator('.detail-panel')).toContainText('AI 初稿 · 待核实')
+  await noPageOverflow(page)
+})
+
+test('folder and GitHub imports keep manifests, and the AI understanding report stays verifiable', async ({ page }) => {
+  await sample(page)
+  await page.getByRole('button', { name: /资料与依据/ }).click()
+
+  await page.route('**/api/repo', route => route.fulfill({
+    json: {
+      repo: 'demo/project',
+      ref: 'abc123def456',
+      files: [
+        { path: 'src/index.ts', text: 'export const entry = true' },
+        { path: 'README.md', text: '# Demo project' },
+      ],
+      skipped: [{ path: 'pnpm-lock.yaml', reason: '不支持的类型或位于跳过目录' }],
+    },
+  }))
+  await page.getByLabel('GitHub 仓库地址').fill('https://github.com/demo/project')
+  await page.getByRole('button', { name: '从 GitHub 导入', exact: true }).click()
+  await expect(page.locator('.import-report')).toContainText('已导入 2 个文件')
+  await expect(page.locator('.import-report')).toContainText('pnpm-lock.yaml')
+  await saved(page)
+  const repoSources = (await state(page))[0].sources.filter(s => s.url === 'https://github.com/demo/project')
+  expect(repoSources).toHaveLength(2)
+  expect(repoSources[0].revision).toBe('abc123def456')
+
+  const fixtureDir = join(tmpdir(), `onelook-folder-${crypto.randomUUID()}`)
+  mkdirSync(join(fixtureDir, 'src'), { recursive: true })
+  mkdirSync(join(fixtureDir, 'node_modules', 'lib'), { recursive: true })
+  writeFileSync(join(fixtureDir, 'src', 'index.ts'), 'const entry = true')
+  writeFileSync(join(fixtureDir, 'README.md'), '# Demo')
+  writeFileSync(join(fixtureDir, 'node_modules', 'lib', 'index.js'), 'vendored')
+  writeFileSync(join(fixtureDir, 'logo.png'), 'img')
+  await page.locator('input[type=file][webkitdirectory]').setInputFiles(fixtureDir)
+  await expect(page.locator('.import-report').last()).toContainText('已导入 2 个文件')
+  await expect(page.locator('.import-report').last()).toContainText('node_modules')
+  await saved(page)
+  const all = (await state(page))[0].sources
+  expect(all.some(s => s.filePath?.endsWith('src/index.ts'))).toBe(true)
+  expect(all.some(s => s.filePath?.includes('node_modules'))).toBe(false)
+  rmSync(fixtureDir, { recursive: true, force: true })
+
+  await page.getByRole('button', { name: 'AI 设置', exact: true }).click()
+  await page.getByLabel(/API Key/).fill('synthetic-test-not-a-real-secret')
+  await page.getByRole('checkbox', { name: /我同意/ }).check()
+  await page.getByRole('button', { name: '完成', exact: true }).click()
+  const sourceId = (await state(page))[0].sources[0].id
+  const quote = (await state(page))[0].sources[0].text.slice(0, 12)
+  await page.route('**/api/understand', route => route.fulfill({
+    json: {
+      understanding: {
+        documentType: 'article',
+        summary: '受控理解报告',
+        coverage: { analyzedSourceIds: [sourceId], skippedSourceIds: [], omissions: ['未读取运行时数据'] },
+        entities: [
+          { id: 'entity-a', title: '受控实体', kind: 'concept', description: '有原文支持。', certainty: 'supported', citations: [{ sourceId, quote }] },
+          { id: 'entity-b', title: '推断实体', kind: 'concept', description: '推断内容。', certainty: 'inferred', citations: [] },
+        ],
+        relations: [{ id: 'rel-a', from: 'entity-a', to: 'entity-b', semantic: 'causes', label: '导致', certainty: 'inferred', citations: [] }],
+        suggestedViews: [{ title: '逻辑图', scenario: 'architecture', kind: 'map', reason: '结构化' }],
+        gaps: ['缺少基准数据'],
+        questions: [{ prompt: '检查题', answer: '参考答案' }],
+      },
+    },
+  }))
+  await page.getByRole('button', { name: /关系地图/ }).first().click()
+  await page.getByRole('button', { name: 'AI 理解材料', exact: true }).click()
+  await expect(page.getByRole('heading', { name: /材料理解报告/ })).toBeVisible()
+  await expect(page.locator('.certainty-chip.supported')).toContainText('原文支持')
+  await expect(page.locator('.certainty-chip.inferred').first()).toContainText('AI 推断')
+  await expect(page.locator('.ol-modal')).toContainText('导致')
+  await page.locator('.citation-chip').first().click()
+  await expect(page.locator('.source-original mark')).toContainText(quote)
+  expect(JSON.stringify(await state(page))).not.toContain('synthetic-test-not-a-real-secret')
   await noPageOverflow(page)
 })

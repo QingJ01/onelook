@@ -1,6 +1,8 @@
 export type Scenario = 'architecture' | 'product' | 'course'
 export type NodeKind = 'component' | 'interface' | 'requirement' | 'actor' | 'state' | 'concept'
-export type RelationKind = 'calls' | 'depends' | 'implements' | 'next' | 'prerequisite' | 'compares'
+export type RelationKind = 'calls' | 'depends' | 'implements' | 'next' | 'prerequisite' | 'compares' | 'supports' | 'contradicts' | 'partOf' | 'causes' | 'defines' | 'evaluates'
+export type DocumentType = 'article' | 'paper' | 'code' | 'product' | 'course' | 'mixed' | 'unknown'
+export type Certainty = 'supported' | 'inferred' | 'unverified'
 export interface SourceVersion { version: number; text: string; createdAt: number; filePath?: string; revision?: string }
 export interface Source extends SourceVersion { id: string; title: string; url?: string; versions: SourceVersion[] }
 export interface Citation { sourceId: string; quote: string; version: number; start: number; end: number }
@@ -47,4 +49,16 @@ export const scenarios: Record<Scenario, { name: string; description: string; co
   course: { name: '课程备考', description: '连接知识、练习与每一次复习', color: '#258b78', action: '开始学习' },
 }
 export const nodeKinds: Record<NodeKind, string> = { component: '组件', interface: '接口', requirement: '需求', actor: '角色', state: '状态', concept: '概念' }
-export const relationKinds: Record<RelationKind, string> = { calls: '调用', depends: '依赖', implements: '实现', next: '下一步', prerequisite: '先修', compares: '对比' }
+export const relationKinds: Record<RelationKind, string> = { calls: '调用', depends: '依赖', implements: '实现', next: '下一步', prerequisite: '先修', compares: '对比', supports: '支持', contradicts: '矛盾', partOf: '组成', causes: '导致', defines: '定义', evaluates: '评估' }
+export const documentTypes: Record<DocumentType, string> = { article: '技术文章', paper: '论文', code: '项目源码', product: '产品材料', course: '课程材料', mixed: '混合材料', unknown: '未识别' }
+export const certaintyKinds: Record<Certainty, string> = { supported: '原文支持', inferred: 'AI 推断', unverified: '待核实' }
+export interface UnderstandingEntity { id: string; title: string; kind: NodeKind; description: string; certainty: Certainty; citations: Citation[] }
+export interface UnderstandingRelation { id: string; from: string; to: string; semantic: RelationKind; label: string; certainty: Certainty; citations: Citation[] }
+export interface SuggestedView { title: string; scenario: Scenario; kind: WorkspaceView['kind']; reason: string }
+export interface MaterialUnderstanding {
+  documentType: DocumentType; summary: string;
+  coverage: { analyzedSourceIds: string[]; skippedSourceIds: string[]; omissions: string[] };
+  entities: UnderstandingEntity[]; relations: UnderstandingRelation[];
+  suggestedViews: SuggestedView[]; gaps: string[]; questions: { prompt: string; answer: string }[]
+}
+export interface RepoImport { repo: string; ref: string; files: { path: string; text: string }[]; skipped: { path: string; reason: string }[] }

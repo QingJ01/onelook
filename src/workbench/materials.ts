@@ -1,13 +1,15 @@
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+import { MAX_SOURCE_FILES, MAX_TOTAL_CHARACTERS, TEXT_EXTENSIONS, supportedSourcePath } from '../../shared/text-sources.mjs'
 
-const TEXT_EXTENSIONS = new Set([
-  'ts', 'tsx', 'js', 'jsx', 'py', 'java', 'go', 'rs', 'c', 'cpp', 'h', 'cs', 'kt',
-  'swift', 'sql', 'yaml', 'yml', 'json', 'vue', 'css', 'html', 'txt', 'md', 'markdown',
-])
 const MAX_TEXT_BYTES = 1024 * 1024
 const MAX_PDF_BYTES = 10 * 1024 * 1024
 const MAX_PDF_PAGES = 200
 const MAX_CHARACTERS = 300_000
+
+export interface FolderImport {
+  imported: { title: string; text: string; filePath: string }[]
+  skipped: { path: string; reason: string }[]
+}
 
 function safeRelativePath(file: File): string {
   const value = file.webkitRelativePath || file.name
@@ -71,4 +73,40 @@ export async function readMaterialFile(file: File): Promise<{ text: string; file
   if (text.includes('\0')) throw new TypeError('Binary files are not supported.')
   if (text.length > MAX_CHARACTERS) throw new TypeError('Text files may contain at most 300,000 characters.')
   return { text, filePath }
+}
+
+export async function readMaterialFiles(files: Iterable<File>): Promise<FolderImport> {
+  const imported: FolderImport['imported'] = []
+  const skipped: FolderImport['skipped'] = []
+  let total = 0
+  for (const file of files) {
+    let filePath: string
+    try {
+      filePath = safeRelativePath(file)
+    } catch (error) {
+      skipped.push({ path: file.name || '(unknown)', reason: (error as Error).message })
+      continue
+    }
+    if (!supportedSourcePath(filePath) && !filePath.toLowerCase().endsWith('.pdf')) {
+      skipped.push({ path: filePath, reason: '不支持的类型或位于跳过目录' })
+      continue
+    }
+    if (imported.length >= MAX_SOURCE_FILES) {
+      skipped.push({ path: filePath, reason: `最多导入 ${MAX_SOURCE_FILES} 个文件` })
+      continue
+    }
+    try {
+      const material = await readMaterialFile(file)
+      if (total + material.text.length > MAX_TOTAL_CHARACTERS) {
+        skipped.push({ path: filePath, reason: '超过本次导入总量上限' })
+        continue
+      }
+      imported.push({ title: filePath, text: material.text, filePath })
+      total += material.text.length
+    } catch (error) {
+      skipped.push({ path: filePath, reason: (error as Error).message })
+    }
+  }
+  if (!imported.length && !skipped.length) throw new TypeError('Select at least one file.')
+  return { imported, skipped }
 }

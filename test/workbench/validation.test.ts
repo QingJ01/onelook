@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   validateGeneratedContentData,
+  validateUnderstandingData,
   validateWorkspaceData,
 } from '../../shared/validation.mjs'
 
@@ -241,5 +242,83 @@ describe('canonical V2 validation and V1 migration', () => {
       ...base,
       nodes: generated.nodes,
     })).toThrow(/unknown field "x"/)
+  })
+
+  it('accepts new semantic relation kinds without treating them as flow order', () => {
+    const workspace = migratedWorkspace()
+    workspace.nodes.push({
+      id: 'node-two', title: 'Second node', kind: 'concept', body: '', example: '', pitfall: '',
+      notes: '', acceptance: '', citations: [], provenance: 'user',
+    })
+    for (const kind of ['supports', 'contradicts', 'partOf', 'causes', 'defines', 'evaluates']) {
+      workspace.relations = [{ id: `edge-${kind}`, from: 'node-old', to: 'node-two', kind, label: '' }]
+      expect(validateWorkspaceData(workspace).relations[0].kind).toBe(kind)
+    }
+    workspace.relations = [{ id: 'edge-bad', from: 'node-old', to: 'node-two', kind: 'because', label: '' }]
+    expect(() => validateWorkspaceData(workspace)).toThrow(/must be one of/)
+  })
+
+  it('validates a material understanding report against current sources', () => {
+    const base = migratedWorkspace()
+    const understanding = validateUnderstandingData({
+      documentType: 'article',
+      summary: 'A technical article about a subsystem.',
+      coverage: { analyzedSourceIds: ['source-old'], skippedSourceIds: [], omissions: ['No runtime data included.'] },
+      entities: [
+        {
+          id: 'entity-a', title: 'Foundation', kind: 'concept',
+          description: 'The main idea.', certainty: 'supported',
+          citations: [{ sourceId: 'source-old', quote: 'quoted evidence' }],
+        },
+        {
+          id: 'entity-b', title: 'Open question', kind: 'concept',
+          description: 'Not directly stated.', certainty: 'inferred', citations: [],
+        },
+      ],
+      relations: [{
+        id: 'rel-a', from: 'entity-a', to: 'entity-b', semantic: 'causes',
+        label: 'motivates', certainty: 'inferred', citations: [],
+      }],
+      suggestedViews: [{ title: 'Logical map', scenario: 'architecture', kind: 'map', reason: 'Shows structure.' }],
+      gaps: ['No benchmark numbers.'],
+      questions: [{ prompt: 'What does the article claim?', answer: 'That the foundation is stable.' }],
+    }, base) as any
+
+    expect(understanding.entities[0].citations[0]).toEqual({
+      sourceId: 'source-old', quote: 'quoted evidence', version: 1, start: 4, end: 19,
+    })
+    expect(understanding.relations[0].semantic).toBe('causes')
+  })
+
+  it('rejects understanding reports with uncited support, dangling entities, or unknown sources', () => {
+    const base = migratedWorkspace()
+    const report = {
+      documentType: 'article',
+      summary: '',
+      coverage: { analyzedSourceIds: ['source-old'], skippedSourceIds: [], omissions: [] },
+      entities: [
+        { id: 'entity-a', title: 'A', kind: 'concept', description: '', certainty: 'supported', citations: [] },
+      ],
+      relations: [],
+      suggestedViews: [],
+      gaps: [],
+      questions: [],
+    }
+    expect(() => validateUnderstandingData(report, base)).toThrow(/supported entity must cite/)
+
+    const withCite = structuredClone(report)
+    withCite.entities[0].citations = [{ sourceId: 'source-old', quote: 'quoted evidence' }]
+    withCite.relations = [{ id: 'rel-x', from: 'entity-a', to: 'missing', semantic: 'supports', label: '', certainty: 'inferred', citations: [] }]
+    expect(() => validateUnderstandingData(withCite, base)).toThrow(/existing entities/)
+
+    const badCoverage = structuredClone(withCite)
+    badCoverage.relations = []
+    badCoverage.coverage.analyzedSourceIds = ['nope']
+    expect(() => validateUnderstandingData(badCoverage, base)).toThrow(/missing source/)
+
+    const badQuote = structuredClone(withCite)
+    badQuote.relations = []
+    badQuote.entities[0].citations = [{ sourceId: 'source-old', quote: 'not in the source' }]
+    expect(() => validateUnderstandingData(badQuote, base)).toThrow(/exact substring/)
   })
 })

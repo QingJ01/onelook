@@ -1,10 +1,13 @@
 import {
   validateGeneratedContentData,
+  validateUnderstandingData,
   validateWorkspaceData,
 } from '../../shared/validation.mjs'
 import type {
   AISettings,
   GeneratedContent,
+  MaterialUnderstanding,
+  RepoImport,
   Workspace,
 } from './types'
 
@@ -69,6 +72,36 @@ export async function generateContent(
     settings,
   }, AI_TIMEOUT_MS, signal)
   return validateGeneratedContentData(response?.generated, current) as GeneratedContent
+}
+
+export async function understandWorkspace(
+  workspace: Workspace,
+  settings: AISettings,
+  signal?: AbortSignal,
+): Promise<MaterialUnderstanding> {
+  const current = validateWorkspaceData(workspace) as Workspace
+  const response = await postJson<{ understanding?: unknown }>('/api/understand', {
+    workspace: current,
+    settings,
+  }, AI_TIMEOUT_MS, signal)
+  return validateUnderstandingData(response?.understanding, current) as MaterialUnderstanding
+}
+
+export async function importRepo(url: string, signal?: AbortSignal): Promise<RepoImport> {
+  const response = await postJson<{ repo?: unknown; ref?: unknown; files?: unknown; skipped?: unknown }>(
+    '/api/repo',
+    { url },
+    AI_TIMEOUT_MS,
+    signal,
+  )
+  const value = response as RepoImport
+  if (
+    typeof value.repo !== 'string' || typeof value.ref !== 'string'
+    || !Array.isArray(value.files) || !Array.isArray(value.skipped)
+  ) {
+    throw new Error('The local service returned an invalid repository import.')
+  }
+  return value
 }
 
 export async function explainNode(

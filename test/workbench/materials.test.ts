@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { readMaterialFile } from '../../src/workbench/materials'
+import { readMaterialFile, readMaterialFiles } from '../../src/workbench/materials'
+
+function folderFile(path: string, text: string) {
+  const file = new File([text], path.split('/').pop()!, { type: 'text/plain' })
+  Object.defineProperty(file, 'webkitRelativePath', { value: path })
+  return file
+}
 
 describe('local material reader', () => {
   it('reads UTF-8 text with a relative path', async () => {
@@ -22,5 +28,26 @@ describe('local material reader', () => {
     const absolute = new File(['text'], 'safe.md')
     Object.defineProperty(absolute, 'webkitRelativePath', { value: '/Users/example/private/safe.md' })
     await expect(readMaterialFile(absolute)).rejects.toThrow(/relative path/)
+  })
+
+  it('imports a folder with a skip manifest for unsupported or excluded files', async () => {
+    const result = await readMaterialFiles([
+      folderFile('demo/src/index.ts', 'const entry = true'),
+      folderFile('demo/README.md', '# Demo'),
+      folderFile('demo/node_modules/lib/index.js', 'vendored'),
+      folderFile('demo/pnpm-lock.yaml', 'lockfile'),
+      folderFile('demo/assets/logo.png', 'PNG'),
+    ])
+    expect(result.imported.map(i => i.filePath).sort()).toEqual(['demo/README.md', 'demo/src/index.ts'])
+    expect(result.skipped.map(s => s.path).sort()).toEqual([
+      'demo/assets/logo.png', 'demo/node_modules/lib/index.js', 'demo/pnpm-lock.yaml',
+    ])
+  })
+
+  it('caps folder imports at the file and total-character limits', async () => {
+    const files = Array.from({ length: 101 }, (_, i) => folderFile(`demo/file-${i}.md`, 'x'))
+    const result = await readMaterialFiles(files)
+    expect(result.imported).toHaveLength(100)
+    expect(result.skipped.some(s => /最多导入/.test(s.reason))).toBe(true)
   })
 })
