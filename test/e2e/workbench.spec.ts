@@ -481,6 +481,7 @@ test('step transitions animate in play mode and fall back to plain switching wit
   await expect(play.locator('.diagram-token')).toHaveCount(2)
   await expect(play.locator('.diagram-node.is-focus')).toHaveCount(3)
   await expect(play.locator('.diagram-node.is-hidden')).toHaveCount(2)
+  await expect.poll(() => play.locator('.diagram-node.is-hidden').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).opacity))).toEqual(['0', '0'])
   expect(await play.locator('.diagram-camera').evaluate(node => getComputedStyle(node).transitionDuration)).toBe('0.6s')
   const before = await play.locator('.diagram-camera').evaluate(node => getComputedStyle(node).transform)
   await page.keyboard.press('ArrowRight')
@@ -530,6 +531,9 @@ test('exports a single HTML player that runs offline with no network requests', 
   await expect(player.locator('.counter')).toHaveText('2 / 6')
   await expect(player.locator('.node.hidden')).toHaveCount(2)
   await expect(player.locator('.node.focus')).toHaveCount(3)
+  // Objects that have not been introduced must be invisible, not merely dimmed.
+  await expect.poll(() => player.locator('.node.hidden').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).opacity))).toEqual(['0', '0'])
+  await expect(player.locator('.node.hidden.dim')).toHaveCount(0)
   await player.getByRole('button', { name: '下一步' }).click()
   await player.getByRole('button', { name: '下一步' }).click()
   await expect(player.locator('.node.hidden')).toHaveCount(0)

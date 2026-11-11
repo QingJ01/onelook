@@ -127,7 +127,7 @@
     step.focus.forEach(function (id) { focus[id] = true })
     if (parts.nodes) {
       for (var id in parts.nodes) {
-        parts.nodes[id].node.setAttribute('class', 'node' + (visible[id] ? '' : ' hidden') + (focus[id] ? ' focus' : step.focus.length ? ' dim' : ''))
+        parts.nodes[id].node.setAttribute('class', 'node' + (!visible[id] ? ' hidden' : focus[id] ? ' focus' : step.focus.length ? ' dim' : ''))
       }
       parts.tokens.textContent = ''
       parts.edges.forEach(function (edge) {
