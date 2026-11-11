@@ -235,17 +235,16 @@ function mapWorkspaceToIR(value, viewId) {
     : workspace.views.find(candidate => candidate.id === viewId)
   if (!view) throw new TypeError(`Unknown workspace view "${viewId}".`)
   const visibleIds = new Set(view.nodeIds)
-  workspace.scenario = view.scenario
   workspace.nodes = workspace.nodes.filter(node => visibleIds.has(node.id))
   workspace.relations = workspace.relations.filter(
     relation => visibleIds.has(relation.from) && visibleIds.has(relation.to),
   )
-  workspace.path = view.path
+  workspace.path = [...new Set(workspace.story.filter(step => step.stageId === view.id).flatMap(step => step.reveal))]
   if (!workspace.nodes.length) throw new TypeError('Add at least one knowledge node before rendering.')
   if (workspace.nodes.length > MAX_NODES) throw new TypeError(`Archify supports at most ${MAX_NODES} nodes per render.`)
   const ids = idMap(workspace)
-  if (workspace.scenario === 'product') return mapWorkflow(workspace, ids)
-  if (workspace.scenario === 'course' && hasRootedPrerequisiteTree(workspace)) return mapCourseTree(workspace, ids)
+  if (view.form === 'flow') return mapWorkflow(workspace, ids)
+  if (view.form === 'tree' && hasRootedPrerequisiteTree(workspace)) return mapCourseTree(workspace, ids)
   return mapArchitecture(workspace, ids)
 }
 

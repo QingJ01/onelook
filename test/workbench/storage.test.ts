@@ -79,7 +79,7 @@ describe('workbench IndexedDB storage', () => {
       summary: 'Current content',
       questions: [
         ...original.questions,
-        { id: 'question-new', nodeId: 'node-b', prompt: 'New?', answer: 'New answer.', relatedNodeIds: [] },
+        { id: 'question-new', nodeId: 'node-b', prompt: 'New?', answer: 'New answer.', relatedNodeIds: [], stepId: '' },
       ],
       attempts: [
         ...original.attempts,

@@ -1,43 +1,53 @@
 import {
+  storyFromPath,
   validateGeneratedContentData,
+  validateOutlineData,
   validateWorkspaceData,
+  workspaceIds,
 } from '../../shared/validation.mjs'
-import type {
-  GeneratedContent,
-  KnowledgeNode,
-  NodeKind,
-  Question,
-  Scenario,
-  Workspace,
-  WorkspaceView,
+import {
+  templates,
+  viewForms,
+  type GeneratedContent,
+  type KnowledgeNode,
+  type NodeKind,
+  type Question,
+  type StoryOutline,
+  type StoryStep,
+  type Template,
+  type ViewForm,
+  type Workspace,
+  type WorkspaceView,
 } from './types'
 
 export function validateWorkspace(value: unknown): Workspace {
   return validateWorkspaceData(value) as Workspace
 }
 
-export function createWorkspace(scenario: Scenario, title: string): Workspace {
+export function createWorkspace(template: Template, title: string, question = ''): Workspace {
   const now = Date.now()
   const id = crypto.randomUUID()
   return validateWorkspace({
-    schemaVersion: 2,
+    schemaVersion: 3,
     revision: 0,
     id,
     title,
-    scenario,
+    template,
+    question,
+    takeaway: '',
+    audience: '',
     summary: '',
     sources: [],
     nodes: [],
     relations: [],
     views: [{
       id: `view-${id}`,
-      title,
-      scenario,
-      kind: viewKind(scenario),
+      title: viewForms[templates[template].form].name,
+      form: templates[template].form,
       nodeIds: [],
-      path: [],
       positions: {},
     }],
+    story: [],
     flows: [],
     decisions: [],
     productItems: [],
@@ -60,60 +70,140 @@ export function makeNode(title: string, kind: NodeKind = 'concept'): KnowledgeNo
     acceptance: '',
     citations: [],
     provenance: 'user',
+    certainty: 'unverified',
   }
 }
 
-function viewKind(scenario: Scenario): WorkspaceView['kind'] {
-  if (scenario === 'product') return 'flow'
-  if (scenario === 'course') return 'learning'
-  return 'map'
+function freshId(workspace: Workspace): string {
+  const reserved = new Set(workspaceIds(workspace) as string[])
+  let id = crypto.randomUUID()
+  while (reserved.has(id)) id = crypto.randomUUID()
+  return id
 }
 
-export function makeView(workspace: Workspace, scenario: Scenario, title: string): WorkspaceView {
+export function makeView(workspace: Workspace, form: ViewForm, title: string, nodeIds?: string[]): WorkspaceView {
   const current = validateWorkspace(workspace)
-  const reservedIds = new Set([
-    current.id,
-    ...current.sources.map(source => source.id),
-    ...current.nodes.map(node => node.id),
-    ...current.relations.map(relation => relation.id),
-    ...current.views.map(view => view.id),
-    ...current.flows.flatMap(flow => [flow.id, ...flow.steps.map(step => step.id)]),
-    ...current.decisions.map(decision => decision.id),
-    ...current.productItems.flatMap(item => [
-      item.id,
-      ...item.criteria.map(criterion => criterion.id),
-      ...item.alternatives.map(alternative => alternative.id),
-    ]),
-    ...current.questions.map(question => question.id),
-    ...current.attempts.map(attempt => attempt.id),
-  ])
-  let id = crypto.randomUUID()
-  while (reservedIds.has(id)) id = crypto.randomUUID()
-  const defaultView = current.views[0]
   const view: WorkspaceView = {
-    id,
+    id: freshId(current),
     title,
-    scenario,
-    kind: viewKind(scenario),
-    nodeIds: current.nodes.map(node => node.id),
-    path: [...defaultView.path],
+    form,
+    nodeIds: nodeIds ?? current.nodes.map(node => node.id),
     positions: {},
   }
   const views = validateWorkspace({ ...current, views: [...current.views, view] }).views
   return views[views.length - 1]!
 }
 
+export function makeStep(workspace: Workspace, stageId: string, title: string): StoryStep {
+  const current = validateWorkspace(workspace)
+  const step: StoryStep = {
+    id: freshId(current), title, narration: '', stageId, reveal: [], focus: [], citations: [], provenance: 'user',
+  }
+  const story = validateWorkspace({ ...current, story: [...current.story, step] }).story
+  return story[story.length - 1]!
+}
+
+export interface StageState { stageId: string; visible: string[]; focus: string[] }
+
+/** What is on screen at a step: everything introduced on that stage so far, and what this step points at. */
+export function stageStateAt(workspace: Workspace, index: number): StageState | undefined {
+  const step = workspace.story[index]
+  if (!step) return undefined
+  const visible = new Set<string>()
+  for (const earlier of workspace.story.slice(0, index + 1)) {
+    if (earlier.stageId === step.stageId) earlier.reveal.forEach(id => visible.add(id))
+  }
+  const view = workspace.views.find(item => item.id === step.stageId)
+  const introducedElsewhere = new Set(workspace.story.slice(0, index).flatMap(item => item.reveal))
+  for (const id of view?.nodeIds ?? []) if (introducedElsewhere.has(id)) visible.add(id)
+  return {
+    stageId: step.stageId,
+    visible: (view?.nodeIds ?? []).filter(id => visible.has(id)),
+    focus: step.focus.length ? [...step.focus] : [...step.reveal],
+  }
+}
+
+/**
+ * Keep story references valid after content was removed: steps whose stage is gone move to the first
+ * view, reveals and focuses outside the stage are dropped, and questions let go of deleted steps.
+ * Returns how many steps lost their stage so the caller can tell the user.
+ */
+export function repairStory(draft: Workspace): number {
+  const stages = new Set([
+    ...draft.views.map(item => item.id), ...draft.flows.map(item => item.id),
+    ...draft.decisions.map(item => item.id), ...draft.productItems.map(item => item.id),
+  ])
+  let moved = 0
+  for (const step of draft.story) {
+    if (!stages.has(step.stageId)) { step.stageId = draft.views[0]!.id; moved += 1 }
+    const allowed = new Set(draft.views.find(view => view.id === step.stageId)?.nodeIds ?? [])
+    step.reveal = step.reveal.filter(id => allowed.has(id))
+    step.focus = step.focus.filter(id => allowed.has(id))
+    const sources = new Set(draft.sources.map(source => source.id))
+    step.citations = step.citations.filter(citation => sources.has(citation.sourceId))
+  }
+  const steps = new Set(draft.story.map(step => step.id))
+  for (const question of draft.questions) if (!steps.has(question.stepId)) question.stepId = ''
+  return moved
+}
+
+/** Adopt an AI outline: one view per diagram form the outline uses, then the steps. */
+export function applyOutline(workspace: Workspace, outline: unknown): Workspace {
+  const current = validateWorkspace(workspace)
+  const content = validateOutlineData(outline, current) as StoryOutline
+  const draft = structuredClone(current)
+  const viewByForm = new Map<ViewForm, WorkspaceView>()
+  const reserved = new Set(workspaceIds(draft) as string[])
+  const newId = () => {
+    let id = crypto.randomUUID()
+    while (reserved.has(id)) id = crypto.randomUUID()
+    reserved.add(id)
+    return id
+  }
+  for (const step of content.steps) {
+    if (viewByForm.has(step.form)) continue
+    const needed = [...new Set(content.steps.filter(item => item.form === step.form).flatMap(item => [...item.reveal, ...item.focus]))]
+    let view = draft.views.find(item => item.form === step.form)
+    if (!view) {
+      view = { id: newId(), title: viewForms[step.form].name, form: step.form, nodeIds: [], positions: {} }
+      draft.views.push(view)
+    }
+    for (const id of needed) if (!view.nodeIds.includes(id)) view.nodeIds.push(id)
+    viewByForm.set(step.form, view)
+  }
+  draft.question = content.question
+  draft.takeaway = content.takeaway
+  draft.audience = content.audience
+  draft.story = content.steps.map(step => ({
+    id: newId(),
+    title: step.title,
+    narration: step.narration,
+    stageId: viewByForm.get(step.form)!.id,
+    reveal: step.reveal,
+    focus: step.focus,
+    citations: step.citations,
+    provenance: 'ai',
+  }))
+  const stepIds = new Set(draft.story.map(step => step.id))
+  draft.questions.forEach(question => {
+    if (!stepIds.has(question.stepId)) question.stepId = draft.story.find(step => step.reveal.includes(question.nodeId))?.id ?? ''
+  })
+  draft.updatedAt = Date.now()
+  return validateWorkspace(draft)
+}
+
 export function applyGenerated(workspace: Workspace, generated: unknown): Workspace {
   const current = validateWorkspace(workspace)
   if (
     current.nodes.length || current.relations.length || current.questions.length
-    || current.flows.length || current.decisions.length || current.productItems.length
-    || current.views.some(view => view.nodeIds.length || view.path.length || Object.keys(view.positions).length)
+    || current.flows.length || current.decisions.length || current.productItems.length || current.story.length
+    || current.views.some(view => view.nodeIds.length || Object.keys(view.positions).length)
   ) {
     throw new TypeError('Generated content can only initialize an empty workspace.')
   }
   const content = validateGeneratedContentData(generated, current) as GeneratedContent
   const nodes = content.nodes.map(({ x: _x, y: _y, ...node }) => node)
+  const reserved = new Set(workspaceIds({ ...current, nodes, relations: content.relations, questions: content.questions }) as string[])
   const firstView = current.views[0]
   const positions = { ...firstView.positions }
   for (const node of content.nodes) {
@@ -122,16 +212,21 @@ export function applyGenerated(workspace: Workspace, generated: unknown): Worksp
     }
   }
   const views = current.views.map((view, index) => index === 0
-    ? { ...view, nodeIds: nodes.map(node => node.id), path: [...content.path], positions }
+    ? { ...view, nodeIds: nodes.map(node => node.id), positions }
     : view)
+  const story = storyFromPath(content.path, firstView.id, nodes, reserved, 'ai') as StoryStep[]
   return validateWorkspace({
     ...current,
     title: content.title,
     summary: content.summary,
     nodes,
     relations: content.relations,
-    questions: content.questions,
+    questions: content.questions.map(question => ({
+      ...question,
+      stepId: story.find(step => step.reveal.includes(question.nodeId))?.id ?? '',
+    })),
     views,
+    story,
     updatedAt: Date.now(),
   })
 }

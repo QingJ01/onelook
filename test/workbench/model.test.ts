@@ -15,7 +15,10 @@ describe('workbench domain model', () => {
   it('creates valid empty workspaces and user-provenance nodes', () => {
     const workspace = createWorkspace('architecture', 'New workspace')
     expect(validateWorkspace(workspace)).toEqual(workspace)
-    expect(workspace.schemaVersion).toBe(2)
+    expect(workspace.schemaVersion).toBe(3)
+    expect(workspace).toMatchObject({ template: 'architecture', question: '', takeaway: '', story: [] })
+    expect(workspace.views[0]!.form).toBe('graph')
+    expect(createWorkspace('book', 'A book', 'What does it argue?')).toMatchObject({ question: 'What does it argue?', views: [{ form: 'tree' }] })
     expect(workspace.revision).toBe(0)
     expect(workspace.nodes).toEqual([])
     expect(workspace.views).toHaveLength(1)
@@ -30,25 +33,25 @@ describe('workbench domain model', () => {
       body: '',
       citations: [],
       provenance: 'user',
+      certainty: 'unverified',
     })
   })
 
-  it('creates independent views with all nodes and a cloned default path', () => {
+  it('creates independent views of the same objects in another form', () => {
     const workspace = fixtureWorkspace()
     const defaultView = workspace.views[0]!
-    const view = makeView(workspace, 'product', 'Alternative flow')
+    const view = makeView(workspace, 'flow', 'Alternative flow')
     expect(view).toMatchObject({
-      scenario: 'product',
-      kind: 'flow',
+      form: 'flow',
       nodeIds: workspace.nodes.map(node => node.id),
-      path: defaultView.path,
       positions: {},
     })
     expect(view.id).not.toBe(defaultView.id)
     const withView = validateWorkspace({ ...workspace, views: [...workspace.views, view] })
     withView.views[0]!.positions['node-a'] = { x: 900, y: 800 }
     expect(withView.views[1]!.positions).toEqual({})
-    expect(makeView(withView, 'course', 'Learning view').kind).toBe('learning')
+    expect(makeView(withView, 'matrix', 'Comparison', ['node-b'])).toMatchObject({ form: 'matrix', nodeIds: ['node-b'] })
+    expect(() => makeView(withView, 'spiral' as never, 'Bad')).toThrow(/must be one of/)
   })
 
   it('rejects unknown fields, broken citations, and invalid source URLs', () => {
@@ -66,7 +69,7 @@ describe('workbench domain model', () => {
     })).toThrow(/HTTP\(S\)/)
   })
 
-  it('enforces graph integrity, prerequisite acyclicity, and path order', () => {
+  it('enforces graph integrity, prerequisite acyclicity, and story references', () => {
     const valid = fixtureWorkspace()
     expect(() => validateWorkspace({
       ...valid,
@@ -77,12 +80,22 @@ describe('workbench domain model', () => {
     })).toThrow(/cycles/)
     expect(() => validateWorkspace({
       ...valid,
-      views: valid.views.map((view, index) => index === 0 ? { ...view, path: ['node-b', 'node-a'] } : view),
-    })).toThrow(/prerequisite/)
+      story: valid.story.map((step, index) => index === 0 ? { ...step, stageId: 'missing-view' } : step),
+    })).toThrow(/missing view or block/)
     expect(() => validateWorkspace({
       ...valid,
-      questions: [{ id: 'question-a', nodeId: 'missing-node', prompt: 'q', answer: 'a', relatedNodeIds: [] }],
+      views: valid.views.map(view => ({ ...view, nodeIds: ['node-a'], positions: { 'node-a': view.positions['node-a'] } })),
+    })).toThrow(/outside its view/)
+    expect(() => validateWorkspace({
+      ...valid,
+      questions: [{ id: 'question-a', nodeId: 'missing-node', prompt: 'q', answer: 'a', relatedNodeIds: [], stepId: '' }],
     })).toThrow(/missing node/)
+    expect(() => validateWorkspace({
+      ...valid,
+      questions: [{ id: 'question-a', nodeId: 'node-a', prompt: 'q', answer: 'a', relatedNodeIds: [], stepId: 'step-gone' }],
+    })).toThrow(/missing story step/)
+    // A story may introduce things out of prerequisite order: that is a clarity warning, not corrupt data.
+    expect(validateWorkspace({ ...valid, story: [...valid.story].reverse() }).story[0]!.id).toBe('step-b')
   })
 
   it('applies validated generation only to an empty graph and preserves workspace identity and sources', () => {
@@ -105,10 +118,11 @@ describe('workbench domain model', () => {
     expect(result.createdAt).toBe(emptyWithSource.createdAt)
     expect(result.sources).toEqual(emptyWithSource.sources)
     expect(result.nodes[0]?.provenance).toBe('ai')
-    expect(result.views[0]).toMatchObject({
-      nodeIds: ['generated-a'],
-      path: ['generated-a'],
-    })
+    expect(result.nodes[0]?.certainty).toBe('inferred')
+    expect(result.views[0]).toMatchObject({ nodeIds: ['generated-a'] })
+    expect(result.story).toHaveLength(1)
+    expect(result.story[0]).toMatchObject({ title: 'Generated concept', stageId: result.views[0]!.id, reveal: ['generated-a'], provenance: 'ai' })
+    expect(result.questions.every(question => question.stepId === result.story[0]!.id)).toBe(true)
     expect(result.views[0]?.positions).toEqual({})
     expect(result).not.toHaveProperty('path')
     expect(() => applyGenerated(fixtureWorkspace(), generatedFixture())).toThrow(/empty workspace/)
@@ -156,7 +170,7 @@ describe('workbench domain model', () => {
       ...restarted,
       questions: [
         ...restarted.questions,
-        { id: 'question-never', nodeId: 'node-a', prompt: 'Unseen?', answer: 'Answer.', relatedNodeIds: [] },
+        { id: 'question-never', nodeId: 'node-a', prompt: 'Unseen?', answer: 'Answer.', relatedNodeIds: [], stepId: '' },
       ],
       attempts: [
         { id: 'older-a', questionId: 'question-a', answer: '', rating: 'again', at: 10, dueAt: 11, errorReason: '' },

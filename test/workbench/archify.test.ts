@@ -2,21 +2,23 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { archifyAvailable, mapWorkspaceToIR, renderWorkspace } from '../../server/archify.mjs'
 import { exampleWorkspace } from '../../src/workbench/examples'
-import type { Scenario } from '../../src/workbench/types'
+import type { Template } from '../../src/workbench/types'
 
 const archifyRoot = path.resolve(process.env.ARCHIFY_ROOT || path.join(process.cwd(), '.cache', 'archify'))
 const canRender = archifyAvailable(archifyRoot)
 
 describe('Archify upstream render integration', () => {
   it.skipIf(!canRender)('validates, renders, and delivers all three example workspaces with the pinned CLI', async () => {
-    const expected = new Map<Scenario, string>([
+    const expected = new Map<Template, string>([
       ['architecture', 'architecture'],
       ['product', 'workflow'],
       ['course', 'tree'],
     ])
     for (const scenario of ['architecture', 'product', 'course'] as const) {
       const workspace = exampleWorkspace(scenario)
-      const { html, ir } = await renderWorkspace(workspace, { archifyRoot })
+      // The diagram type follows the form of the chosen view; the course example keeps its tree in a second view.
+      const view = scenario === 'course' ? workspace.views.find(item => item.form === 'tree')! : workspace.views[0]!
+      const { html, ir } = await renderWorkspace(workspace, { archifyRoot, viewId: view.id })
       expect(ir.diagram_type).toBe(expected.get(scenario))
       expect(html).toMatch(/<html(?:\s|>)/i)
       const firstNode = workspace.nodes[0]!
@@ -69,8 +71,7 @@ describe('Archify upstream render integration', () => {
       id: 'view-second',
       title: 'Subset',
       nodeIds: [workspace.nodes[0]!.id],
-      path: [workspace.nodes[0]!.id],
-      positions: { [workspace.nodes[0]!.id]: workspace.views[0]!.positions[workspace.nodes[0]!.id]! },
+      positions: { [workspace.nodes[0]!.id]: { x: 10, y: 20 } },
     }
     workspace.views.push(secondView)
     const selected = mapWorkspaceToIR(workspace, secondView.id)

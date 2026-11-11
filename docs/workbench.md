@@ -48,6 +48,47 @@ The same Node process serves the built `dist` files and the API. `PORT` may
 change the local port, but the service remains bound to loopback. Do not expose
 it through a public interface or an unprotected reverse proxy.
 
+## Explanation model
+
+A workspace is one explanation: a question, a one-sentence takeaway, and a
+story of steps. The data has three layers.
+
+- **Understanding** — sources, objects, relations, citations, and a certainty
+  label per object (`supported`, `inferred`, `unverified`).
+- **Story** — ordered steps. Each step has one point, a narration, a stage, the
+  objects it introduces (`reveal`), the objects it points at (`focus`), and
+  its own citations. A stage is a diagram view or a content block (request
+  flow, decision, product record).
+- **Presentation** — a view renders the same objects as a relation graph, mind
+  map, flowchart, comparison table, or timeline. Layout is computed
+  (`src/workbench/layout.ts`, dagre for layered forms); only the relation
+  graph keeps manual positions. Changing the form never changes the content.
+
+Animation is not authored. In play mode it is the difference between two
+consecutive steps: introduced objects fade in, edges draw, the camera frames
+the focused objects, and a marker runs along edges between focused objects.
+`prefers-reduced-motion` turns all of it into plain switching.
+
+The clarity check (`src/workbench/clarity.ts`) is deterministic and does not
+call AI. It flags a missing question or takeaway, a step title that looks like
+several points, more than five new objects in one step, objects focused or
+named before they are introduced, prerequisites introduced after their
+dependents, objects that never appear, and objects with no citation that are
+not marked as inferred. It points at what to review; it does not measure
+understanding.
+
+The starting templates (project, product, course, concept, book or article)
+only choose the default diagram form and object type. The classic mind map
+editor stays separate; its exported `.json` / `.olook` file can be imported
+one way as a tree explanation from the home page.
+
+**Export.** "导出播放页" writes one HTML file with the story, precomputed
+layouts, and a small player. It carries a `default-src 'none'` content
+security policy and makes no network requests. Archify remains an optional
+static render of a single view ("精修图"); the diagram type follows the view's
+form (flow → workflow, a rooted prerequisite tree → tree, otherwise
+architecture) and it does not follow story steps.
+
 ## Storage and privacy
 
 - The classic editor continues to use its unchanged `OneLookDB` version-1
@@ -57,9 +98,13 @@ it through a public interface or an unprotected reverse proxy.
   browser's IndexedDB. Invalid data is rejected before it can replace a saved
   workspace; the API validates the same structured contract. Canonical
   workspaces are limited to 20 MiB of UTF-8 JSON, and each source retains at
-  most 50 older versions. A Dexie v1 workbench upgrade stores each raw legacy
-  workspace in a separate migration-backups table before conversion; a failed
-  conversion rolls back the database upgrade. Backups survive workspace
+  most 50 older versions. Stored data is schema version 3. Opening an older database
+  converts V1 and V2 workspaces in one transaction and stores each raw
+  pre-migration workspace in a separate migration-backups table first; a
+  failed conversion rolls back the whole upgrade. In the V2 → V3 conversion
+  the first view's path becomes one story step per object, questions attach
+  to the step that introduces their object, and objects get a certainty label
+  from their citations and provenance. Backups survive workspace
   deletion and should be exported before clearing browser data.
 - Saves use compare-and-swap revisions. A stale edit or deletion raises a
   conflict instead of overwriting newer work. Revision snapshots are capped
@@ -79,6 +124,13 @@ it through a public interface or an unprotected reverse proxy.
   Entities and relations carry a certainty label — `supported` requires an
   exact source quote, `inferred` and `unverified` are shown as such. The
   report is preview-only and never written to the workspace.
+- `POST /api/outline` proposes a story for the objects that already exist
+  (question, takeaway, steps with a form, reveal, focus, and citations). It
+  cannot add or rewrite objects, every object may be introduced only once,
+  and a quote must match the current source text. `POST /api/restep` rewrites
+  one step's narration (simpler, with an example, or as an analogy). Both are
+  previews: nothing is written until the user adopts the result, and an
+  adopted step is marked as AI-generated.
 - AI is optional. The user supplies an OpenAI-compatible HTTPS base URL, model,
   and API key. The key is held by the current page session and sent in the
   request to the loopback service; it is not stored in IndexedDB, local
