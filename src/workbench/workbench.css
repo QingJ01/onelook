@@ -1756,10 +1756,6 @@
     padding: 42px;
   }
 
-  .ol-app .graph-scroll {
-    display: flex;
-    justify-content: center;
-  }
 }
 
 @media (max-width:1200px) {

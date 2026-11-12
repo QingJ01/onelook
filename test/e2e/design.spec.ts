@@ -124,3 +124,67 @@ test('theme preference stays separate from workspace data and exported player sw
     rmSync(playerFile, { force: true })
   }
 })
+
+test('wide graph edges remain reachable without document overflow in both themes', async ({ page }) => {
+  await page.goto('/')
+  const app = page.locator('.ol-app')
+  await expect(app).toHaveAttribute('data-theme', 'light')
+  await page.getByRole('button', { name: '编程项目示例', exact: true }).click()
+  await expect(page.getByLabel('讲解标题')).toHaveValue('一次登录请求，如何抵达系统深处')
+  await page.locator('.workbench-nav .nav-item').filter({ hasText: /^结构/ }).click()
+  await page.getByRole('tab', { name: '图', exact: true }).click()
+
+  const scroll = page.locator('.graph-scroll')
+  const nodes = scroll.locator('.graph-node')
+  await expect(nodes).toHaveCount(6)
+
+  const assertNoDocumentOverflow = async () => {
+    const sizes = await page.evaluate(() => ({
+      document: document.documentElement.scrollWidth,
+      viewport: window.innerWidth,
+    }))
+    expect(sizes.document).toBeLessThanOrEqual(sizes.viewport + 1)
+  }
+  const scrollLeft = () => scroll.evaluate(element => (element as HTMLElement).scrollLeft)
+
+  for (const width of [1600, 1920]) {
+    await page.setViewportSize({ width, height: 1000 })
+
+    for (const theme of ['light', 'dark'] as const) {
+      const currentTheme = await app.getAttribute('data-theme')
+      if (currentTheme !== theme) {
+        await page.getByRole('button', {
+          name: theme === 'dark' ? '切换深色主题' : '切换浅色主题',
+          exact: true,
+        }).click()
+      }
+      await expect(app).toHaveAttribute('data-theme', theme)
+      await expect.poll(scrollLeft).toBe(0)
+      await assertNoDocumentOverflow()
+
+      const scrollBox = await scroll.boundingBox()
+      const firstBox = await nodes.first().boundingBox()
+      expect(scrollBox).not.toBeNull()
+      expect(firstBox).not.toBeNull()
+      expect(firstBox!.x).toBeGreaterThanOrEqual(scrollBox!.x)
+
+      const maxScrollLeft = await scroll.evaluate(element => {
+        const viewport = element as HTMLElement
+        return viewport.scrollWidth - viewport.clientWidth
+      })
+      if (maxScrollLeft > 0) {
+        await scroll.hover()
+        await page.mouse.wheel(maxScrollLeft + 100, 0)
+        await expect.poll(scrollLeft).toBeGreaterThanOrEqual(maxScrollLeft - 1)
+      }
+
+      const lastBox = await nodes.last().boundingBox()
+      expect(lastBox).not.toBeNull()
+      expect(lastBox!.x + lastBox!.width).toBeLessThanOrEqual(scrollBox!.x + scrollBox!.width + 2)
+      await assertNoDocumentOverflow()
+
+      if (maxScrollLeft > 0) await page.mouse.wheel(-maxScrollLeft - 100, 0)
+      await expect.poll(scrollLeft).toBe(0)
+    }
+  }
+})
