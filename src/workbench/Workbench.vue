@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { ArrowLeft, ArrowRight, Check, ChevronRight, CircleHelp, Download, Layers3, LoaderCircle, Plus, Search, Settings2, Trash2, X } from 'lucide-vue-next'
-import GraphCanvas from './GraphCanvas.vue'
+import StageView from './StageView.vue'
+import StoryStudio from './StoryStudio.vue'
 import SourceLibrary from './SourceLibrary.vue'
 import EvidenceEditor from './EvidenceEditor.vue'
 import ArchitectureStudio from './ArchitectureStudio.vue'
@@ -9,10 +10,12 @@ import ProductStudio from './ProductStudio.vue'
 import ReviewStudio from './ReviewStudio.vue'
 import { makeSource } from './evidence'
 import { exampleWorkspace } from './examples'
-import { createWorkspace, makeNode, makeView, validateWorkspace, applyGenerated, getDueQuestions } from './model'
+import { createWorkspace, makeNode, makeView, validateWorkspace, applyGenerated, applyOutline, repairStory, getDueQuestions } from './model'
+import { importClassicMap, isClassicMap } from './classic'
+import { exportPlayerHtml } from './player'
 import { listWorkspaces, getWorkspace, saveWorkspace, deleteWorkspace, listRevisions, restoreRevision, listMigrationBackups } from './storage'
-import { generateContent, understandWorkspace, explainNode, renderArchify, getApiHealth } from './api'
-import { scenarios, nodeKinds, relationKinds, documentTypes, certaintyKinds, type Citation, type Workspace, type Scenario, type KnowledgeNode, type RelationKind, type Revision, type GeneratedContent, type MaterialUnderstanding, type AISettings } from './types'
+import { generateContent, understandWorkspace, explainNode, outlineWorkspace, restepNarration, renderArchify, getApiHealth } from './api'
+import { templates, viewForms, nodeKinds, relationKinds, documentTypes, certaintyKinds, type Citation, type Workspace, type Template, type ViewForm, type KnowledgeNode, type RelationKind, type Revision, type GeneratedContent, type MaterialUnderstanding, type StoryOutline, type RestepMode, type AISettings } from './types'
 import './workbench.css'
 
 const location = window.location
@@ -20,19 +23,17 @@ const workspaces = ref<Workspace[]>([]), current = ref<Workspace>()
 const selectedId = ref(''), viewId = ref('')
 const selected = computed(() => current.value?.nodes.find(n => n.id === selectedId.value))
 const activeView = computed(() => current.value?.views.find(v => v.id === viewId.value) ?? current.value?.views[0])
-const viewNodes = computed(() => activeView.value?.nodeIds.flatMap(id => {
-  const node = current.value?.nodes.find(n => n.id === id)
-  return node ? [{ ...node, ...activeView.value?.positions[id] }] : []
-}) ?? [])
 const viewRelations = computed(() => current.value?.relations.filter(r => activeView.value?.nodeIds.includes(r.from) && activeView.value.nodeIds.includes(r.to)) ?? [])
-const tab = ref<'map' | 'explain' | 'sources' | 'practice' | 'archify' | 'architecture' | 'product' | 'views'>('map')
+const tab = ref<'sources' | 'structure' | 'story' | 'practice' | 'archify'>('structure')
+const structureTab = ref<'diagram' | 'architecture' | 'product' | 'views'>('diagram')
+const stepIndex = ref(0)
 const mode = ref<'explore' | 'edit' | 'present'>('explore')
-const modal = ref<'' | 'new' | 'settings' | 'relation' | 'history' | 'generate' | 'understand' | 'help'>('')
+const modal = ref<'' | 'new' | 'settings' | 'relation' | 'history' | 'generate' | 'understand' | 'outline' | 'help'>('')
 const switching = ref(false)
 const loading = ref(true), busy = ref(''), error = ref(''), notice = ref('')
 const saveState = ref<'saved' | 'saving' | 'error'>('saved')
-const search = ref(''), scenarioFilter = ref<Scenario | 'all'>('all')
-const filteredWorkspaces = computed(() => workspaces.value.filter(w => (scenarioFilter.value === 'all' || w.scenario === scenarioFilter.value) && `${w.title} ${w.summary}`.toLowerCase().includes(search.value.toLowerCase())))
+const search = ref(''), templateFilter = ref<Template | 'all'>('all')
+const filteredWorkspaces = computed(() => workspaces.value.filter(w => (templateFilter.value === 'all' || w.template === templateFilter.value) && `${w.title} ${w.question} ${w.summary}`.toLowerCase().includes(search.value.toLowerCase())))
 const nodeSearch = ref('')
 const listedNodes = computed(() => current.value?.nodes.filter(n => `${n.title} ${n.body}`.toLowerCase().includes(nodeSearch.value.toLowerCase())) ?? [])
 const scope = ref<'all' | 'upstream' | 'downstream'>('all')
@@ -45,21 +46,22 @@ const highlighted = computed(() => {
   }
   return [...seen]
 })
-const newTitle = ref(''), newScenario = ref<Scenario>('architecture'), newMaterial = ref('')
+const newTitle = ref(''), newQuestion = ref(''), newTemplate = ref<Template>('concept'), newMaterial = ref('')
 const relationFrom = ref(''), relationTo = ref(''), relationKind = ref<RelationKind>('calls'), relationLabel = ref('')
-const revisions = ref<Revision[]>([]), step = ref(0)
-const pathNodes = computed(() => activeView.value?.path.map(id => current.value!.nodes.find(n => n.id === id)).filter((n): n is KnowledgeNode => !!n) ?? [])
+const revisions = ref<Revision[]>([])
 const clock = ref(Date.now())
 const dueQuestions = computed(() => current.value ? getDueQuestions(current.value, clock.value) : [])
-const viewTitle = ref(''), viewScenario = ref<Scenario>('architecture'), focusedCitation = ref<Citation>()
+const viewTitle = ref(''), viewForm = ref<ViewForm>('graph'), focusedCitation = ref<Citation>()
 const externalChange = ref(false), healthError = ref(''), healthChecking = ref(false), backupAt = ref(0)
 const needsBackup = computed(() => !!current.value && (!backupAt.value || clock.value - backupAt.value >= 7 * 86400000))
-const importPreview = ref<Workspace>()
+const importPreview = ref<Workspace>(), importKind = ref<'backup' | 'classic'>('backup')
 const settings = ref<AISettings>({ baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini', apiKey: '' })
 const aiConsent = ref(false), aiQuestion = ref('用一个具体例子解释这个概念，并指出常见误区。')
 const aiDraft = ref<{ workspaceId: string; nodeId: string; original: string; body: string }>()
 const generated = ref<GeneratedContent>(), generatedFor = ref(''), generatedFrom = ref('')
 const understanding = ref<MaterialUnderstanding>(), understandingFor = ref('')
+const outlineDraft = ref<StoryOutline>(), outlineFor = ref(''), outlineAt = ref(0)
+const stepDraft = ref<{ workspaceId: string; stepId: string; original: string; narration: string }>()
 const artifact = ref<{ html: string; ir: unknown; updatedAt: number; workspaceId: string; viewId: string }>()
 const health = ref<{ archify: boolean; aiHosts: string[] }>()
 const artifactIsCurrent = computed(() => artifact.value?.workspaceId === current.value?.id && artifact.value?.updatedAt === current.value?.updatedAt && artifact.value?.viewId === activeView.value?.id)
@@ -97,7 +99,8 @@ onMounted(async () => {
 })
 onUnmounted(() => { clearInterval(timer); clearTimeout(noticeTimer); channel?.close(); requestController?.abort(); window.removeEventListener('beforeunload', beforeUnload); window.removeEventListener('focus', checkExternal) })
 watch(selectedId, () => { aiDraft.value = undefined })
-watch(viewId, () => { step.value = 0; scope.value = 'all'; if (!activeView.value?.nodeIds.includes(selectedId.value)) selectedId.value = activeView.value?.nodeIds[0] ?? '' })
+watch(viewId, () => { scope.value = 'all'; if (!activeView.value?.nodeIds.includes(selectedId.value)) selectedId.value = activeView.value?.nodeIds[0] ?? '' })
+watch(stepIndex, () => { stepDraft.value = undefined })
 watch(() => [settings.value.baseUrl, settings.value.model, settings.value.apiKey], () => { aiConsent.value = false; requestController?.abort() }, { flush: 'sync' })
 
 function commit(change: (draft: Workspace) => void, label: string) {
@@ -106,6 +109,7 @@ function commit(change: (draft: Workspace) => void, label: string) {
   if (externalChange.value) { fail('另一个标签页已修改此空间。请先保留本地副本或载入最新版本，不会覆盖对方内容。'); return false }
   try {
     const draft = clone(current.value); change(draft); draft.updatedAt = Math.max(Date.now(), current.value.updatedAt + 1)
+    if (repairStory(draft)) notify('被删除的画面曾用于讲解步骤，这些步骤已改用第一张图，请检查。')
     const valid = validateWorkspace(draft); current.value = valid
     const snapshot = clone(valid)
     if (writeFailed) { saveState.value = 'error'; return true }
@@ -148,15 +152,15 @@ async function withDocumentLock(action: () => Promise<void>) {
 function adoptWorkspace(item: Workspace) {
   requestController?.abort()
   current.value = item; persistedRevision = item.revision; writeFailed = false; saveState.value = 'saved'; externalChange.value = false
-  selectedId.value = item.nodes[0]?.id ?? ''; viewId.value = item.views[0]?.id ?? ''; mode.value = 'explore'; tab.value = 'map'; scope.value = 'all'; step.value = 0
-  artifact.value = undefined; aiDraft.value = undefined; generated.value = undefined; focusedCitation.value = undefined; nodeSearch.value = ''; error.value = ''
+  selectedId.value = item.nodes[0]?.id ?? ''; viewId.value = item.views[0]?.id ?? ''; mode.value = 'explore'; tab.value = item.story.length ? 'story' : 'structure'; structureTab.value = 'diagram'; scope.value = 'all'; stepIndex.value = 0
+  artifact.value = undefined; aiDraft.value = undefined; generated.value = undefined; outlineDraft.value = undefined; stepDraft.value = undefined; focusedCitation.value = undefined; nodeSearch.value = ''; error.value = ''
   try { backupAt.value = Number(localStorage.getItem(`onelook-backup:${item.id}`)) || 0 } catch { backupAt.value = 0 }
 }
 async function openWorkspace(id: string) {
   return withDocumentLock(async () => {
   await saveQueue
   if (saveState.value === 'error') { fail('当前内容未保存，请先重试保存、保留副本或导出备份。'); return }
-  try { const item = await getWorkspace(id); if (!item) throw new Error('工作空间不存在。'); adoptWorkspace(item) } catch (e) { fail(e) }
+  try { const item = await getWorkspace(id); if (!item) throw new Error('这份讲解不存在。'); adoptWorkspace(item) } catch (e) { fail(e) }
 
   })
 }
@@ -184,77 +188,68 @@ async function home() {
   return withDocumentLock(async () => { await saveQueue; if (saveState.value === 'error') { fail('请先保存或导出当前内容。'); return }; requestController?.abort(); current.value = undefined; mode.value = 'explore'; await refresh()
   })
 }
-async function addExample(scenario: Scenario) {
-  return withDocumentLock(async () => { try { await saveQueue; const saved = await saveWorkspace(exampleWorkspace(scenario)); await refresh(); adoptWorkspace(saved) } catch (e) { fail(e) }
+async function addExample(template: Template) {
+  return withDocumentLock(async () => { try { await saveQueue; const saved = await saveWorkspace(exampleWorkspace(template)); await refresh(); adoptWorkspace(saved) } catch (e) { fail(e) }
   })
 }
-function showNew(scenario: Scenario = 'architecture') { newScenario.value = scenario; newTitle.value = ''; newMaterial.value = ''; modal.value = 'new' }
+function showNew() { newTitle.value = ''; newQuestion.value = ''; newMaterial.value = ''; modal.value = 'new' }
 async function create() {
   return withDocumentLock(async () => {
   if (!newTitle.value.trim()) return
   try {
-    const doc = createWorkspace(newScenario.value, newTitle.value.trim())
+    const doc = createWorkspace(newTemplate.value, newTitle.value.trim(), newQuestion.value.trim())
     if (newMaterial.value.trim()) doc.sources.push(makeSource('初始资料', newMaterial.value))
-    const saved = await saveWorkspace(doc); await refresh(); adoptWorkspace(saved); modal.value = ''; notify('空间已创建。添加对象，或用 AI 生成初稿。')
+    const saved = await saveWorkspace(doc); await refresh(); adoptWorkspace(saved); modal.value = ''; notify('已创建。先添加资料或对象，再编排讲解步骤。')
   } catch (e) { fail(e) }
 
   })
 }
 async function removeWorkspace(id: string) {
   const item = workspaces.value.find(w => w.id === id)
-  if (!item || !confirm('删除当前工作空间及普通历史？此操作不可撤销；迁移前备份会保留，建议先导出备份。')) return
+  if (!item || !confirm('删除这份讲解及普通历史？此操作不可撤销；迁移前备份会保留，建议先导出备份。')) return
   try { await deleteWorkspace(id, item.revision); channel?.postMessage(id); await refresh() } catch (e) { fail(e) }
 }
 function updateNode(field: keyof KnowledgeNode, value: unknown) { const id = selectedId.value; commit(doc => { const node = doc.nodes.find(n => n.id === id); if (node) Object.assign(node, { [field]: value }) }, '编辑对象') }
 function addNode() {
-  const scenario = activeView.value?.scenario ?? current.value?.scenario
-  const node = makeNode('新对象', scenario === 'architecture' ? 'component' : scenario === 'product' ? 'requirement' : 'concept'), target = activeView.value?.id
-  if (commit(doc => { doc.nodes.push(node); const view = doc.views.find(v => v.id === target)!; view.nodeIds.push(node.id); view.path.push(node.id) }, '添加对象')) { selectedId.value = node.id; mode.value = 'edit'; tab.value = 'map' }
+  if (!current.value) return
+  const node = makeNode('新对象', templates[current.value.template].kind), target = activeView.value?.id
+  if (commit(doc => { doc.nodes.push(node); doc.views.find(v => v.id === target)!.nodeIds.push(node.id) }, '添加对象')) { selectedId.value = node.id; mode.value = 'edit'; tab.value = 'structure'; structureTab.value = 'diagram' }
 }
 function removeNode() {
   const id = selectedId.value
-  if (!confirm('删除此对象及所有视图中的位置、相关连线、请求步骤、主要关联题目和作答？其他记录只移除对象关联。')) return
+  if (!confirm('删除此对象及所有视图中的位置、相关连线、请求步骤、主要关联题目和作答？讲解步骤保留，只移除对它的指向。')) return
   if (commit(doc => {
     doc.nodes = doc.nodes.filter(n => n.id !== id); doc.relations = doc.relations.filter(r => r.from !== id && r.to !== id)
-    doc.views.forEach(v => { v.nodeIds = v.nodeIds.filter(n => n !== id); v.path = v.path.filter(n => n !== id); delete v.positions[id] })
+    doc.views.forEach(v => { v.nodeIds = v.nodeIds.filter(n => n !== id); delete v.positions[id] })
     doc.questions = doc.questions.filter(q => q.nodeId !== id); doc.questions.forEach(q => q.relatedNodeIds = q.relatedNodeIds.filter(n => n !== id)); doc.attempts = doc.attempts.filter(a => doc.questions.some(q => q.id === a.questionId))
     doc.flows.forEach(f => f.steps = f.steps.filter(s => s.from !== id && s.to !== id)); doc.decisions.forEach(d => d.nodeIds = d.nodeIds.filter(n => n !== id)); doc.productItems.forEach(i => i.nodeIds = i.nodeIds.filter(n => n !== id))
   }, '删除对象')) selectedId.value = current.value?.nodes[0]?.id ?? ''
 }
-function openRelation() { relationFrom.value = selectedId.value || current.value?.nodes[0]?.id || ''; relationTo.value = current.value?.nodes.find(n => n.id !== relationFrom.value)?.id ?? ''; relationKind.value = activeView.value?.scenario === 'course' ? 'prerequisite' : activeView.value?.scenario === 'product' ? 'next' : 'calls'; relationLabel.value = ''; modal.value = 'relation' }
+function openRelation() { relationFrom.value = selectedId.value || current.value?.nodes[0]?.id || ''; relationTo.value = current.value?.nodes.find(n => n.id !== relationFrom.value)?.id ?? ''; relationKind.value = current.value?.template === 'course' ? 'prerequisite' : current.value?.template === 'product' ? 'next' : current.value?.template === 'architecture' ? 'calls' : 'partOf'; relationLabel.value = ''; modal.value = 'relation' }
 function addRelation() {
   if (!relationFrom.value || !relationTo.value || relationFrom.value === relationTo.value) { fail('请选择两个不同的对象。'); return }
   if (commit(doc => doc.relations.push({ id: crypto.randomUUID(), from: relationFrom.value, to: relationTo.value, kind: relationKind.value, label: relationLabel.value.trim() || relationKinds[relationKind.value] }), '添加关系')) modal.value = ''
 }
-function movePath(index: number, delta: number) {
-  const key = activeView.value?.id
-  commit(doc => { const path = doc.views.find(v => v.id === key)!.path; const next = index + delta; if (next >= 0 && next < path.length) [path[index], path[next]] = [path[next]!, path[index]!] }, '调整视图讲解顺序')
-}
 function moveNode(id: string, x: number, y: number) { const key = activeView.value?.id; commit(d => { d.views.find(v => v.id === key)!.positions[id] = { x, y } }, '调整视图布局') }
 function addView() {
   if (!current.value || !viewTitle.value.trim()) return
-  const view = makeView(clone(current.value), viewScenario.value, viewTitle.value.trim())
-  if (commit(d => d.views.push(view), '添加独立视图')) { viewId.value = view.id; viewTitle.value = ''; tab.value = 'map' }
+  const view = makeView(clone(current.value), viewForm.value, viewTitle.value.trim())
+  if (commit(d => d.views.push(view), '添加视图')) { viewId.value = view.id; viewTitle.value = ''; structureTab.value = 'diagram' }
 }
-function removeView() { const id = activeView.value?.id; if (!current.value || current.value.views.length < 2 || !confirm('删除这个视图？共享内容与学习记录不会被删除。')) return; if (commit(d => d.views = d.views.filter(v => v.id !== id), '删除视图')) viewId.value = current.value?.views[0]?.id ?? '' }
+function removeView() { const id = activeView.value?.id; if (!current.value || current.value.views.length < 2 || !confirm('删除这张图？对象、引用和作答会保留；用到它的讲解步骤会改用第一张图。')) return; if (commit(d => d.views = d.views.filter(v => v.id !== id), '删除视图')) viewId.value = current.value?.views[0]?.id ?? '' }
+function setViewForm(form: ViewForm) { const key = activeView.value?.id; commit(d => { d.views.find(v => v.id === key)!.form = form }, '切换呈现形式') }
 function toggleViewNode(id: string) {
   const key = activeView.value?.id
   commit(d => {
     const view = d.views.find(v => v.id === key)!
-    if (view.nodeIds.includes(id)) { view.nodeIds = view.nodeIds.filter(n => n !== id); view.path = view.path.filter(n => n !== id); delete view.positions[id]; return }
-    view.nodeIds.push(id)
-    const remaining = [...view.path, id], ordered: string[] = []
-    while (remaining.length) {
-      const index = remaining.findIndex(node => !d.relations.some(r => r.kind === 'prerequisite' && r.to === node && remaining.includes(r.from)))
-      if (index < 0) throw new Error('先修关系成环，无法生成讲解顺序。')
-      ordered.push(...remaining.splice(index, 1))
-    }
-    view.path = ordered
+    if (view.nodeIds.includes(id)) { view.nodeIds = view.nodeIds.filter(n => n !== id); delete view.positions[id] }
+    else view.nodeIds.push(id)
   }, '调整视图对象')
 }
-function inspectNode(id: string) { if (!activeView.value?.nodeIds.includes(id)) { const view = current.value?.views.find(v => v.nodeIds.includes(id)); if (view) viewId.value = view.id }; selectedId.value = id; tab.value = 'map' }
-function present() { if (!pathNodes.value.length) return; mode.value = 'present'; tab.value = 'explain'; step.value = 0; selectedId.value = pathNodes.value[0]!.id }
-function goStep(delta: number) { step.value = Math.max(0, Math.min(pathNodes.value.length - 1, step.value + delta)); selectedId.value = pathNodes.value[step.value]?.id ?? '' }
+function inspectNode(id: string) { if (!activeView.value?.nodeIds.includes(id)) { const view = current.value?.views.find(v => v.nodeIds.includes(id)); if (view) viewId.value = view.id }; selectedId.value = id; tab.value = 'structure'; structureTab.value = 'diagram'; mode.value = mode.value === 'present' ? 'explore' : mode.value }
+function openStep(stepId: string) { const at = current.value?.story.findIndex(s => s.id === stepId) ?? -1; if (at < 0) return; stepIndex.value = at; tab.value = 'story' }
+function present() { if (!current.value?.story.length) return; tab.value = 'story'; mode.value = 'present' }
+function setPlaying(playing: boolean) { mode.value = playing ? 'present' : 'explore' }
 function locateCitation(citation: Citation) { focusedCitation.value = { ...citation }; tab.value = 'sources' }
 async function readMaterial(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]; if (!file) return
@@ -264,7 +259,7 @@ async function readMaterial(event: Event) {
 function removeSource(id: string) {
   if (!confirm('删除资料及所有版本和引用？相关内容保留，但依赖该资料的证据会降为待核实。')) return
   commit(d => {
-    d.sources = d.sources.filter(s => s.id !== id); d.nodes.forEach(n => n.citations = n.citations.filter(c => c.sourceId !== id)); d.decisions.forEach(a => a.citations = a.citations.filter(c => c.sourceId !== id))
+    d.sources = d.sources.filter(s => s.id !== id); d.nodes.forEach(n => { n.citations = n.citations.filter(c => c.sourceId !== id); if (!n.citations.length && n.certainty === 'supported') n.certainty = 'unverified' }); d.decisions.forEach(a => a.citations = a.citations.filter(c => c.sourceId !== id))
     d.flows.forEach(f => f.steps.forEach(s => { s.citations = s.citations.filter(c => c.sourceId !== id); if (!s.citations.length) s.evidence = 'unverified' }))
     d.productItems.forEach(i => { i.citations = i.citations.filter(c => c.sourceId !== id); if (i.type === 'evidence' && !i.citations.length && i.status === 'confirmed') i.status = 'unverified' })
   }, '删除资料')
@@ -287,12 +282,13 @@ function exportJSON() {
   try { localStorage.setItem(`onelook-backup:${current.value.id}`, String(backupAt.value)) } catch { /* Download remains usable when browser metadata storage is unavailable. */ }
 }
 async function exportMigrationBackup() {
-  try { const backups = await listMigrationBackups(current.value?.id); if (!backups.length) { notify('没有 V1 迁移前备份；新建的 V2 空间无需迁移。'); return }; for (const backup of backups) download(JSON.stringify(backup.snapshot, null, 2), `onelook-v1-${backup.workspaceId}.json`, 'application/json') } catch (e) { fail(e) }
+  try { const backups = await listMigrationBackups(current.value?.id); if (!backups.length) { notify('没有迁移前备份；按当前格式新建的讲解无需迁移。'); return }; for (const backup of backups) download(JSON.stringify(backup.snapshot, null, 2), `onelook-pre-migration-${backup.workspaceId}-${backup.createdAt}.json`, 'application/json') } catch (e) { fail(e) }
 }
 function exportMarkdown() {
   const d = current.value; if (!d) return
-  const text = `# ${d.title}\n\n${d.summary}\n\n` + d.nodes.map(n => `## ${n.title}\n\n${n.body}\n\n### 例子\n${n.example}\n\n### 常见误区\n${n.pitfall}\n\n### 笔记\n${n.notes}\n\n### 验收条件\n${n.acceptance}\n\n` + n.citations.map(c => `> ${c.quote}\n> ${d.sources.find(s => s.id === c.sourceId)?.title} · v${c.version} · 字符 ${c.start + 1}–${c.end}`).join('\n')).join('\n')
-    + '\n\n## 视图\n' + d.views.map(v => `### ${v.title}\n场景：${scenarios[v.scenario].name}\n讲解顺序：${v.path.map(nodeTitle).join(' → ')}`).join('\n\n')
+  const text = `# ${d.title}\n\n要讲清的问题：${d.question || '未填写'}\n一句话结论：${d.takeaway || '未填写'}\n写给：${d.audience || '未填写'}\n\n${d.summary}\n\n## 讲解步骤\n`
+    + d.story.map((s, i) => `### ${i + 1}. ${s.title}\n${s.narration}\n出现：${s.reveal.map(nodeTitle).join('、') || '无'}\n` + s.citations.map(c => `> ${c.quote}`).join('\n')).join('\n\n') + '\n\n## 对象\n\n' + d.nodes.map(n => `## ${n.title}\n\n${n.body}\n\n### 例子\n${n.example}\n\n### 常见误区\n${n.pitfall}\n\n### 笔记\n${n.notes}\n\n### 验收条件\n${n.acceptance}\n\n` + n.citations.map(c => `> ${c.quote}\n> ${d.sources.find(s => s.id === c.sourceId)?.title} · v${c.version} · 字符 ${c.start + 1}–${c.end}`).join('\n')).join('\n')
+    + '\n\n## 视图\n' + d.views.map(v => `### ${v.title}\n形式：${viewForms[v.form].name}\n对象：${v.nodeIds.map(nodeTitle).join('、')}`).join('\n\n')
     + '\n\n## 关系\n' + d.relations.map(r => `- ${nodeTitle(r.from)} → ${nodeTitle(r.to)}：${r.label}（${relationKinds[r.kind]}）`).join('\n')
     + '\n\n## 请求链路\n' + d.flows.map(f => `### ${f.title}\n` + f.steps.map((s, i) => `${i + 1}. ${nodeTitle(s.from)} → ${nodeTitle(s.to)}：${s.message} [${s.branch}; ${s.condition || '无附加条件'}; ${s.evidence}]`).join('\n')).join('\n\n')
     + '\n\n## 架构决策\n' + d.decisions.map(a => `### ${a.title}\n问题：${a.context}\n选择：${a.choice}\n备选：${a.alternatives}\n影响：${a.consequences}`).join('\n\n')
@@ -303,13 +299,18 @@ function exportMarkdown() {
 }
 async function importJSON(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]; if (!file) return
-  try { if (file.size > 50000000) throw new Error('备份文件不能超过 50 MB。'); importPreview.value = validateWorkspace(JSON.parse(await file.text())) } catch (e) { fail(e) }
+  try {
+    if (file.size > 50000000) throw new Error('备份文件不能超过 50 MB。')
+    const data: unknown = JSON.parse(await file.text())
+    importKind.value = isClassicMap(data) ? 'classic' : 'backup'
+    importPreview.value = importKind.value === 'classic' ? importClassicMap(data) : validateWorkspace(data)
+  } catch (e) { fail(e) }
   ;(event.target as HTMLInputElement).value = ''
 }
 async function confirmImport() {
   return withDocumentLock(async () => {
   if (!importPreview.value) return
-  try { const doc = clone(importPreview.value); doc.id = crypto.randomUUID(); doc.revision = 0; doc.title = `${doc.title.slice(0, 180)}（导入）`; doc.updatedAt = Date.now(); const saved = await saveWorkspace(doc); importPreview.value = undefined; await refresh(); adoptWorkspace(saved); notify('已导入独立副本，未覆盖任何现有空间。') } catch (e) { fail(e) }
+  try { const doc = clone(importPreview.value); doc.id = crypto.randomUUID(); doc.revision = 0; if (importKind.value === 'backup') doc.title = `${doc.title.slice(0, 180)}（导入）`; doc.updatedAt = Date.now(); const saved = await saveWorkspace(doc); importPreview.value = undefined; await refresh(); adoptWorkspace(saved); notify('已导入为独立的一份讲解，未覆盖任何现有内容。') } catch (e) { fail(e) }
 
   })
 }
@@ -317,10 +318,10 @@ function checkAI() { if (!settings.value.apiKey.trim()) { modal.value = 'setting
 function beginRequest(label: string) { const controller = new AbortController(); requestController = controller; busy.value = label; error.value = ''; return controller }
 function cancelRequest() { requestController?.abort(); requestController = undefined; busy.value = ''; notify('已取消请求，不会采用迟到的响应。') }
 function finishRequest(controller: AbortController) { if (requestController === controller) { requestController = undefined; busy.value = '' } }
-function draftBasis(doc: Workspace) { return JSON.stringify({ title: doc.title, scenario: doc.scenario, summary: doc.summary, sources: doc.sources }) }
+function draftBasis(doc: Workspace) { return JSON.stringify({ title: doc.title, template: doc.template, question: doc.question, summary: doc.summary, sources: doc.sources }) }
 async function generate() {
   if (busy.value || !current.value || !checkAI()) return
-  if (current.value.nodes.length) { fail('AI 初稿只能填充空白空间；已有对象请使用局部追问。'); return }
+  if (current.value.nodes.length) { fail('初稿只能填充空白的讲解；已有对象请使用局部追问或生成提纲。'); return }
   const doc = clone(current.value), controller = beginRequest('正在生成结构化初稿…'); generated.value = undefined
   try { const result = await generateContent(doc, { ...settings.value }, controller.signal); if (controller.signal.aborted || current.value?.id !== doc.id) return; applyGenerated(doc, result); generated.value = result; generatedFor.value = doc.id; generatedFrom.value = draftBasis(doc); modal.value = 'generate' } catch (e) { if (!controller.signal.aborted) fail(e) } finally { finishRequest(controller) }
 }
@@ -335,7 +336,7 @@ function acceptGenerated() {
   if (!current.value || !generated.value || generatedFor.value !== current.value.id) return
   if (draftBasis(current.value) !== generatedFrom.value) { fail('资料或生成上下文已改变，请重新生成初稿。'); return }
   const payload = generated.value
-  if (commit(doc => Object.assign(doc, applyGenerated(doc, payload)), '采用 AI 初稿')) { selectedId.value = current.value?.nodes[0]?.id ?? ''; generated.value = undefined; modal.value = '' }
+  if (commit(doc => Object.assign(doc, applyGenerated(doc, payload)), '采用 AI 初稿')) { selectedId.value = current.value?.nodes[0]?.id ?? ''; stepIndex.value = 0; generated.value = undefined; modal.value = '' }
 }
 async function askAI() {
   if (busy.value || !current.value || !selected.value || !checkAI() || !aiQuestion.value.trim()) return
@@ -348,6 +349,36 @@ function acceptExplanation() {
   if (selected.value?.body !== draft.original) { fail('原文已被修改，请重新生成建议，避免覆盖新编辑。'); return }
   if (commit(doc => { const node = doc.nodes.find(n => n.id === draft.nodeId)!; node.body = draft.body; node.provenance = 'ai'; node.citations = [] }, '采用局部 AI 建议')) aiDraft.value = undefined
 }
+async function outline() {
+  if (busy.value || !current.value || !checkAI()) return
+  if (!current.value.nodes.length) { fail('先添加对象或生成初稿，再生成讲解提纲。'); return }
+  const doc = clone(current.value), controller = beginRequest('正在生成讲解提纲…'); outlineDraft.value = undefined
+  try { const result = await outlineWorkspace(doc, { ...settings.value }, controller.signal); if (controller.signal.aborted || current.value?.id !== doc.id) return; applyOutline(doc, result); outlineDraft.value = result; outlineFor.value = doc.id; outlineAt.value = doc.updatedAt; modal.value = 'outline' } catch (e) { if (!controller.signal.aborted) fail(e) } finally { finishRequest(controller) }
+}
+function dropOutlineStep(index: number) {
+  const draft = outlineDraft.value; if (!draft || draft.steps.length < 2) return
+  const removed = new Set(draft.steps[index]!.reveal)
+  outlineDraft.value = { ...draft, steps: draft.steps.filter((_, i) => i !== index).map(s => ({ ...s, focus: s.focus.filter(id => !removed.has(id)) })) }
+}
+function acceptOutline() {
+  if (!current.value || !outlineDraft.value || outlineFor.value !== current.value.id) return
+  if (current.value.updatedAt !== outlineAt.value) { fail('内容在生成提纲后已改变，请重新生成。'); return }
+  if (current.value.story.length && !confirm(`采用提纲会替换现有的 ${current.value.story.length} 步讲解；原内容保留在历史中。继续吗？`)) return
+  const payload = clone(outlineDraft.value)
+  if (commit(doc => Object.assign(doc, applyOutline(doc, payload)), '采用 AI 提纲')) { stepIndex.value = 0; outlineDraft.value = undefined; modal.value = ''; tab.value = 'story' }
+}
+async function restep(stepId: string, kind: RestepMode) {
+  if (busy.value || !current.value || !checkAI()) return
+  const doc = clone(current.value), original = doc.story.find(s => s.id === stepId)?.narration ?? '', controller = beginRequest('正在换一种讲法…')
+  try { const narration = await restepNarration(doc, stepId, kind, { ...settings.value }, controller.signal); if (!controller.signal.aborted && current.value?.id === doc.id) stepDraft.value = { workspaceId: doc.id, stepId, original, narration } } catch (e) { if (!controller.signal.aborted) fail(e) } finally { finishRequest(controller) }
+}
+function acceptStepDraft() {
+  const draft = stepDraft.value, item = current.value?.story.find(s => s.id === draft?.stepId)
+  if (!draft || !item || draft.workspaceId !== current.value?.id) return
+  if (item.narration !== draft.original) { fail('这一步的讲述已被修改，请重新生成，避免覆盖新编辑。'); return }
+  if (commit(doc => { const target = doc.story.find(s => s.id === draft.stepId)!; target.narration = draft.narration; target.provenance = 'ai' }, '采用 AI 讲述')) stepDraft.value = undefined
+}
+function exportPlayer() { if (current.value) download(exportPlayerHtml(current.value), `${current.value.title}.html`, 'text/html') }
 async function render() {
   if (busy.value || !current.value || !activeView.value?.nodeIds.length) return
   const doc = clone(current.value), target = activeView.value.id, controller = beginRequest('Archify 正在渲染当前视图…')
@@ -359,8 +390,8 @@ async function render() {
   <div class="ol-app" :class="{ presenting: mode === 'present' }" :inert="switching || undefined" :aria-busy="switching">
     <header class="ol-header">
       <button class="brand" aria-label="OneLook 首页" @click="home"><span class="brand-mark"><Layers3 :size="21" /></span><strong>OneLook<span>一目</span></strong></button>
-      <div v-if="current" class="breadcrumb"><ChevronRight :size="14" /><button @click="home">工作空间</button><ChevronRight :size="14" /><span>{{ current.title }}</span></div>
-      <span v-else class="brand-caption">可视化工作台</span>
+      <div v-if="current" class="breadcrumb"><ChevronRight :size="14" /><button @click="home">讲解</button><ChevronRight :size="14" /><span>{{ current.title }}</span></div>
+      <span v-else class="brand-caption">把一件事讲清楚</span>
       <div class="header-actions"><button class="icon-button" aria-label="使用帮助" @click="modal = 'help'"><CircleHelp :size="18" /></button><button class="icon-button" aria-label="AI 设置" @click="modal = 'settings'"><Settings2 :size="18" /></button><a class="legacy-link" href="?editor=classic">经典导图</a></div>
     </header>
 
@@ -369,47 +400,50 @@ async function render() {
     <div v-if="busy" class="busy-bar" role="status"><LoaderCircle class="spin" :size="16" />{{ busy }}<span>不会覆盖当前已保存内容</span><button class="text-button" @click="cancelRequest">取消请求</button></div>
     <div v-if="externalChange && current" class="conflict-banner" role="alert"><strong>此空间已在另一标签页更改或删除。</strong><span>当前内容仍保留，保存时不会覆盖另一版本。</span><button class="ol-button" @click="saveCopy">保留本地副本</button><button class="ol-button" @click="reloadLatest">载入最新版本</button></div>
     <details class="service-status"><summary><i :class="['service-dot', { ready: health }]" />{{ healthChecking ? '正在检查本地服务…' : health ? (health.archify ? '本地服务已连接' : '本地服务已连接 · Archify 未就绪') : '本地服务未连接 · 本地编辑仍可使用' }}</summary><div><p>{{ healthError || 'AI 需在设置中配置你自己的提供商与密钥。' }}</p><p>启动：<code>pnpm local</code>（或开发用 <code>pnpm dev:all</code>）。存储归属 <strong>{{ location.origin }}</strong>；更换端口、域名或浏览器前请先导出备份，不要把本地服务暴露到公网。</p><button class="ol-button" :disabled="healthChecking" @click="checkHealth">重新检查</button><button class="text-button" @click="exportMigrationBackup">导出迁移前备份</button></div></details>
-    <input ref="importInput" type="file" accept=".json" hidden @change="importJSON" />
+    <input ref="importInput" type="file" accept=".json,.olook" hidden @change="importJSON" />
     <input ref="materialInput" type="file" accept=".txt,.md,.markdown" hidden @change="readMaterial" />
 
     <main v-if="!current" class="home-scroll">
       <section class="home-content">
-        <div class="section-heading home-heading"><div><h1>工作空间</h1><p class="muted">资料、结构与练习保存在当前浏览器，不会自动上传。</p></div><div class="toolbar-actions"><button class="ol-button" @click="importInput?.click()">导入备份</button><button class="ol-button primary" @click="showNew()">新建空间</button></div></div>
-        <div class="workspace-filters"><div class="filter-pills"><button :class="{ active: scenarioFilter === 'all' }" @click="scenarioFilter = 'all'">全部</button><button v-for="(info, scenario) in scenarios" :key="scenario" :class="{ active: scenarioFilter === scenario }" @click="scenarioFilter = scenario">{{ info.name }}</button></div><label class="search-box"><Search :size="15" /><input v-model="search" placeholder="搜索" aria-label="搜索工作空间" /></label></div>
+        <div class="section-heading home-heading"><div><h1>讲解</h1><p class="muted">每份讲解讲清一件事。内容保存在当前浏览器，不会自动上传。</p></div><div class="toolbar-actions"><button class="ol-button" title="导入备份文件或经典导图文件" @click="importInput?.click()">导入</button><button class="ol-button primary" @click="showNew()">新建讲解</button></div></div>
+        <div class="workspace-filters"><div class="filter-pills"><button :class="{ active: templateFilter === 'all' }" @click="templateFilter = 'all'">全部</button><button v-for="(info, template) in templates" :key="template" :class="{ active: templateFilter === template }" @click="templateFilter = template">{{ info.name }}</button></div><label class="search-box"><Search :size="15" /><input v-model="search" placeholder="搜索" aria-label="搜索讲解" /></label></div>
         <div v-if="loading" class="empty-state"><LoaderCircle class="spin" />正在读取…</div>
-        <div v-else-if="!filteredWorkspaces.length" class="empty-workspaces"><p>{{ workspaces.length ? '没有匹配的空间。' : '还没有空间。新建一个，或从示例开始。' }}</p></div>
-        <div v-else class="workspace-grid"><article v-for="item in filteredWorkspaces" :key="item.id" class="workspace-card"><button class="workspace-open" @click="openWorkspace(item.id)"><span class="workspace-category" :style="{ color: scenarios[item.scenario].color }">{{ scenarios[item.scenario].name }}</span><h3>{{ item.title }}</h3><p>{{ item.summary || '还没有描述。' }}</p><div class="workspace-meta"><span>{{ item.nodes.length }} 个对象 · {{ item.sources.length }} 份资料</span><span>{{ formatDate(item.updatedAt) }}</span></div></button><button class="workspace-delete icon-button" :aria-label="`删除 ${item.title}`" @click="removeWorkspace(item.id)"><Trash2 :size="14" /></button></article></div>
-        <section class="scenario-strip"><span class="muted small">从示例开始：</span><button v-for="(info, scenario) in scenarios" :key="scenario" class="text-button" @click="addExample(scenario)">{{ info.name }}示例</button></section>
+        <div v-else-if="!filteredWorkspaces.length" class="empty-workspaces"><p>{{ workspaces.length ? '没有匹配的讲解。' : '还没有讲解。新建一份，或从示例开始。' }}</p></div>
+        <div v-else class="workspace-grid"><article v-for="item in filteredWorkspaces" :key="item.id" class="workspace-card"><button class="workspace-open" @click="openWorkspace(item.id)"><span class="workspace-category">{{ templates[item.template].name }}</span><h3>{{ item.title }}</h3><p>{{ item.question || item.summary || '还没有写要讲清的问题。' }}</p><div class="workspace-meta"><span>{{ item.story.length }} 步 · {{ item.nodes.length }} 个对象 · {{ item.sources.length }} 份资料</span><span>{{ formatDate(item.updatedAt) }}</span></div></button><button class="workspace-delete icon-button" :aria-label="`删除 ${item.title}`" @click="removeWorkspace(item.id)"><Trash2 :size="15" /></button></article></div>
+        <section class="scenario-strip"><span class="muted small">从示例开始：</span><button v-for="(info, template) in templates" :key="template" class="text-button" @click="addExample(template)">{{ info.name }}示例</button></section>
       </section>
     </main>
 
     <template v-else>
-      <div class="workspace-titlebar"><div class="workspace-title"><span class="scenario-label" :style="{ color: scenarios[current.scenario].color }">{{ scenarios[current.scenario].name }}</span><input :value="current.title" aria-label="工作空间标题" maxlength="160" @change="commit(d => d.title = ($event.target as HTMLInputElement).value.trim(), '修改标题')" /><span class="save-status" :class="saveState"><LoaderCircle v-if="saveState === 'saving'" class="spin" :size="12" /><Check v-else-if="saveState === 'saved'" :size="12" />{{ saveState === 'saved' ? '已保存到本地' : saveState === 'saving' ? '保存中' : '保存失败' }}</span></div><div class="toolbar-actions"><button class="ol-button" @click="showHistory">历史</button><button class="ol-button" @click="exportJSON">备份</button><button class="ol-button" @click="exportMarkdown">导出</button><button class="ol-button primary" :disabled="!pathNodes.length" @click="present">{{ scenarios[current.scenario].action }}</button></div></div>
-      <div v-if="activeView" class="view-switchbar"><label>视图<select :value="activeView.id" aria-label="当前视图" @change="viewId = ($event.target as HTMLSelectElement).value"><option v-for="v in current.views" :key="v.id" :value="v.id">{{ v.title }} · {{ scenarios[v.scenario].name }}</option></select></label><span class="small muted">{{ activeView.nodeIds.length }} 个对象</span><button class="text-button" @click="tab = 'views'">管理视图</button><span v-if="needsBackup" class="backup-reminder">{{ backupAt ? '距上次备份已满 7 天' : '尚未备份' }} <button class="text-button" @click="exportJSON">现在备份</button></span></div>
+      <div class="workspace-titlebar"><div class="workspace-title"><span class="scenario-label">{{ templates[current.template].name }}</span><input :value="current.title" aria-label="讲解标题" maxlength="160" @change="commit(d => d.title = ($event.target as HTMLInputElement).value.trim(), '修改标题')" /><span class="save-status" :class="saveState"><LoaderCircle v-if="saveState === 'saving'" class="spin" :size="12" /><Check v-else-if="saveState === 'saved'" :size="12" />{{ saveState === 'saved' ? '已保存到本地' : saveState === 'saving' ? '保存中' : '保存失败' }}</span><span v-if="needsBackup" class="backup-reminder">{{ backupAt ? '距上次备份已满 7 天' : '尚未备份' }} <button class="text-button" @click="exportJSON">现在备份</button></span></div><div class="toolbar-actions"><button class="ol-button" @click="showHistory">历史</button><button class="ol-button" @click="exportJSON">备份</button><button class="ol-button" @click="exportMarkdown">导出</button><button class="ol-button primary" :disabled="!current.story.length" @click="present">播放</button></div></div>
+      <div v-if="tab === 'structure' && structureTab === 'diagram' && activeView" class="view-switchbar">
+        <template v-if="activeView"><label>视图<select :value="activeView.id" aria-label="当前视图" @change="viewId = ($event.target as HTMLSelectElement).value"><option v-for="v in current.views" :key="v.id" :value="v.id">{{ v.title }}</option></select></label><label>形式<select :value="activeView.form" aria-label="呈现形式" @change="setViewForm(($event.target as HTMLSelectElement).value as ViewForm)"><option v-for="(info, form) in viewForms" :key="form" :value="form">{{ info.name }}</option></select></label><span class="small muted">{{ viewForms[activeView.form].answers }} · {{ activeView.nodeIds.length }} 个对象</span></template>
+      </div>
       <div class="workbench-body">
-        <aside class="workbench-nav"><button class="back-home" @click="home"><ArrowLeft :size="14" />所有空间</button><div class="nav-group-label">工作台</div><button :class="['nav-item', { active: tab === 'map' }]" @click="tab = 'map'">关系地图<span>{{ current.nodes.length }}</span></button><button :class="['nav-item', { active: tab === 'explain' }]" @click="tab = 'explain'">图文讲解</button><button :class="['nav-item', { active: tab === 'sources' }]" @click="tab = 'sources'">资料与依据<span>{{ current.sources.length }}</span></button><button :class="['nav-item', { active: tab === 'practice' }]" @click="tab = 'practice'">{{ current.scenario === 'course' ? '练习与复习' : '理解自测' }}<span v-if="dueQuestions.length" class="due-count">{{ dueQuestions.length }}</span></button><button :class="['nav-item', { active: tab === 'archify' }]" @click="tab = 'archify'">Archify 视图</button>
-          <button :class="['nav-item', { active: tab === 'architecture' }]" @click="tab = 'architecture'">请求链路与决策</button><button :class="['nav-item', { active: tab === 'product' }]" @click="tab = 'product'">产品方案与验收</button><button :class="['nav-item', { active: tab === 'views' }]" @click="tab = 'views'">多视图管理</button>
+        <aside class="workbench-nav"><button class="back-home" @click="home"><ArrowLeft :size="14" />所有讲解</button>
+          <button :class="['nav-item', { active: tab === 'sources' }]" @click="tab = 'sources'">资料<span>{{ current.sources.length }}</span></button><button :class="['nav-item', { active: tab === 'structure' || tab === 'archify' }]" @click="tab = 'structure'">结构<span>{{ current.nodes.length }}</span></button><button :class="['nav-item', { active: tab === 'story' }]" @click="tab = 'story'">讲解<span>{{ current.story.length }}</span></button><button :class="['nav-item', { active: tab === 'practice' }]" @click="tab = 'practice'">检验<span v-if="dueQuestions.length" class="due-count">{{ dueQuestions.length }}</span></button>
           <div class="nav-group-label object-label">对象<button class="icon-button" aria-label="添加对象" @click="addNode"><Plus :size="15" /></button></div><label class="node-search"><Search :size="13" /><input v-model="nodeSearch" placeholder="查找…" aria-label="查找对象" /></label><div class="node-list"><button v-for="node in listedNodes" :key="node.id" :class="['node-list-item', { active: selectedId === node.id }]" @click="inspectNode(node.id)">{{ node.title }}</button><p v-if="!listedNodes.length" class="muted small">暂无对象</p></div><div class="nav-bottom"><p class="small muted">保存在当前浏览器，请定期备份。</p></div>
         </aside>
 
         <section class="workbench-main">
-          <div v-if="tab === 'map' || tab === 'explain'" class="canvas-toolbar"><div class="mode-switch"><button :class="{ active: mode === 'explore' }" @click="mode = 'explore'">探索</button><button :class="{ active: mode === 'edit' }" @click="mode = 'edit'">编辑</button></div><div v-if="tab === 'map'" class="reach-tools"><select v-model="scope" aria-label="关系追踪范围"><option value="all">全部关系</option><option value="upstream">上游</option><option value="downstream">下游</option></select></div><div class="toolbar-actions"><button class="text-button" @click="addNode">+ 对象</button><button class="text-button" :disabled="current.nodes.length < 2" @click="openRelation">+ 关系</button><button class="text-button" :disabled="!!busy || !!current.nodes.length" @click="generate">生成初稿</button><button class="text-button" :disabled="!!busy || !current.sources.length" @click="understand">理解材料</button></div></div>
-          <GraphCanvas v-if="tab === 'map'" :key="activeView?.id" :nodes="viewNodes" :relations="viewRelations" :selected-id="selectedId" :highlighted="highlighted" :editable="mode === 'edit'" @select="selectedId = $event" @move="moveNode" />
+          <template v-if="tab === 'structure'">
+            <div class="structure-tabs" role="tablist" aria-label="结构"><button role="tab" :aria-selected="structureTab === 'diagram'" :class="{ active: structureTab === 'diagram' }" @click="structureTab = 'diagram'">图</button><button role="tab" :aria-selected="structureTab === 'architecture'" :class="{ active: structureTab === 'architecture' }" @click="structureTab = 'architecture'">链路与决策</button><button role="tab" :aria-selected="structureTab === 'product'" :class="{ active: structureTab === 'product' }" @click="structureTab = 'product'">方案与验收</button><button role="tab" :aria-selected="structureTab === 'views'" :class="{ active: structureTab === 'views' }" @click="structureTab = 'views'">管理视图</button></div>
+            <template v-if="structureTab === 'diagram'">
+              <div class="canvas-toolbar"><div class="mode-switch"><button :class="{ active: mode === 'explore' }" @click="mode = 'explore'">探索</button><button :class="{ active: mode === 'edit' }" @click="mode = 'edit'">编辑</button></div><div class="reach-tools"><select v-model="scope" aria-label="关系追踪范围"><option value="all">全部关系</option><option value="upstream">上游</option><option value="downstream">下游</option></select></div><div class="toolbar-actions"><button class="text-button" @click="addNode">+ 对象</button><button class="text-button" :disabled="current.nodes.length < 2" @click="openRelation">+ 关系</button><button class="text-button" :disabled="!!busy || !!current.nodes.length" @click="generate">生成初稿</button><button class="text-button" :disabled="!!busy || !current.sources.length" @click="understand">理解材料</button><button class="text-button" :disabled="!activeView?.nodeIds.length" @click="tab = 'archify'">精修图</button></div></div>
+              <StageView v-if="activeView" :workspace="current" :stage-id="activeView.id" :selected-id="selectedId" :highlighted="highlighted" :editable="mode === 'edit'" @select="selectedId = $event" @move="moveNode" />
+            </template>
+            <ArchitectureStudio v-if="structureTab === 'architecture'" :workspace="current" @change="commit" @locate="locateCitation" @inspect="inspectNode" />
+            <ProductStudio v-if="structureTab === 'product'" :workspace="current" @change="commit" @locate="locateCitation" @inspect="inspectNode" />
+            <div v-if="structureTab === 'views' && activeView" class="content-scroll studio-page"><h1>管理视图</h1><p class="muted">同一个对象可以出现在多张图里：正文共享，形式和布局各自独立。</p><form class="studio-card studio-form" @submit.prevent="addView"><h2>新建视图</h2><div class="form-grid"><label class="form-label">视图名称<input v-model="viewTitle" required maxlength="200" placeholder="例如：登录流程" /></label><label class="form-label">形式<select v-model="viewForm" aria-label="新视图的形式"><option v-for="(info, form) in viewForms" :key="form" :value="form">{{ info.name }} · {{ info.answers }}</option></select></label></div><button class="ol-button primary">创建视图</button></form><div class="studio-card studio-form studio-section"><div class="section-heading"><h2>当前视图 · {{ activeView.title }}</h2><button class="text-button danger" :disabled="current.views.length < 2" @click="removeView">删除视图，保留内容</button></div><label class="form-label">修改视图名称<input :value="activeView.title" maxlength="200" @change="commit(d => { d.views.find(v => v.id === activeView!.id)!.title = ($event.target as HTMLInputElement).value }, '重命名视图')" /></label><fieldset class="node-checks"><legend>这张图显示哪些对象？</legend><label v-for="node in current.nodes" :key="node.id"><input type="checkbox" :checked="activeView.nodeIds.includes(node.id)" @change="toggleViewNode(node.id)" />{{ node.title }}</label></fieldset><p class="small muted">取消勾选只把对象移出这张图，不删除对象、引用或作答；讲解步骤里对它的指向会一并移除。</p><button class="ol-button" @click="structureTab = 'diagram'">进入当前视图</button></div></div>
+          </template>
 
-          <div v-if="tab === 'explain'" class="content-scroll explainer"><h1>{{ current.title }}</h1><textarea v-if="mode === 'edit'" :value="current.summary" class="summary-input" aria-label="工作空间简介" @change="commit(d => d.summary = ($event.target as HTMLTextAreaElement).value, '修改简介')" /><p v-else class="document-summary">{{ current.summary }}</p>
-            <div v-if="mode === 'present'" class="presentation-controls"><button class="ol-button" :disabled="step === 0" @click="goStep(-1)"><ArrowLeft :size="15" />上一步</button><span>{{ step + 1 }} / {{ pathNodes.length }}</span><button class="ol-button" :disabled="step >= pathNodes.length - 1" @click="goStep(1)">下一步<ArrowRight :size="15" /></button><button class="text-button" @click="mode = 'explore'">退出演示</button></div>
-            <div class="explain-layout"><aside class="story-index"><span class="mini-label">{{ current.scenario === 'course' ? '学习路径' : '讲解顺序' }}</span><div v-for="(node, index) in pathNodes" :key="node.id" class="story-step"><button :class="{ active: selectedId === node.id }" @click="selectedId = node.id; step = index"><span>{{ String(index + 1).padStart(2, '0') }}</span>{{ node.title }}</button><div v-if="mode === 'edit'" class="order-tools"><button :disabled="index === 0" :aria-label="`上移 ${node.title}`" @click="movePath(index, -1)">↑</button><button :disabled="index === pathNodes.length - 1" :aria-label="`下移 ${node.title}`" @click="movePath(index, 1)">↓</button></div></div></aside><article v-if="selected" class="explain-card"><span class="object-type">{{ nodeKinds[selected.kind] }}</span><h2>{{ selected.title }}</h2><p class="prose">{{ selected.body || '还没有解释。' }}</p><div v-if="selected.example" class="example-box"><span>例子</span><p class="prose">{{ selected.example }}</p></div><div v-if="selected.pitfall" class="pitfall-box"><span>常见误区</span><p class="prose">{{ selected.pitfall }}</p></div><div v-if="selected.acceptance" class="acceptance-box"><h3>验收条件</h3><p class="prose">{{ selected.acceptance }}</p></div><button class="text-button" @click="tab = 'practice'">去练习 <ArrowRight :size="15" /></button></article><div v-else class="empty-state"><p>添加对象后开始讲解。</p></div></div>
-          </div>
-
-          <div v-if="tab === 'views' && activeView" class="content-scroll studio-page"><h1>多视图管理</h1><p class="muted">同一个对象可出现在多个视图：正文共享，布局与讲解顺序各自独立。</p><form class="studio-card studio-form" @submit.prevent="addView"><h2>新建视图</h2><div class="form-grid"><label class="form-label">视图名称<input v-model="viewTitle" required maxlength="200" placeholder="例如：登录的产品流程" /></label><label class="form-label">视角<select v-model="viewScenario"><option v-for="(info, scenario) in scenarios" :key="scenario" :value="scenario">{{ info.name }}</option></select></label></div><button class="ol-button primary">创建独立视图</button></form><div class="studio-card studio-form studio-section"><div class="section-heading"><h2>当前视图 · {{ activeView.title }}</h2><button class="text-button danger" :disabled="current.views.length < 2" @click="removeView">删除视图，保留内容</button></div><label class="form-label">修改视图名称<input :value="activeView.title" maxlength="200" @change="commit(d => { d.views.find(v => v.id === activeView!.id)!.title = ($event.target as HTMLInputElement).value }, '重命名视图')" /></label><fieldset class="node-checks"><legend>此视图显示哪些对象？</legend><label v-for="node in current.nodes" :key="node.id"><input type="checkbox" :checked="activeView.nodeIds.includes(node.id)" @change="toggleViewNode(node.id)" />{{ node.title }}</label></fieldset><p class="small muted">取消勾选只移除此视图的位置与讲解步骤，不删除对象、引用或作答。讲解顺序在“图文讲解 → 编辑”中调整。</p><button class="ol-button" @click="tab = 'map'">进入当前视图</button></div></div>
+          <StoryStudio v-if="tab === 'story'" v-model:step-index="stepIndex" :workspace="current" :playing="mode === 'present'" :busy="!!busy" :commit="commit" :draft="stepDraft?.workspaceId === current.id ? stepDraft : undefined" @update:playing="setPlaying" @locate="locateCitation" @inspect="inspectNode" @outline="outline" @restep="restep" @accept-draft="acceptStepDraft" @discard-draft="stepDraft = undefined" @export-player="exportPlayer" />
           <SourceLibrary v-if="tab === 'sources'" :workspace="current" :focus="focusedCitation" :commit="commit" @remove="removeSource" />
-          <ReviewStudio v-if="tab === 'practice'" :workspace="current" :now="clock" :selected-node="selectedId" :commit="commit" @inspect="inspectNode" />
-          <ArchitectureStudio v-if="tab === 'architecture'" :workspace="current" @change="commit" @locate="locateCitation" @inspect="inspectNode" />
-          <ProductStudio v-if="tab === 'product'" :workspace="current" @change="commit" @locate="locateCitation" @inspect="inspectNode" />
-          <div v-if="tab === 'archify'" class="archify-page"><div class="archify-toolbar"><div><h2>Archify 视图</h2><p class="muted small">由本地 Archify 服务渲染，内容仍由 OneLook 保存</p></div><div class="toolbar-actions"><button v-if="artifact" class="ol-button" @click="download(JSON.stringify(artifact.ir, null, 2), 'diagram.archify.json', 'application/json')">JSON IR</button><button v-if="artifact" class="ol-button" @click="download(artifact.html, `${current.title}.html`, 'text/html')"><Download :size="14" />交互 HTML</button><button class="ol-button primary" :disabled="!!busy || !current.nodes.length" @click="render"><Layers3 :size="15" />{{ artifact ? '重新生成' : '生成视图' }}</button></div></div><div v-if="artifact && !artifactIsCurrent" class="stale-warning">内容已更新，下方为上一次成功生成的视图。请重新生成后再导出最新版本。</div><iframe v-if="artifact" :srcdoc="artifact.html" sandbox="allow-scripts" referrerpolicy="no-referrer" title="Archify 隔离交互视图" /><div v-else class="empty-state"><h3>还没有视图</h3><p>生成可分享的交互 HTML 和 JSON 源。{{ health?.archify ? '' : '需要本地服务与 Archify。' }}</p></div></div>
+          <ReviewStudio v-if="tab === 'practice'" :workspace="current" :now="clock" :selected-node="selectedId" :commit="commit" @inspect="inspectNode" @step="openStep" />
+          <div v-if="tab === 'archify'" class="archify-page"><div class="archify-toolbar"><div><h2>精修图</h2><p class="muted small">由本地 Archify 把当前这张图渲染成可分享的静态页；不随讲解步骤变化。</p></div><div class="toolbar-actions"><button class="text-button" @click="tab = 'structure'">返回结构</button><button v-if="artifact" class="ol-button" @click="download(JSON.stringify(artifact.ir, null, 2), 'diagram.archify.json', 'application/json')">JSON IR</button><button v-if="artifact" class="ol-button" @click="download(artifact.html, `${current.title}.html`, 'text/html')"><Download :size="14" />交互 HTML</button><button class="ol-button primary" :disabled="!!busy || !current.nodes.length" @click="render"><Layers3 :size="15" />{{ artifact ? '重新生成' : '生成视图' }}</button></div></div><div v-if="artifact && !artifactIsCurrent" class="stale-warning">内容已更新，下方为上一次成功生成的视图。请重新生成后再导出最新版本。</div><iframe v-if="artifact" :srcdoc="artifact.html" sandbox="allow-scripts" referrerpolicy="no-referrer" title="Archify 隔离交互视图" /><div v-else class="empty-state"><h3>还没有视图</h3><p>生成可分享的交互 HTML 和 JSON 源。{{ health?.archify ? '' : '需要本地服务与 Archify。' }}</p></div></div>
         </section>
 
-        <aside v-if="selected && (tab === 'map' || tab === 'explain')" class="detail-panel"><div class="detail-heading"><span>详情</span><span :class="['provenance', selected.provenance]">{{ selected.provenance === 'ai' ? 'AI 生成 · 待核实' : selected.provenance === 'demo' ? '示例' : '已编辑' }}</span></div><template v-if="mode === 'edit'"><label class="form-label">标题<input :key="selected.id + '-title'" :value="selected.title" @change="updateNode('title', ($event.target as HTMLInputElement).value)" /></label><label class="form-label">对象类型<select :value="selected.kind" @change="updateNode('kind', ($event.target as HTMLSelectElement).value)"><option v-for="(name, kind) in nodeKinds" :key="kind" :value="kind">{{ name }}</option></select></label><label class="form-label">解释<textarea :key="selected.id + '-body'" :value="selected.body" rows="5" @change="updateNode('body', ($event.target as HTMLTextAreaElement).value)" /></label><label class="form-label">例子<textarea :key="selected.id + '-example'" :value="selected.example" rows="3" @change="updateNode('example', ($event.target as HTMLTextAreaElement).value)" /></label><label class="form-label">常见误区<textarea :key="selected.id + '-pitfall'" :value="selected.pitfall" rows="3" @change="updateNode('pitfall', ($event.target as HTMLTextAreaElement).value)" /></label><label v-if="current.scenario === 'product' || selected.kind === 'requirement'" class="form-label">验收条件 / 待确认项<textarea :key="selected.id + '-acceptance'" :value="selected.acceptance" rows="3" @change="updateNode('acceptance', ($event.target as HTMLTextAreaElement).value)" /></label></template><template v-else><span class="object-type">{{ nodeKinds[selected.kind] }}</span><h2>{{ selected.title }}</h2><p class="detail-body prose">{{ selected.body || '暂无解释。' }}</p><div v-if="selected.pitfall" class="detail-caution"><strong>常见误区</strong><p>{{ selected.pitfall }}</p></div></template>
+        <aside v-if="selected && tab === 'structure' && structureTab === 'diagram'" class="detail-panel"><div class="detail-heading"><span>详情</span><span :class="['provenance', selected.provenance]">{{ selected.provenance === 'ai' ? 'AI 生成 · 待核实' : selected.provenance === 'demo' ? '示例' : '已编辑' }}</span></div><template v-if="mode === 'edit'"><label class="form-label">标题<input :key="selected.id + '-title'" :value="selected.title" @change="updateNode('title', ($event.target as HTMLInputElement).value)" /></label><label class="form-label">对象类型<select :value="selected.kind" @change="updateNode('kind', ($event.target as HTMLSelectElement).value)"><option v-for="(name, kind) in nodeKinds" :key="kind" :value="kind">{{ name }}</option></select></label><label class="form-label">依据状态<select :value="selected.certainty" aria-label="依据状态" @change="updateNode('certainty', ($event.target as HTMLSelectElement).value)"><option v-for="(name, certainty) in certaintyKinds" :key="certainty" :value="certainty">{{ name }}</option></select></label><label class="form-label">解释<textarea :key="selected.id + '-body'" :value="selected.body" rows="5" @change="updateNode('body', ($event.target as HTMLTextAreaElement).value)" /></label><label class="form-label">例子<textarea :key="selected.id + '-example'" :value="selected.example" rows="3" @change="updateNode('example', ($event.target as HTMLTextAreaElement).value)" /></label><label class="form-label">常见误区<textarea :key="selected.id + '-pitfall'" :value="selected.pitfall" rows="3" @change="updateNode('pitfall', ($event.target as HTMLTextAreaElement).value)" /></label><label v-if="current.template === 'product' || selected.kind === 'requirement'" class="form-label">验收条件 / 待确认项<textarea :key="selected.id + '-acceptance'" :value="selected.acceptance" rows="3" @change="updateNode('acceptance', ($event.target as HTMLTextAreaElement).value)" /></label></template><template v-else><span class="object-type">{{ nodeKinds[selected.kind] }}<span :class="['certainty-chip', selected.certainty]">{{ certaintyKinds[selected.certainty] }}</span></span><h2>{{ selected.title }}</h2><p class="detail-body prose">{{ selected.body || '暂无解释。' }}</p><div v-if="selected.example" class="example-box"><span>例子</span><p class="prose">{{ selected.example }}</p></div><div v-if="selected.pitfall" class="detail-caution"><strong>常见误区</strong><p>{{ selected.pitfall }}</p></div><div v-if="selected.acceptance" class="acceptance-box"><h3>验收条件</h3><p class="prose">{{ selected.acceptance }}</p></div></template>
           <label class="form-label detail-notes">笔记<textarea :key="selected.id + '-notes'" :value="selected.notes" rows="3" placeholder="记录自己的理解…" @change="updateNode('notes', ($event.target as HTMLTextAreaElement).value)" /></label>
           <section class="detail-section"><h3>资料依据 <span>{{ selected.citations.length }}</span></h3><EvidenceEditor :workspace="current" :value="selected.citations" :editable="mode === 'edit'" @change="updateNode('citations', $event)" @locate="locateCitation" /></section>
           <section class="detail-section"><h3>关联关系</h3><div v-for="relation in current.relations.filter(r => r.from === selectedId || r.to === selectedId)" :key="relation.id" class="relation-row"><button @click="selectedId = relation.from === selectedId ? relation.to : relation.from"><span>{{ relationKinds[relation.kind] }} · {{ relation.from === selectedId ? '→' : '←' }}</span>{{ nodeTitle(relation.from === selectedId ? relation.to : relation.from) }}</button><button v-if="mode === 'edit'" class="icon-button" aria-label="删除关系" @click="commit(d => d.relations = d.relations.filter(r => r.id !== relation.id), '删除关系')"><X :size="13" /></button></div></section>
@@ -418,22 +452,26 @@ async function render() {
       </div>
     </template>
 
-    <div v-if="importPreview" class="modal-backdrop"><section class="ol-modal" role="dialog" aria-modal="true" aria-label="导入预检"><h2>导入预检</h2><p>目标：<strong>{{ importPreview.title }}</strong></p><dl class="import-summary"><dt>格式</dt><dd>V2（V1 文件已在内存中转换）</dd><dt>对象 / 视图</dt><dd>{{ importPreview.nodes.length }} / {{ importPreview.views.length }}</dd><dt>资料 / 作答</dt><dd>{{ importPreview.sources.length }} / {{ importPreview.attempts.length }}</dd><dt>请求链路 / 产品记录</dt><dd>{{ importPreview.flows.length }} / {{ importPreview.productItems.length }}</dd></dl><p class="privacy-box">创建独立副本，不覆盖现有空间，不导入密钥。</p><div class="toolbar-actions"><button class="ol-button primary" @click="confirmImport">确认导入</button><button class="text-button" @click="importPreview = undefined">取消</button></div></section></div>
-    <div v-if="modal" class="modal-backdrop" @click.self="!busy && (modal = '')"><section class="ol-modal" :class="{ wide: modal === 'generate' || modal === 'history' }" role="dialog" aria-modal="true" :aria-label="modal === 'new' ? '新建工作空间' : modal === 'settings' ? 'AI 设置' : '工作空间操作'" @keydown.esc="!busy && (modal = '')"><button class="modal-close icon-button" aria-label="关闭弹窗" @click="modal = ''"><X :size="19" /></button>
-      <template v-if="modal === 'new'"><h2>新建工作空间</h2><form @submit.prevent="create"><label class="form-label">场景<select v-model="newScenario"><option v-for="(info, scenario) in scenarios" :key="scenario" :value="scenario">{{ info.name }}</option></select></label><label class="form-label">空间名称<input v-model="newTitle" required maxlength="160" placeholder="例如：理解项目的认证架构" autofocus /></label><label class="form-label">初始资料（可选）<textarea v-model="newMaterial" rows="6" placeholder="粘贴需求、技术说明或讲义摘录。不会自动发送给 AI。" /></label><button type="button" class="text-button" @click="materialInput?.click()">导入 TXT / Markdown</button><div class="modal-footer"><span class="small muted">AI 操作前会征求发送授权。</span><button class="ol-button primary" :disabled="!newTitle.trim()">创建工作空间 <ArrowRight :size="15" /></button></div></form></template>
-      <template v-if="modal === 'settings'"><h2>AI 设置</h2><p class="modal-intro muted">可选；不配置也能编辑、练习和导出。</p><label class="form-label">OpenAI 兼容 API 地址<input v-model="settings.baseUrl" placeholder="https://api.openai.com/v1" /></label><label class="form-label">模型<input v-model="settings.model" placeholder="gpt-4o-mini" /></label><label class="form-label">API Key · 只在内存中<input v-model="settings.apiKey" type="password" autocomplete="off" placeholder="刷新页面后需要重新输入" /></label><div class="privacy-box"><strong>请求会发送什么？</strong><p>生成初稿发送空间的标题、场景与资料；追问发送当前对象、关联上下文与资料。密钥经本地服务转发，不进入备份或浏览器存储。</p><p>允许的域名：{{ health?.aiHosts?.join('、') || 'api.openai.com（其他域名需在服务端配置）' }}。</p></div><label class="consent"><input v-model="aiConsent" type="checkbox" /><span>我同意点击 AI 操作时把相关内容发送给上述提供商。</span></label><div class="modal-footer"><button class="text-button" @click="cancelRequest(); settings.apiKey = ''; aiConsent = false">清除密钥</button><button class="ol-button primary" @click="modal = ''; error = ''">完成</button></div></template>
+    <div v-if="importPreview" class="modal-backdrop"><section class="ol-modal" role="dialog" aria-modal="true" aria-label="导入预检"><h2>导入预检</h2><p>目标：<strong>{{ importPreview.title }}</strong></p><dl class="import-summary"><dt>来源</dt><dd>{{ importKind === 'classic' ? '经典导图文件（单向转换，原文件和经典导图数据不变）' : '讲解备份（旧格式已在内存中转换）' }}</dd><dt>步骤 / 对象 / 视图</dt><dd>{{ importPreview.story.length }} / {{ importPreview.nodes.length }} / {{ importPreview.views.length }}</dd><dt>资料 / 作答</dt><dd>{{ importPreview.sources.length }} / {{ importPreview.attempts.length }}</dd><dt>请求链路 / 产品记录</dt><dd>{{ importPreview.flows.length }} / {{ importPreview.productItems.length }}</dd></dl><p class="privacy-box">创建独立副本，不覆盖现有内容，不导入密钥。</p><div class="toolbar-actions"><button class="ol-button primary" @click="confirmImport">确认导入</button><button class="text-button" @click="importPreview = undefined">取消</button></div></section></div>
+    <div v-if="modal" class="modal-backdrop" @click.self="!busy && (modal = '')"><section class="ol-modal" :class="{ wide: modal === 'generate' || modal === 'history' || modal === 'outline' }" role="dialog" aria-modal="true" :aria-label="modal === 'new' ? '新建讲解' : modal === 'settings' ? 'AI 设置' : '讲解操作'" @keydown.esc="!busy && (modal = '')"><button class="modal-close icon-button" aria-label="关闭弹窗" @click="modal = ''"><X :size="19" /></button>
+      <template v-if="modal === 'new'"><h2>新建讲解</h2><form @submit.prevent="create"><label class="form-label">标题<input v-model="newTitle" required maxlength="160" placeholder="例如：登录认证是怎么工作的" autofocus /></label><label class="form-label">要讲清的问题（可稍后填写）<input v-model="newQuestion" maxlength="500" placeholder="一句话写出要回答的问题" /></label><label class="form-label">起步模板<select v-model="newTemplate"><option v-for="(info, template) in templates" :key="template" :value="template">{{ info.name }} · {{ info.hint }}</option></select></label><label class="form-label">初始资料（可选）<textarea v-model="newMaterial" rows="6" placeholder="粘贴文章、技术说明、需求或讲义摘录。不会自动发送给 AI。" /></label><button type="button" class="text-button" @click="materialInput?.click()">导入 TXT / Markdown</button><div class="modal-footer"><span class="small muted">模板只决定默认的图和对象类型，之后都能改。</span><button class="ol-button primary" :disabled="!newTitle.trim()">创建讲解 <ArrowRight :size="15" /></button></div></form></template>
+      <template v-if="modal === 'settings'"><h2>AI 设置</h2><p class="modal-intro muted">可选；不配置也能编辑、练习和导出。</p><label class="form-label">OpenAI 兼容 API 地址<input v-model="settings.baseUrl" placeholder="https://api.openai.com/v1" /></label><label class="form-label">模型<input v-model="settings.model" placeholder="gpt-4o-mini" /></label><label class="form-label">API Key · 只在内存中<input v-model="settings.apiKey" type="password" autocomplete="off" placeholder="刷新页面后需要重新输入" /></label><div class="privacy-box"><strong>请求会发送什么？</strong><p>生成初稿和理解材料发送标题、问题与资料；生成提纲还发送对象与关系；追问和换讲法发送当前对象或步骤及其上下文。密钥经本地服务转发，不进入备份或浏览器存储。</p><p>允许的域名：{{ health?.aiHosts?.join('、') || 'api.openai.com（其他域名需在服务端配置）' }}。</p></div><label class="consent"><input v-model="aiConsent" type="checkbox" /><span>我同意点击 AI 操作时把相关内容发送给上述提供商。</span></label><div class="modal-footer"><button class="text-button" @click="cancelRequest(); settings.apiKey = ''; aiConsent = false">清除密钥</button><button class="ol-button primary" @click="modal = ''; error = ''">完成</button></div></template>
       <template v-if="modal === 'relation' && current"><h2>添加关系</h2><form @submit.prevent="addRelation"><label class="form-label">起点<select v-model="relationFrom"><option v-for="n in current.nodes" :key="n.id" :value="n.id">{{ n.title }}</option></select></label><label class="form-label">关系类型<select v-model="relationKind"><option v-for="(name, kind) in relationKinds" :key="kind" :value="kind">{{ name }}</option></select></label><label class="form-label">终点<select v-model="relationTo"><option v-for="n in current.nodes" :key="n.id" :value="n.id">{{ n.title }}</option></select></label><label class="form-label">连线说明<input v-model="relationLabel" placeholder="例如：提交认证请求" /></label><p class="small muted">先修关系不能成环；起点应位于学习路径中终点之前。其他关系可以形成有意义的循环。</p><div class="modal-footer"><span /><button class="ol-button primary">添加关系</button></div></form></template>
-      <template v-if="modal === 'history'"><h2>版本历史</h2><p class="modal-intro muted">保留最近 20 次变更前的内容；恢复不回滚仍有效的学习记录。 <button class="text-button" @click="exportMigrationBackup">导出迁移前备份</button></p><div v-if="!revisions.length" class="empty-state">暂无可恢复的版本。</div><div v-for="revision in revisions" :key="revision.id" class="revision-row"><div><strong>{{ revision.label }}</strong><p>{{ formatDate(revision.createdAt) }} · {{ revision.snapshot.nodes.length }} 个对象</p></div><button class="ol-button" @click="restore(revision)">恢复此版本</button></div></template>
+      <template v-if="modal === 'history'"><h2>版本历史</h2><p class="modal-intro muted">保留最近 20 次变更前的内容；恢复不回滚仍有效的学习记录。 <button class="text-button" @click="exportMigrationBackup">导出迁移前备份</button></p><div v-if="!revisions.length" class="empty-state">暂无可恢复的版本。</div><div v-for="revision in revisions" :key="revision.id" class="revision-row"><div><strong>{{ revision.label }}</strong><p>{{ formatDate(revision.createdAt) }} · {{ revision.snapshot.story.length }} 步 · {{ revision.snapshot.nodes.length }} 个对象</p></div><button class="ol-button" @click="restore(revision)">恢复此版本</button></div></template>
       <template v-if="modal === 'understand' && understanding"><h2>材料理解报告 · {{ documentTypes[understanding.documentType] }}</h2><p class="modal-intro">{{ understanding.summary }}</p>
         <section class="understanding-section"><h3>覆盖范围</h3><p class="small muted">分析了 {{ understanding.coverage.analyzedSourceIds.length }} 份资料{{ understanding.coverage.skippedSourceIds.length ? `，未能利用 ${understanding.coverage.skippedSourceIds.length} 份` : '' }}。</p><ul v-if="understanding.coverage.omissions.length" class="gap-list"><li v-for="(item, i) in understanding.coverage.omissions" :key="i">{{ item }}</li></ul></section>
         <section class="understanding-section"><h3>实体（{{ understanding.entities.length }}）</h3><div class="generated-list"><article v-for="entity in understanding.entities" :key="entity.id"><span>{{ nodeKinds[entity.kind] }}</span><h3>{{ entity.title }}<span :class="['certainty-chip', entity.certainty]">{{ certaintyKinds[entity.certainty] }}</span></h3><p>{{ entity.description }}</p><div v-if="entity.citations.length" class="citation-chips"><button v-for="citation in entity.citations" :key="`${citation.sourceId}-${citation.start}`" class="citation-chip" @click="locateCitation(citation); modal = ''">{{ current?.sources.find(s => s.id === citation.sourceId)?.title ?? citation.sourceId }} · v{{ citation.version }}</button></div></article></div></section>
         <section v-if="understanding.relations.length" class="understanding-section"><h3>关系（{{ understanding.relations.length }}）</h3><ul class="gap-list"><li v-for="relation in understanding.relations" :key="relation.id">{{ entityTitle(understanding, relation.from) }} → {{ entityTitle(understanding, relation.to) }} · {{ relationKinds[relation.semantic] }}{{ relation.label ? `：${relation.label}` : '' }}<span :class="['certainty-chip', relation.certainty]">{{ certaintyKinds[relation.certainty] }}</span></li></ul></section>
-        <section v-if="understanding.suggestedViews.length" class="understanding-section"><h3>建议视图</h3><ul class="gap-list"><li v-for="(view, i) in understanding.suggestedViews" :key="i">{{ scenarios[view.scenario].name }} · {{ view.title }}{{ view.reason ? ` — ${view.reason}` : '' }}</li></ul></section>
+        <section v-if="understanding.suggestedViews.length" class="understanding-section"><h3>建议视图</h3><ul class="gap-list"><li v-for="(view, i) in understanding.suggestedViews" :key="i">{{ viewForms[view.form].name }} · {{ view.title }}{{ view.reason ? ` — ${view.reason}` : '' }}</li></ul></section>
         <section v-if="understanding.gaps.length" class="understanding-section"><h3>材料未回答的问题</h3><ul class="gap-list"><li v-for="(gap, i) in understanding.gaps" :key="i">{{ gap }}</li></ul></section>
-        <p class="small muted">报告不写入空间；确认后再生成逻辑图。</p>
+        <p class="small muted">报告不写入讲解；确认后再生成逻辑图。</p>
         <div class="modal-footer"><button class="text-button" @click="modal = ''">关闭报告</button><button v-if="!current?.nodes.length" class="ol-button primary" :disabled="!!busy" @click="modal = ''; generate()">据此生成逻辑图</button></div></template>
       <template v-if="modal === 'generate' && generated"><h2>初稿预览</h2><p class="modal-intro">{{ generated.summary }}</p><div class="generated-list"><article v-for="node in generated.nodes" :key="node.id"><span>{{ nodeKinds[node.kind] }}</span><h3>{{ node.title }}</h3><p>{{ node.body }}</p></article></div><p class="small muted">{{ generated.relations.length }} 条关系 · {{ generated.questions.length }} 个练习。生成内容需人工核实。</p><div class="modal-footer"><button class="text-button" @click="generated = undefined; modal = ''">放弃</button><button class="ol-button primary" @click="acceptGenerated">采用这份初稿</button></div></template>
-      <template v-if="modal === 'help'"><h2>帮助</h2><div class="help-content"><h3>从资料或示例开始</h3><p>新建架构、产品或课程空间；示例仅作教学。</p><h3>编辑与探索</h3><p>地图中查看关系，编辑模式下修改对象、连线与布局；讲解页可调整顺序。</p><h3>练习与复习</h3><p>先独立作答再核对参考答案。"还需回顾" 10 分钟后到期，"自评理解"按 1、3、7、14、30 天递增，不生成掌握率。</p><h3>备份与导出</h3><p>JSON 备份含资料、对象与学习记录；Markdown 用于文档交流；Archify 可生成交互 HTML。清除浏览器数据会丢失内容，请定期备份。</p><h3>经典导图</h3><p>右上角进入原编辑器，数据与导入导出保持独立。</p></div></template>
+      <template v-if="modal === 'outline' && outlineDraft"><h2>讲解提纲预览</h2><p class="modal-intro"><strong>问题：</strong>{{ outlineDraft.question }}<br /><strong>结论：</strong>{{ outlineDraft.takeaway }}<template v-if="outlineDraft.audience"><br /><strong>写给：</strong>{{ outlineDraft.audience }}</template></p>
+        <ol class="outline-list"><li v-for="(item, i) in outlineDraft.steps" :key="i"><div class="outline-step-head"><input v-model="item.title" maxlength="200" :aria-label="`第 ${i + 1} 步要点`" /><span class="certainty-chip">{{ viewForms[item.form].name }}</span><button class="text-button danger" :disabled="outlineDraft.steps.length < 2" @click="dropOutlineStep(i)">去掉</button></div><textarea v-model="item.narration" rows="2" maxlength="20000" :aria-label="`第 ${i + 1} 步讲述`" /><p class="small muted">出现：{{ item.reveal.map(nodeTitle).join('、') || '无' }}{{ item.citations.length ? ` · ${item.citations.length} 处引用` : ' · 无引用，待核实' }}</p></li></ol>
+        <p class="small muted">提纲只编排已有对象，不新增或改写对象。采用后每一步标为“AI 生成 · 待核实”。</p>
+        <div class="modal-footer"><button class="text-button" @click="outlineDraft = undefined; modal = ''">放弃</button><button class="ol-button primary" @click="acceptOutline">采用这份提纲</button></div></template>
+      <template v-if="modal === 'help'"><h2>帮助</h2><div class="help-content"><h3>一份讲解讲清一件事</h3><p>先写下要回答的问题，再分步讲：每一步一个要点，画面随步骤变化。</p><h3>资料与结构</h3><p>资料页导入文本、PDF、文件夹或公开仓库。结构页整理对象和关系；同一份内容可以切换成关系图、思维图、流程图、对比表或时间线。</p><h3>讲解与播放</h3><p>讲解页编排步骤：选画面、勾选这一步出现和聚焦的对象、写讲述、挂依据。播放时用左右方向键翻步，Esc 退出。清晰度检查按固定规则提示该看哪里，不调用 AI。</p><h3>检验</h3><p>先独立作答再核对参考答案。"还需回顾" 10 分钟后到期，"自评理解"按 1、3、7、14、30 天递增，不生成掌握率。答错可以回到对应的那一步。</p><h3>备份与导出</h3><p>JSON 备份含资料、对象、步骤与作答；Markdown 用于文档交流；播放页是一个可离线打开的 HTML 文件。清除浏览器数据会丢失内容，请定期备份。</p><h3>经典导图</h3><p>右上角进入原编辑器，数据保持独立。在首页“导入”里选择经典导图导出的 JSON 或 .olook 文件，可以把它转成一份讲解。</p></div></template>
     </section></div>
   </div>
 </template>

@@ -47,6 +47,30 @@ class WorkbenchDB extends Dexie {
         await revisions.put(cleanRevision(raw))
       }
     })
+    this.version(3).stores({
+      workspaces: '&id,updatedAt',
+      revisions: '&id,workspaceId,createdAt',
+      migrationBackups: '&id,workspaceId,createdAt',
+    }).upgrade(async transaction => {
+      const workspaces = transaction.table('workspaces')
+      const revisions = transaction.table('revisions')
+      const backups = transaction.table('migrationBackups')
+      for (const raw of await workspaces.toArray()) {
+        const canonical = cleanWorkspace(raw)
+        if (raw?.schemaVersion !== 3) {
+          await backups.add({
+            id: crypto.randomUUID(),
+            workspaceId: raw.id,
+            createdAt: Date.now(),
+            snapshot: structuredClone(raw),
+          })
+        }
+        await workspaces.put({ ...canonical, revision: Math.max(1, canonical.revision) })
+      }
+      for (const raw of await revisions.toArray()) {
+        await revisions.put(cleanRevision(raw))
+      }
+    })
   }
 }
 

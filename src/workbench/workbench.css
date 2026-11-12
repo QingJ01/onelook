@@ -837,13 +837,6 @@
   gap: 7px;
 }
 
-.ol-app .live-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #8f9bba;
-}
-
 .ol-app .graph-scroll {
   flex: 1;
   min-height: 0;
@@ -895,11 +888,6 @@
   line-height: 1;
   margin-bottom: 7px;
   width: 100%;
-}
-
-.ol-app .node-symbol {
-  font-size: 13px;
-  color: #8a94a8;
 }
 
 .ol-app .graph-node strong {
@@ -1200,82 +1188,6 @@
   padding: 26px 30px;
 }
 
-.ol-app .document-summary {
-  color: #939db0;
-  font-size: 12px;
-  margin-top: 13px;
-  line-height: 1.9;
-  max-width: 720px;
-}
-
-.ol-app .summary-input {
-  border: 1px solid #dde2ec;
-  border-radius: 6px;
-  padding: 10px;
-  font-size: 12px;
-  width: 100%;
-  margin-top: 13px;
-  background: #fff;
-  color: #7685a0;
-}
-
-.ol-app .explainer {
-  background: #fbfcfd;
-}
-
-.ol-app .explainer h1 {
-  font-size: 20px;
-}
-
-.ol-app .explain-layout {
-  display: flex;
-  gap: 24px;
-  margin-top: 32px;
-  align-items: flex-start;
-}
-
-.ol-app .story-index {
-  width: 145px;
-  flex-shrink: 0;
-}
-
-.ol-app .story-index>.mini-label {
-  display: block;
-  font-size: 8px;
-  line-height: 1.8;
-  margin-bottom: 15px;
-}
-
-.ol-app .story-step {
-  display: flex;
-  flex-direction: column;
-}
-
-.ol-app .story-step>button {
-  display: flex;
-  gap: 9px;
-  align-items: flex-start;
-  text-align: left;
-  background: none;
-  border: 0;
-  color: #9aa6bc;
-  font-size: 11px !important;
-  border-left: 2px solid #e5e8ee;
-  padding: 11px 5px 11px 12px;
-  line-height: 1.7;
-}
-
-.ol-app .story-step>button>span {
-  font-size: 9px;
-  color: #b1bad0;
-}
-
-.ol-app .story-step>button.active {
-  border-color: #4a5878;
-  color: #3d4763;
-  background: #f2f4f8;
-}
-
 .ol-app .order-tools {
   display: flex;
   gap: 8px;
@@ -1287,25 +1199,6 @@
   border: 0;
   color: #91a0be;
   font-size: 12px;
-}
-
-.ol-app .explain-card {
-  flex: 1;
-  min-width: 0;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  padding: 26px 28px;
-}
-
-.ol-app .explain-card h2 {
-  font-size: 18px;
-  margin: 6px 0 14px;
-}
-
-.ol-app .explain-card>p {
-  color: #7e8ba3;
-  font-size: 13px;
 }
 
 .ol-app .example-box,
@@ -1342,49 +1235,10 @@
   margin-bottom: 8px;
 }
 
-.ol-app .explain-card>.text-button {
-  margin-top: 25px;
-  font-size: 11px !important;
-}
-
-.ol-app .presentation-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  padding: 17px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  margin-top: 23px;
-  font-size: 12px;
-  color: #8292b3;
-}
-
 .ol-app.presenting .workbench-nav,
 .ol-app.presenting .detail-panel,
 .ol-app.presenting .canvas-toolbar {
   display: none;
-}
-
-.ol-app.presenting .explainer {
-  padding: 40px max(30px,calc((100% - 1050px)/2));
-}
-
-.ol-app.presenting .explain-card {
-  padding: 40px;
-}
-
-.ol-app.presenting .explain-card>p {
-  font-size: 16px;
-}
-
-.ol-app.presenting .explain-layout {
-  gap: 45px;
-}
-
-.ol-app.presenting .story-index {
-  width: 190px;
 }
 
 .ol-app .sources-page,
@@ -1949,35 +1803,6 @@
     padding: 26px;
   }
 
-  .ol-app .explain-layout {
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  .ol-app .story-index {
-    width: 100%;
-  }
-
-  .ol-app .story-index>.mini-label {
-    margin-bottom: 8px;
-  }
-
-  .ol-app .story-step {
-    display: inline-flex;
-    vertical-align: top;
-  }
-
-  .ol-app .story-step>button {
-    border-left: 0;
-    border-bottom: 2px solid #e5e8ee;
-    padding: 7px 10px;
-    font-size: 10px !important;
-  }
-
-  .ol-app .explain-card {
-    width: 100%;
-  }
-
   .ol-app .question-list {
     width: 145px;
   }
@@ -2173,7 +1998,6 @@
     grid-template-columns: 1fr;
   }
 
-
   .ol-app .workspace-titlebar {
     padding: 12px 15px;
     gap: 10px;
@@ -2268,10 +2092,6 @@
     flex: initial;
   }
 
-  .ol-app .explainer h1 {
-    font-size: 23px;
-  }
-
   .ol-app .graph-bottom>span {
     max-width: 230px;
     font-size: 9px;
@@ -2356,29 +2176,6 @@
   .ol-app.presenting .workbench-main {
     height: auto;
     min-height: calc(100vh - 180px);
-  }
-
-  .ol-app.presenting .explainer {
-    padding: 25px 20px;
-  }
-
-  .ol-app.presenting .explain-layout {
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .ol-app.presenting .story-index {
-    width: 100%;
-  }
-
-  .ol-app.presenting .explain-card {
-    padding: 24px;
-  }
-
-  .ol-app .presentation-controls {
-    gap: 10px;
-    padding: 12px;
-    flex-wrap: wrap;
   }
 
   .ol-app .busy-bar>span {
@@ -2492,3 +2289,144 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ---- V3: explain one thing ---- */
+.ol-app .workspace-category,
+.ol-app .scenario-label { color: var(--muted); }
+
+.ol-app.presenting .workspace-titlebar,
+.ol-app.presenting .view-switchbar,
+.ol-app.presenting .service-status { display: none; }
+
+.ol-app .structure-tabs { display: flex; gap: 2px; padding: 6px 22px 0; background: #fff; border-bottom: 1px solid var(--line); flex-shrink: 0; overflow-x: auto; }
+.ol-app .structure-tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 7px 12px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.ol-app .structure-tabs button.active { color: var(--ink); border-color: var(--accent); font-weight: 600; }
+
+.ol-app .graph-shell.playing .graph-scroll { overflow: hidden; }
+.ol-app .diagram-camera { transform-origin: 0 0; transition: transform .6s ease; }
+.ol-app .diagram-node { transition: transform .45s ease, opacity .35s ease; }
+.ol-app .semantic-graph.dragging .diagram-node { transition: none; }
+.ol-app .diagram-node.is-hidden { opacity: 0; pointer-events: none; }
+.ol-app .diagram-node.is-ghost { opacity: .25; }
+.ol-app .diagram-node.is-dim { opacity: .5; }
+.ol-app .diagram-node.is-focus .graph-node { border: 1.5px solid #2f3b57; box-shadow: 0 0 0 3px #2f3b571f; }
+.ol-app .diagram-edge { transition: opacity .3s ease; }
+.ol-app .diagram-edge path { fill: none; stroke: #aab5c6; stroke-width: 1.7; stroke-dasharray: 1; stroke-dashoffset: 0; transition: stroke-dashoffset .5s ease; }
+.ol-app .diagram-edge.cross path { stroke-dasharray: .015 .015; opacity: .75; }
+.ol-app .diagram-edge text { font-size: 11px; fill: #788396; stroke: #f7f8fa; stroke-width: 5px; paint-order: stroke; }
+.ol-app .diagram-edge.is-hidden { opacity: 0; }
+.ol-app .diagram-edge.is-hidden:not(.cross) path { stroke-dashoffset: 1; }
+.ol-app .diagram-edge.is-ghost { opacity: .18; }
+.ol-app .diagram-edge.is-dim { opacity: .2; }
+.ol-app .diagram-root rect { fill: #2f3b57; }
+.ol-app .diagram-root text { fill: #fff; font-size: 13px; font-weight: 600; }
+.ol-app .diagram-axis line { stroke: #aab5c6; stroke-width: 2; transition: opacity .3s ease; }
+.ol-app .diagram-axis line.tick { stroke-width: 1; }
+.ol-app .diagram-axis line.is-hidden { opacity: 0; }
+.ol-app .diagram-axis line.is-ghost { opacity: .25; }
+.ol-app .diagram-token { fill: #2f3b57; }
+
+.ol-app .matrix-scroll { flex: 1; min-height: 0; overflow: auto; padding: 22px 24px; background: #f7f8fa; }
+.ol-app .matrix-table { border-collapse: collapse; background: #fff; font-size: 12px; }
+.ol-app .matrix-table th,
+.ol-app .matrix-table td { border: 1px solid var(--line); padding: 9px 12px; text-align: left; vertical-align: top; min-width: 110px; max-width: 340px; white-space: pre-wrap; line-height: 1.7; font-weight: 400; }
+.ol-app .matrix-table thead th { background: #fafbfc; color: var(--muted); font-size: 11px; font-weight: 600; }
+.ol-app .matrix-table tbody th .text-button { font-weight: 600; padding: 0; text-align: left; }
+.ol-app .matrix-table tr.is-ghost { opacity: .3; }
+.ol-app .matrix-table tr.is-focus > *,
+.ol-app .matrix-table tr.selected > * { background: #f1f3f8; }
+.ol-app .matrix-row-enter-active { transition: opacity .35s ease; }
+.ol-app .matrix-row-enter-from { opacity: 0; }
+
+.ol-app .stage-block { flex: 1; min-height: 0; overflow: auto; padding: 22px 24px; background: #f7f8fa; }
+.ol-app .stage-block > h3 { font-size: 14px; margin-bottom: 12px; }
+.ol-app .stage-card > * { max-width: 640px; }
+.ol-app .stage-card dl { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px 14px; font-size: 12px; line-height: 1.7; margin: 10px 0; }
+.ol-app .stage-card dt { color: var(--muted); }
+.ol-app .stage-card dd { margin: 0; white-space: pre-wrap; }
+
+.ol-app .story-page { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #fbfcfd; }
+.ol-app .story-head { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1fr) auto; gap: 12px; align-items: end; padding: 12px 22px; background: #fff; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.ol-app .story-head .form-label { margin: 0; }
+.ol-app .story-head .toolbar-actions { padding-bottom: 2px; }
+.ol-app .clarity-panel { padding: 7px 22px; background: #fff; border-bottom: 1px solid var(--line); font-size: 12px; flex-shrink: 0; }
+.ol-app .clarity-panel summary { color: var(--muted); }
+.ol-app .clarity-panel ul { list-style: none; margin: 6px 0; padding: 0; max-height: 132px; overflow: auto; }
+.ol-app .clarity-panel li .text-button { text-align: left; padding: 2px 0; color: #7d8798; }
+.ol-app .clarity-panel li.warn .text-button { color: #8a6d3f; }
+.ol-app .clarity-panel li .text-button:disabled { opacity: 1; cursor: default; }
+.ol-app .story-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 190px minmax(0, 1fr) 320px; }
+.ol-app .story-steps { background: #fff; border-right: 1px solid var(--line); overflow: auto; padding: 14px 10px; }
+.ol-app .story-steps-head,
+.ol-app .story-notes-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ol-app .story-notes-head { margin-bottom: 8px; }
+.ol-app .story-notes-head .provenance { margin-left: 8px; }
+.ol-app .story-steps ol { list-style: none; margin: 8px 0; padding: 0; }
+.ol-app .story-steps li button { display: flex; gap: 8px; width: 100%; text-align: left; background: none; border: 0; border-left: 2px solid #e5e8ee; padding: 8px 6px 8px 10px; font-size: 12px; line-height: 1.6; color: #7d8798; }
+.ol-app .story-steps li button > span { font-size: 10px; color: #a8b0c0; font-weight: 400; padding-top: 2px; }
+.ol-app .story-steps li button.active { border-color: #2f3b57; background: #f2f4f8; color: var(--ink); font-weight: 600; }
+.ol-app .story-stage { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.ol-app .story-notes { background: #fff; border-left: 1px solid var(--line); overflow: auto; padding: 14px 16px 24px; }
+.ol-app .story-notes .node-checks { margin: 0 0 12px; }
+.ol-app .story-notes .node-checks .small { margin-left: 6px; }
+.ol-app .restep-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: -6px 0 12px; }
+
+.ol-app .story-play { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #fff; }
+.ol-app .play-top { display: flex; align-items: center; gap: 14px; padding: 10px 22px; border-bottom: 1px solid var(--line); font-size: 13px; flex-shrink: 0; }
+.ol-app .play-top strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ol-app .play-count { color: var(--muted); font-size: 12px; }
+.ol-app .play-body { flex: 1; min-height: 0; display: flex; }
+.ol-app .play-stage { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: #f7f8fa; }
+.ol-app .play-notes { width: 360px; flex-shrink: 0; border-left: 1px solid var(--line); padding: 22px 24px 0; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
+.ol-app .play-notes h2 { font-size: 18px; line-height: 1.5; }
+.ol-app .play-narration { font-size: 14px; line-height: 1.9; }
+.ol-app .play-detail,
+.ol-app .play-check,
+.ol-app .play-takeaway { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; background: #fafbfc; font-size: 12px; line-height: 1.8; }
+.ol-app .play-detail h3 { font-size: 13px; margin: 2px 0 6px; }
+.ol-app .play-quote { display: block; width: 100%; font-size: 11px; line-height: 1.7; color: var(--muted); border-left: 2px solid #dde2ec; padding-left: 8px; }
+.ol-app .play-controls { margin-top: auto; display: flex; justify-content: space-between; gap: 10px; padding: 12px 0 16px; border-top: 1px solid var(--line); position: sticky; bottom: 0; background: #fff; }
+
+.ol-app .outline-list { margin: 12px 0; padding-left: 22px; display: grid; gap: 12px; font-size: 12px; }
+.ol-app .outline-step-head { display: flex; align-items: center; gap: 8px; }
+.ol-app .outline-step-head input,
+.ol-app .outline-list textarea { width: 100%; border: 1px solid #dde2ec; border-radius: 6px; padding: 7px 9px; font-size: 12px; background: #fff; color: var(--ink); }
+.ol-app .outline-step-head input { flex: 1; min-width: 0; font-weight: 600; }
+.ol-app .outline-list textarea { margin-top: 6px; resize: vertical; }
+.ol-app .review-missed { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 8px 0; padding: 8px 10px; border: 1px solid #ecdfc4; border-radius: 6px; color: #8a6d3f; font-size: 12px; }
+
+@media (max-width: 1200px) {
+  .ol-app .story-body { grid-template-columns: 170px minmax(0, 1fr) 280px; }
+  .ol-app .play-notes { width: 300px; }
+}
+
+@media (max-width: 980px) {
+  .ol-app .story-head { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .ol-app .story-page { overflow: auto; }
+  .ol-app .story-body { display: flex; flex-direction: column; flex: none; }
+  .ol-app .story-steps { border-right: 0; border-bottom: 1px solid var(--line); overflow: visible; flex-shrink: 0; }
+  .ol-app .story-steps ol { display: flex; gap: 6px; overflow-x: auto; }
+  .ol-app .story-steps li { flex-shrink: 0; max-width: 200px; }
+  .ol-app .story-steps li button { border-left: 0; border-bottom: 2px solid #e5e8ee; }
+  .ol-app .story-stage { height: 380px; flex-shrink: 0; }
+  .ol-app .story-notes { border-left: 0; border-top: 1px solid var(--line); overflow: visible; flex-shrink: 0; }
+}
+
+@media (max-width: 760px) {
+  .ol-app .story-head { grid-template-columns: minmax(0, 1fr); }
+  .ol-app .structure-tabs { padding: 6px 12px 0; }
+  .ol-app .play-body { flex-direction: column; }
+  .ol-app .play-notes { width: auto; border-left: 0; border-top: 1px solid var(--line); max-height: 52%; padding: 14px 16px 0; }
+  .ol-app .play-top { padding: 8px 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ol-app .diagram-camera,
+  .ol-app .diagram-node,
+  .ol-app .diagram-edge,
+  .ol-app .diagram-edge path,
+  .ol-app .diagram-axis line,
+  .ol-app .matrix-row-enter-active { transition: none; }
+}
+.ol-app .workspace-title .backup-reminder { margin: 3px 0 0; font-size: 10px; }
+.ol-app .workspace-title .backup-reminder .text-button { font-size: 10px; padding: 0 2px; }

@@ -1,8 +1,8 @@
 import { createWorkspace, makeNode, validateWorkspace } from '../../src/workbench/model'
-import type { Scenario, Workspace } from '../../src/workbench/types'
+import type { Template, Workspace } from '../../src/workbench/types'
 
 export function fixtureWorkspace(
-  scenario: Scenario = 'course',
+  scenario: Template = 'course',
   id = `workspace-${crypto.randomUUID()}`,
 ): Workspace {
   const base = createWorkspace(scenario, 'Sample workspace')
@@ -19,6 +19,7 @@ export function fixtureWorkspace(
     ...makeNode('Foundation'),
     id: 'node-a',
     body: 'A foundational idea.',
+    certainty: 'supported' as const,
     citations: [{
       sourceId: source.id,
       quote,
@@ -49,18 +50,21 @@ export function fixtureWorkspace(
     views: [{
       ...base.views[0],
       nodeIds: [first.id, second.id],
-      path: [first.id, second.id],
       positions: {
         [first.id]: { x: 10, y: 20 },
         [second.id]: { x: 30, y: 40 },
       },
     }],
+    story: [
+      { id: 'step-a', title: 'Start from the foundation', narration: 'First the base idea.', stageId: base.views[0].id, reveal: [first.id], focus: [first.id], citations: [], provenance: 'user' },
+      { id: 'step-b', title: 'Then apply it', narration: 'Then the applied idea.', stageId: base.views[0].id, reveal: [second.id], focus: [first.id, second.id], citations: [], provenance: 'user' },
+    ],
     flows: [],
     decisions: [],
     productItems: [],
     questions: [
-      { id: 'question-a', nodeId: first.id, prompt: 'What is the foundation?', answer: 'A base idea.', relatedNodeIds: [] },
-      { id: 'question-b', nodeId: second.id, prompt: 'How is it applied?', answer: 'In a later context.', relatedNodeIds: [] },
+      { id: 'question-a', nodeId: first.id, prompt: 'What is the foundation?', answer: 'A base idea.', relatedNodeIds: [], stepId: 'step-a' },
+      { id: 'question-b', nodeId: second.id, prompt: 'How is it applied?', answer: 'In a later context.', relatedNodeIds: [], stepId: 'step-b' },
     ],
     createdAt: 100,
     updatedAt: 200,

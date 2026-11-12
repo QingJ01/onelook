@@ -1,5 +1,6 @@
 import {
   validateGeneratedContentData,
+  validateOutlineData,
   validateUnderstandingData,
   validateWorkspaceData,
 } from '../../shared/validation.mjs'
@@ -8,6 +9,8 @@ import type {
   GeneratedContent,
   MaterialUnderstanding,
   RepoImport,
+  RestepMode,
+  StoryOutline,
   Workspace,
 } from './types'
 
@@ -122,6 +125,39 @@ export async function explainNode(
     throw new Error('The AI response did not contain an explanation.')
   }
   return response.explanation
+}
+
+export async function outlineWorkspace(
+  workspace: Workspace,
+  settings: AISettings,
+  signal?: AbortSignal,
+): Promise<StoryOutline> {
+  const current = validateWorkspaceData(workspace) as Workspace
+  const response = await postJson<{ outline?: unknown }>('/api/outline', {
+    workspace: current,
+    settings,
+  }, AI_TIMEOUT_MS, signal)
+  return validateOutlineData(response?.outline, current) as StoryOutline
+}
+
+export async function restepNarration(
+  workspace: Workspace,
+  stepId: string,
+  mode: RestepMode,
+  settings: AISettings,
+  signal?: AbortSignal,
+): Promise<string> {
+  const current = validateWorkspaceData(workspace) as Workspace
+  const response = await postJson<{ narration?: unknown }>('/api/restep', {
+    workspace: current,
+    stepId,
+    mode,
+    settings,
+  }, AI_TIMEOUT_MS, signal)
+  if (typeof response?.narration !== 'string' || !response.narration.trim()) {
+    throw new Error('The AI response did not contain a narration.')
+  }
+  return response.narration
 }
 
 export async function renderArchify(

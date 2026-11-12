@@ -2,7 +2,7 @@ import { createServer as createHttpServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { explain, generate, understand } from './ai.mjs'
+import { explain, generate, outline, restep, understand } from './ai.mjs'
 import { archifyAvailable, renderWorkspace } from './archify.mjs'
 import { importRepo } from './repo.mjs'
 
@@ -174,6 +174,8 @@ function createApplicationServer({
       ['/api/generate', (payload, signal) => generate(payload, allowedHosts, fetchImpl, signal)],
       ['/api/understand', (payload, signal) => understand(payload, allowedHosts, fetchImpl, signal)],
       ['/api/explain', (payload, signal) => explain(payload, allowedHosts, fetchImpl, signal)],
+      ['/api/outline', (payload, signal) => outline(payload, allowedHosts, fetchImpl, signal)],
+      ['/api/restep', (payload, signal) => restep(payload, allowedHosts, fetchImpl, signal)],
       ['/api/repo', (payload, signal) => importRepo(payload, fetchImpl, signal)],
       ['/api/render', async (payload, signal) => renderWorkspace(payload?.workspace, { archifyRoot, viewId: payload?.viewId, signal })],
     ])

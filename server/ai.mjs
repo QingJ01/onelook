@@ -1,5 +1,5 @@
-import { explainPrompt, generatePrompt, understandPrompt } from './ai-prompts.mjs'
-import { validateGeneratedContentData, validateUnderstandingData, validateWorkspaceData } from '../shared/validation.mjs'
+import { explainPrompt, generatePrompt, outlinePrompt, restepPrompt, understandPrompt } from './ai-prompts.mjs'
+import { outlineModes, validateGeneratedContentData, validateOutlineData, validateUnderstandingData, validateWorkspaceData } from '../shared/validation.mjs'
 
 const AI_TIMEOUT_MS = 90_000
 const RESPONSE_LIMIT = 2 * 1024 * 1024
@@ -135,7 +135,7 @@ async function complete({ baseUrl, model, apiKey }, systemPrompt, userContent, f
 }
 
 function emptyGraph(workspace) {
-  if (workspace.nodes.length || workspace.relations.length || workspace.views.some(view => view.nodeIds.length || view.path.length) || workspace.questions.length) {
+  if (workspace.nodes.length || workspace.relations.length || workspace.views.some(view => view.nodeIds.length) || workspace.story.length || workspace.questions.length) {
     throw Object.assign(new TypeError('AI generation is only available for an empty workspace.'), { statusCode: 400 })
   }
 }
@@ -153,7 +153,7 @@ async function understand(payload, allowedHosts, fetchImpl, signal) {
   const understanding = await complete(
     settings,
     understandPrompt,
-    JSON.stringify({ scenario: workspace.scenario, title: workspace.title, summary: workspace.summary, sources: currentSources(workspace) }),
+    JSON.stringify({ template: workspace.template, question: workspace.question, title: workspace.title, summary: workspace.summary, sources: currentSources(workspace) }),
     fetchImpl,
     signal,
   )
@@ -167,7 +167,7 @@ async function generate(payload, allowedHosts, fetchImpl, signal) {
   const generated = await complete(
     settings,
     generatePrompt,
-    JSON.stringify({ scenario: workspace.scenario, title: workspace.title, summary: workspace.summary, sources: currentSources(workspace) }),
+    JSON.stringify({ template: workspace.template, question: workspace.question, title: workspace.title, summary: workspace.summary, sources: currentSources(workspace) }),
     fetchImpl,
     signal,
   )
@@ -197,4 +197,58 @@ async function explain(payload, allowedHosts, fetchImpl, signal) {
   return { explanation: response.body }
 }
 
-export { explain, generate, settingsFrom, understand }
+async function outline(payload, allowedHosts, fetchImpl, signal) {
+  const workspace = validateWorkspaceData(payload?.workspace)
+  if (!workspace.nodes.length) {
+    throw Object.assign(new TypeError('Add objects before asking AI for an outline.'), { statusCode: 400 })
+  }
+  const settings = settingsFrom(payload?.settings, allowedHosts)
+  const response = await complete(
+    settings,
+    outlinePrompt,
+    JSON.stringify({
+      template: workspace.template,
+      title: workspace.title,
+      question: workspace.question,
+      summary: workspace.summary,
+      nodes: workspace.nodes.map(({ id, title, kind, body, certainty }) => ({ id, title, kind, body, certainty })),
+      relations: workspace.relations,
+      sources: currentSources(workspace),
+    }),
+    fetchImpl,
+    signal,
+  )
+  return { outline: validateOutlineData(response, workspace) }
+}
+
+async function restep(payload, allowedHosts, fetchImpl, signal) {
+  const workspace = validateWorkspaceData(payload?.workspace)
+  const step = workspace.story.find(item => item.id === payload?.stepId)
+  if (typeof payload?.stepId !== 'string' || !step) {
+    throw Object.assign(new TypeError('The requested step does not exist in this workspace.'), { statusCode: 400 })
+  }
+  if (!outlineModes.has(payload?.mode)) {
+    throw Object.assign(new TypeError('mode must be simpler, example or analogy.'), { statusCode: 400 })
+  }
+  const settings = settingsFrom(payload?.settings, allowedHosts)
+  const ids = new Set([...step.reveal, ...step.focus])
+  const response = await complete(
+    settings,
+    restepPrompt,
+    JSON.stringify({
+      mode: payload.mode,
+      question: workspace.question,
+      takeaway: workspace.takeaway,
+      step: { title: step.title, narration: step.narration },
+      nodes: workspace.nodes.filter(node => ids.has(node.id)).map(({ id, title, body, example }) => ({ id, title, body, example })),
+    }),
+    fetchImpl,
+    signal,
+  )
+  if (typeof response.narration !== 'string' || !response.narration.trim() || response.narration.length > 20000) {
+    throw Object.assign(new TypeError('AI narration must contain 1–20000 characters.'), { statusCode: 502 })
+  }
+  return { narration: response.narration }
+}
+
+export { explain, generate, outline, restep, settingsFrom, understand }

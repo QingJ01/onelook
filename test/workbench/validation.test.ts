@@ -60,7 +60,7 @@ function migratedWorkspace() {
   return structuredClone(validateWorkspaceData(legacyWorkspace())) as any
 }
 
-describe('canonical V2 validation and V1 migration', () => {
+describe('canonical V3 validation and migration from V1 and V2', () => {
   it('rejects UTF-8 JSON larger than 20 MiB before canonical normalization', () => {
     const oversized = legacyWorkspace({
       sources: [{
@@ -80,19 +80,24 @@ describe('canonical V2 validation and V1 migration', () => {
 
     expect(first).toEqual(second)
     expect(first).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 3,
       revision: 0,
       id: 'legacy-workspace',
+      template: 'architecture',
+      question: '',
+      takeaway: '',
       createdAt: 5,
       updatedAt: 40,
       views: [{
         id: 'view-legacy-workspace',
         title: 'Legacy workspace',
-        scenario: 'architecture',
-        kind: 'map',
+        form: 'graph',
         nodeIds: ['node-old'],
-        path: ['node-old'],
         positions: { 'node-old': { x: 12, y: 24 } },
+      }],
+      story: [{
+        id: 'step-1', title: 'Legacy node', narration: '', stageId: 'view-legacy-workspace',
+        reveal: ['node-old'], focus: ['node-old'], citations: [], provenance: 'user',
       }],
       sources: [{
         id: 'source-old',
@@ -100,9 +105,11 @@ describe('canonical V2 validation and V1 migration', () => {
         versions: [],
         text: sourceText,
       }],
-      questions: [{ relatedNodeIds: [] }],
+      questions: [{ relatedNodeIds: [], stepId: 'step-1' }],
       attempts: [{ dueAt: 30, errorReason: '' }],
     })
+    expect(first.nodes[0].certainty).toBe('supported')
+    expect(first.views[0]).not.toHaveProperty('path')
     expect(first.nodes[0]).not.toHaveProperty('x')
     expect(first.nodes[0]).not.toHaveProperty('y')
     expect(first.nodes[0].citations).toEqual([{
@@ -116,10 +123,10 @@ describe('canonical V2 validation and V1 migration', () => {
 
   it('rejects unknown V1 data and future schemas instead of repairing them', () => {
     expect(() => validateWorkspaceData({ ...legacyWorkspace(), futureField: true })).toThrow(/unknown field/)
-    expect(() => validateWorkspaceData({ schemaVersion: 3 })).toThrow(/must equal 1 or 2/)
+    expect(() => validateWorkspaceData({ schemaVersion: 4 })).toThrow(/must equal 1, 2 or 3/)
   })
 
-  it('requires canonical V2 shapes and validates exact offsets against current or historical source text', () => {
+  it('requires canonical V3 shapes and validates exact offsets against current or historical source text', () => {
     const workspace = migratedWorkspace()
     workspace.sources[0] = {
       ...workspace.sources[0],
@@ -128,7 +135,7 @@ describe('canonical V2 validation and V1 migration', () => {
       createdAt: 50,
       versions: [{ version: 1, text: sourceText, createdAt: 10 }],
     }
-    expect(validateWorkspaceData(workspace)).toMatchObject({ schemaVersion: 2 })
+    expect(validateWorkspaceData(workspace)).toMatchObject({ schemaVersion: 3 })
     expect(() => validateWorkspaceData({
       ...workspace,
       nodes: workspace.nodes.map((node: any) => ({
@@ -193,7 +200,7 @@ describe('canonical V2 validation and V1 migration', () => {
     })).toThrow(/must contain evidence/)
   })
 
-  it('normalizes the legacy AI wire citations and question links without weakening V2 storage validation', () => {
+  it('normalizes the legacy AI wire citations and question links without weakening storage validation', () => {
     const base = validateWorkspaceData(legacyWorkspace({
       nodes: [],
       relations: [],
@@ -238,6 +245,9 @@ describe('canonical V2 validation and V1 migration', () => {
     expect(generated.nodes[0]).toMatchObject({ x: 7, y: 8 })
     expect(validateGeneratedContentData(validateGeneratedContentData(generated, base), base)).toEqual(generated)
     expect(generated.questions[0].relatedNodeIds).toEqual([])
+    expect(generated.nodes[0].certainty).toBe('supported')
+    expect(generated.story).toMatchObject([{ title: 'Generated node', reveal: ['ai-node'], provenance: 'ai' }])
+    expect(generated.questions[0].stepId).toBe(generated.story[0].id)
     expect(() => validateWorkspaceData({
       ...base,
       nodes: generated.nodes,
@@ -248,7 +258,7 @@ describe('canonical V2 validation and V1 migration', () => {
     const workspace = migratedWorkspace()
     workspace.nodes.push({
       id: 'node-two', title: 'Second node', kind: 'concept', body: '', example: '', pitfall: '',
-      notes: '', acceptance: '', citations: [], provenance: 'user',
+      notes: '', acceptance: '', citations: [], provenance: 'user', certainty: 'unverified',
     })
     for (const kind of ['supports', 'contradicts', 'partOf', 'causes', 'defines', 'evaluates']) {
       workspace.relations = [{ id: `edge-${kind}`, from: 'node-old', to: 'node-two', kind, label: '' }]
@@ -279,7 +289,7 @@ describe('canonical V2 validation and V1 migration', () => {
         id: 'rel-a', from: 'entity-a', to: 'entity-b', semantic: 'causes',
         label: 'motivates', certainty: 'inferred', citations: [],
       }],
-      suggestedViews: [{ title: 'Logical map', scenario: 'architecture', kind: 'map', reason: 'Shows structure.' }],
+      suggestedViews: [{ title: 'Logical map', form: 'graph', reason: 'Shows structure.' }],
       gaps: ['No benchmark numbers.'],
       questions: [{ prompt: 'What does the article claim?', answer: 'That the foundation is stable.' }],
     }, base) as any

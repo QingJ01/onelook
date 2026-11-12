@@ -1,5 +1,9 @@
 const scenarios = new Set(['architecture', 'product', 'course'])
-const nodeKinds = new Set(['component', 'interface', 'requirement', 'actor', 'state', 'concept'])
+const templates = new Set(['architecture', 'product', 'course', 'concept', 'book'])
+const legacyNodeKinds = new Set(['component', 'interface', 'requirement', 'actor', 'state', 'concept'])
+const nodeKinds = new Set([...legacyNodeKinds, 'claim', 'step', 'example'])
+const viewForms = new Set(['graph', 'tree', 'flow', 'matrix', 'timeline'])
+const provenances = new Set(['user', 'ai', 'demo'])
 const relationKinds = new Set(['calls', 'depends', 'implements', 'next', 'prerequisite', 'compares', 'supports', 'contradicts', 'partOf', 'causes', 'defines', 'evaluates'])
 const documentTypes = new Set(['article', 'paper', 'code', 'product', 'course', 'mixed', 'unknown'])
 const certaintyKinds = new Set(['supported', 'inferred', 'unverified'])
@@ -16,7 +20,7 @@ const MAX_WORKSPACE_JSON_BYTES = 20 * 1024 * 1024
 const limits = {
   sources: 100,
   sourceVersions: 50,
-  nodes: 60,
+  nodes: 200,
   relations: 300,
   views: 100,
   path: 60,
@@ -30,6 +34,7 @@ const limits = {
   attempts: 2000,
   omissions: 50,
   suggestedViews: 20,
+  story: 100,
 }
 
 function fail(path, reason) {
@@ -183,7 +188,7 @@ function validateLegacyNode(value, index) {
   const result = {
     id: identifier(node.id, `${path}.id`),
     title: text(node.title, `${path}.title`, 200, true),
-    kind: enumValue(node.kind, `${path}.kind`, nodeKinds),
+    kind: enumValue(node.kind, `${path}.kind`, legacyNodeKinds),
     body: text(node.body, `${path}.body`, 20000),
     example: text(node.example, `${path}.example`, 10000),
     pitfall: text(node.pitfall, `${path}.pitfall`, 10000),
@@ -489,14 +494,15 @@ function validateCitation(value, path) {
   }
 }
 
-function validateNode(value, index) {
+function validateNode(value, index, current = false) {
   const path = `nodes[${index}]`
   const fields = ['id', 'title', 'kind', 'body', 'example', 'pitfall', 'notes', 'acceptance', 'citations', 'provenance']
-  const node = record(value, path, fields)
+  const node = record(value, path, current ? [...fields, 'certainty'] : fields)
   return {
+    ...(current ? { certainty: enumValue(node.certainty, `${path}.certainty`, certaintyKinds) } : {}),
     id: identifier(node.id, `${path}.id`),
     title: text(node.title, `${path}.title`, 200, true),
-    kind: enumValue(node.kind, `${path}.kind`, nodeKinds),
+    kind: enumValue(node.kind, `${path}.kind`, current ? nodeKinds : legacyNodeKinds),
     body: text(node.body, `${path}.body`, 20000),
     example: text(node.example, `${path}.example`, 10000),
     pitfall: text(node.pitfall, `${path}.pitfall`, 10000),
@@ -505,7 +511,7 @@ function validateNode(value, index) {
     citations: boundedArray(node.citations, `${path}.citations`, 100).map((citation, citationIndex) => (
       validateCitation(citation, `${path}.citations[${citationIndex}]`)
     )),
-    provenance: enumValue(node.provenance, `${path}.provenance`, new Set(['user', 'ai', 'demo'])),
+    provenance: enumValue(node.provenance, `${path}.provenance`, provenances),
   }
 }
 
@@ -527,10 +533,7 @@ function stringIds(value, path, maximum) {
   return result
 }
 
-function validateView(value, index) {
-  const path = `views[${index}]`
-  const item = record(value, path, ['id', 'title', 'scenario', 'kind', 'nodeIds', 'path', 'positions'])
-  const positionsValue = item.positions
+function validatePositions(positionsValue, path) {
   if (positionsValue === null || typeof positionsValue !== 'object' || Array.isArray(positionsValue)) {
     fail(`${path}.positions`, 'must be an object')
   }
@@ -545,6 +548,12 @@ function validateView(value, index) {
       y: finite(position.y, `${path}.positions.${nodeId}.y`),
     }
   }
+  return positions
+}
+
+function validateLegacyView(value, index) {
+  const path = `views[${index}]`
+  const item = record(value, path, ['id', 'title', 'scenario', 'kind', 'nodeIds', 'path', 'positions'])
   return {
     id: identifier(item.id, `${path}.id`),
     title: text(item.title, `${path}.title`, 200, true),
@@ -552,7 +561,36 @@ function validateView(value, index) {
     kind: enumValue(item.kind, `${path}.kind`, viewKinds),
     nodeIds: stringIds(item.nodeIds, `${path}.nodeIds`, limits.nodes),
     path: stringIds(item.path, `${path}.path`, limits.path),
-    positions,
+    positions: validatePositions(item.positions, path),
+  }
+}
+
+function validateView(value, index) {
+  const path = `views[${index}]`
+  const item = record(value, path, ['id', 'title', 'form', 'nodeIds', 'positions'])
+  return {
+    id: identifier(item.id, `${path}.id`),
+    title: text(item.title, `${path}.title`, 200, true),
+    form: enumValue(item.form, `${path}.form`, viewForms),
+    nodeIds: stringIds(item.nodeIds, `${path}.nodeIds`, limits.nodes),
+    positions: validatePositions(item.positions, path),
+  }
+}
+
+function validateStoryStep(value, index) {
+  const path = `story[${index}]`
+  const item = record(value, path, ['id', 'title', 'narration', 'stageId', 'reveal', 'focus', 'citations', 'provenance'])
+  return {
+    id: identifier(item.id, `${path}.id`),
+    title: text(item.title, `${path}.title`, 200, true),
+    narration: text(item.narration, `${path}.narration`, 20000),
+    stageId: identifier(item.stageId, `${path}.stageId`),
+    reveal: stringIds(item.reveal, `${path}.reveal`, limits.nodes),
+    focus: stringIds(item.focus, `${path}.focus`, limits.nodes),
+    citations: boundedArray(item.citations, `${path}.citations`, 100).map((citation, citationIndex) => (
+      validateCitation(citation, `${path}.citations[${citationIndex}]`)
+    )),
+    provenance: enumValue(item.provenance, `${path}.provenance`, provenances),
   }
 }
 
@@ -652,10 +690,12 @@ function validateProductItem(value, index) {
   return result
 }
 
-function validateQuestion(value, index) {
+function validateQuestion(value, index, current = false) {
   const path = `questions[${index}]`
-  const item = record(value, path, ['id', 'nodeId', 'prompt', 'answer', 'relatedNodeIds'])
+  const fields = ['id', 'nodeId', 'prompt', 'answer', 'relatedNodeIds']
+  const item = record(value, path, current ? [...fields, 'stepId'] : fields)
   return {
+    ...(current ? { stepId: item.stepId === '' ? '' : identifier(item.stepId, `${path}.stepId`) } : {}),
     id: identifier(item.id, `${path}.id`),
     nodeId: identifier(item.nodeId, `${path}.nodeId`),
     prompt: text(item.prompt, `${path}.prompt`, 3000, true),
@@ -707,13 +747,13 @@ function validateV2WorkspaceData(value) {
     scenario: enumValue(workspace.scenario, 'workspace.scenario', scenarios),
     summary: text(workspace.summary, 'workspace.summary', 20000),
     sources: boundedArray(workspace.sources, 'workspace.sources', limits.sources).map(validateSource),
-    nodes: boundedArray(workspace.nodes, 'workspace.nodes', limits.nodes).map(validateNode),
+    nodes: boundedArray(workspace.nodes, 'workspace.nodes', limits.nodes).map((item, index) => validateNode(item, index)),
     relations: boundedArray(workspace.relations, 'workspace.relations', limits.relations).map(validateRelation),
-    views: boundedArray(workspace.views, 'workspace.views', limits.views).map(validateView),
+    views: boundedArray(workspace.views, 'workspace.views', limits.views).map(validateLegacyView),
     flows: boundedArray(workspace.flows, 'workspace.flows', limits.flows).map(validateFlow),
     decisions: boundedArray(workspace.decisions, 'workspace.decisions', limits.decisions).map(validateDecision),
     productItems: boundedArray(workspace.productItems, 'workspace.productItems', limits.productItems).map(validateProductItem),
-    questions: boundedArray(workspace.questions, 'workspace.questions', limits.questions).map(validateQuestion),
+    questions: boundedArray(workspace.questions, 'workspace.questions', limits.questions).map((item, index) => validateQuestion(item, index)),
     attempts: boundedArray(workspace.attempts, 'workspace.attempts', limits.attempts).map(validateAttempt),
     createdAt: finite(workspace.createdAt, 'workspace.createdAt'),
     updatedAt: finite(workspace.updatedAt, 'workspace.updatedAt'),
@@ -799,12 +839,213 @@ function validateV2WorkspaceData(value) {
   return result
 }
 
+function nextStepId(reservedIds) {
+  let counter = 1
+  while (reservedIds.has(`step-${counter}`)) counter += 1
+  const id = `step-${counter}`
+  reservedIds.add(id)
+  return id
+}
+
+function defaultCertainty(node) {
+  if (node.citations.length) return 'supported'
+  return node.provenance === 'ai' ? 'inferred' : 'unverified'
+}
+
+// One story step per path entry: the step introduces that object on the given view.
+function storyFromPath(path, viewId, nodes, reservedIds, provenance = 'user') {
+  const titles = new Map(nodes.map(node => [node.id, node.title]))
+  return path.map(nodeId => ({
+    id: nextStepId(reservedIds),
+    title: titles.get(nodeId),
+    narration: '',
+    stageId: viewId,
+    reveal: [nodeId],
+    focus: [nodeId],
+    citations: [],
+    provenance,
+  }))
+}
+
+function workspaceIds(workspace) {
+  return [
+    workspace.id,
+    ...workspace.sources.map(item => item.id),
+    ...workspace.nodes.map(item => item.id),
+    ...workspace.relations.map(item => item.id),
+    ...workspace.views.map(item => item.id),
+    ...workspace.flows.flatMap(flow => [flow.id, ...flow.steps.map(step => step.id)]),
+    ...workspace.decisions.map(item => item.id),
+    ...workspace.productItems.flatMap(item => [
+      item.id,
+      ...item.criteria.map(criterion => criterion.id),
+      ...item.alternatives.map(alternative => alternative.id),
+    ]),
+    ...workspace.questions.map(item => item.id),
+    ...workspace.attempts.map(item => item.id),
+    ...(workspace.story ?? []).map(item => item.id),
+  ]
+}
+
+function migrateV2Workspace(v2) {
+  const reservedIds = new Set(workspaceIds(v2))
+  const firstPath = v2.views[0].path
+  const story = v2.views.flatMap((view, index) => (
+    index > 0 && view.path.join('\u0000') === firstPath.join('\u0000')
+      ? []
+      : storyFromPath(view.path, view.id, v2.nodes, reservedIds)
+  ))
+  return validateV3WorkspaceData({
+    schemaVersion: 3,
+    revision: v2.revision,
+    id: v2.id,
+    title: v2.title,
+    template: v2.scenario,
+    question: '',
+    takeaway: '',
+    audience: '',
+    summary: v2.summary,
+    sources: v2.sources,
+    nodes: v2.nodes.map(node => ({ ...node, certainty: defaultCertainty(node) })),
+    relations: v2.relations,
+    views: v2.views.map(view => ({
+      id: view.id,
+      title: view.title,
+      form: view.kind === 'flow' && !Object.keys(view.positions).length ? 'flow' : 'graph',
+      nodeIds: view.nodeIds,
+      positions: view.positions,
+    })),
+    story,
+    flows: v2.flows,
+    decisions: v2.decisions,
+    productItems: v2.productItems,
+    questions: v2.questions.map(question => ({
+      ...question,
+      stepId: story.find(step => step.reveal.includes(question.nodeId))?.id ?? '',
+    })),
+    attempts: v2.attempts,
+    createdAt: v2.createdAt,
+    updatedAt: v2.updatedAt,
+  })
+}
+
+function validateV3WorkspaceData(value) {
+  assertWorkspaceJsonSize(value)
+  const fields = [
+    'schemaVersion', 'revision', 'id', 'title', 'template', 'question', 'takeaway', 'audience', 'summary',
+    'sources', 'nodes', 'relations', 'views', 'story', 'flows', 'decisions', 'productItems',
+    'questions', 'attempts', 'createdAt', 'updatedAt',
+  ]
+  const workspace = record(value, 'workspace', fields)
+  if (workspace.schemaVersion !== 3) fail('workspace.schemaVersion', 'must equal 3')
+  const result = {
+    schemaVersion: 3,
+    revision: integer(workspace.revision, 'workspace.revision'),
+    id: identifier(workspace.id, 'workspace.id'),
+    title: text(workspace.title, 'workspace.title', 200, true),
+    template: enumValue(workspace.template, 'workspace.template', templates),
+    question: text(workspace.question, 'workspace.question', 500),
+    takeaway: text(workspace.takeaway, 'workspace.takeaway', 1000),
+    audience: text(workspace.audience, 'workspace.audience', 200),
+    summary: text(workspace.summary, 'workspace.summary', 20000),
+    sources: boundedArray(workspace.sources, 'workspace.sources', limits.sources).map(validateSource),
+    nodes: boundedArray(workspace.nodes, 'workspace.nodes', limits.nodes).map((item, index) => validateNode(item, index, true)),
+    relations: boundedArray(workspace.relations, 'workspace.relations', limits.relations).map(validateRelation),
+    views: boundedArray(workspace.views, 'workspace.views', limits.views).map(validateView),
+    story: boundedArray(workspace.story, 'workspace.story', limits.story).map(validateStoryStep),
+    flows: boundedArray(workspace.flows, 'workspace.flows', limits.flows).map(validateFlow),
+    decisions: boundedArray(workspace.decisions, 'workspace.decisions', limits.decisions).map(validateDecision),
+    productItems: boundedArray(workspace.productItems, 'workspace.productItems', limits.productItems).map(validateProductItem),
+    questions: boundedArray(workspace.questions, 'workspace.questions', limits.questions).map((item, index) => validateQuestion(item, index, true)),
+    attempts: boundedArray(workspace.attempts, 'workspace.attempts', limits.attempts).map(validateAttempt),
+    createdAt: finite(workspace.createdAt, 'workspace.createdAt'),
+    updatedAt: finite(workspace.updatedAt, 'workspace.updatedAt'),
+  }
+  if (!result.views.length) fail('workspace.views', 'must contain at least one view')
+  unique(workspaceIds(result), 'workspace identifiers')
+
+  const sourceById = new Map(result.sources.map(source => [source.id, source]))
+  const nodeIds = new Set(result.nodes.map(node => node.id))
+  const viewById = new Map(result.views.map(view => [view.id, view]))
+  const blockIds = new Set([
+    ...result.flows.map(item => item.id),
+    ...result.decisions.map(item => item.id),
+    ...result.productItems.map(item => item.id),
+  ])
+  const stepIds = new Set(result.story.map(step => step.id))
+  const questionIds = new Set(result.questions.map(question => question.id))
+  const productIds = new Set(result.productItems.map(item => item.id))
+  const checkCitations = (citations, path) => {
+    for (const [index, citation] of citations.entries()) {
+      validateCitationSource(citation, `${path}[${index}]`, sourceById)
+    }
+  }
+  for (const node of result.nodes) checkCitations(node.citations, `nodes.${node.id}.citations`)
+  for (const relation of result.relations) {
+    if (!nodeIds.has(relation.from) || !nodeIds.has(relation.to)) fail(`relations.${relation.id}`, 'references a missing node')
+  }
+  for (const view of result.views) {
+    for (const id of view.nodeIds) {
+      if (!nodeIds.has(id)) fail(`views.${view.id}.nodeIds`, `references missing node "${id}"`)
+    }
+    for (const id of Object.keys(view.positions)) {
+      if (!nodeIds.has(id) || !view.nodeIds.includes(id)) fail(`views.${view.id}.positions`, `references node "${id}" outside this view`)
+    }
+  }
+  for (const step of result.story) {
+    const view = viewById.get(step.stageId)
+    if (!view && !blockIds.has(step.stageId)) fail(`story.${step.id}.stageId`, `references missing view or block "${step.stageId}"`)
+    for (const id of [...step.reveal, ...step.focus]) {
+      if (!view) fail(`story.${step.id}`, 'can only reveal or focus objects on a diagram view')
+      if (!view.nodeIds.includes(id)) fail(`story.${step.id}`, `references node "${id}" outside its view`)
+    }
+    checkCitations(step.citations, `story.${step.id}.citations`)
+  }
+  for (const flow of result.flows) {
+    for (const step of flow.steps) {
+      if (!nodeIds.has(step.from) || !nodeIds.has(step.to)) fail(`flows.${flow.id}.steps.${step.id}`, 'references a missing node')
+      checkCitations(step.citations, `flows.${flow.id}.steps.${step.id}.citations`)
+      if (step.evidence !== 'unverified' && !step.citations.length) {
+        fail(`flows.${flow.id}.steps.${step.id}.citations`, 'static or runtime evidence must have citations')
+      }
+    }
+  }
+  for (const decision of result.decisions) {
+    for (const id of decision.nodeIds) {
+      if (!nodeIds.has(id)) fail(`decisions.${decision.id}.nodeIds`, `references missing node "${id}"`)
+    }
+    checkCitations(decision.citations, `decisions.${decision.id}.citations`)
+  }
+  for (const item of result.productItems) {
+    for (const id of item.nodeIds) {
+      if (!nodeIds.has(id)) fail(`productItems.${item.id}.nodeIds`, `references missing node "${id}"`)
+    }
+    for (const id of item.relatedIds) {
+      if (!productIds.has(id)) fail(`productItems.${item.id}.relatedIds`, `references missing product item "${id}"`)
+    }
+    checkCitations(item.citations, `productItems.${item.id}.citations`)
+  }
+  for (const question of result.questions) {
+    if (!nodeIds.has(question.nodeId)) fail(`questions.${question.id}`, 'references a missing node')
+    if (question.stepId && !stepIds.has(question.stepId)) fail(`questions.${question.id}.stepId`, 'references a missing story step')
+    for (const id of question.relatedNodeIds) {
+      if (!nodeIds.has(id)) fail(`questions.${question.id}.relatedNodeIds`, `references missing node "${id}"`)
+    }
+  }
+  for (const attempt of result.attempts) {
+    if (!questionIds.has(attempt.questionId)) fail(`attempts.${attempt.id}`, 'references a missing question')
+  }
+  validatePrerequisites(result.nodes, result.relations, [], 'workspace.story')
+  return result
+}
+
 function validateWorkspaceData(value) {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) fail('workspace', 'must be an object')
   assertWorkspaceJsonSize(value)
-  if (value.schemaVersion === 1) return migrateLegacyWorkspace(validateLegacyWorkspaceData(value))
-  if (value.schemaVersion === 2) return validateV2WorkspaceData(value)
-  fail('workspace.schemaVersion', 'must equal 1 or 2')
+  if (value.schemaVersion === 1) return migrateV2Workspace(migrateLegacyWorkspace(validateLegacyWorkspaceData(value)))
+  if (value.schemaVersion === 2) return migrateV2Workspace(validateV2WorkspaceData(value))
+  if (value.schemaVersion === 3) return validateV3WorkspaceData(value)
+  fail('workspace.schemaVersion', 'must equal 1, 2 or 3')
 }
 
 function normalizeIncomingCitation(citation, citationPath, base) {
@@ -827,8 +1068,9 @@ function normalizeIncomingCitation(citation, citationPath, base) {
 
 function normalizeGeneratedNode(value, index, base) {
   const path = `generated content.nodes[${index}]`
-  const fields = ['id', 'title', 'kind', 'body', 'example', 'pitfall', 'notes', 'acceptance', 'citations', 'provenance', 'x', 'y']
-  const item = record(value, path, fields, fields.filter(field => field !== 'x' && field !== 'y'))
+  // certainty is derived from the citations, so a value echoed back by the service is ignored.
+  const fields = ['id', 'title', 'kind', 'body', 'example', 'pitfall', 'notes', 'acceptance', 'citations', 'provenance', 'x', 'y', 'certainty']
+  const item = record(value, path, fields, fields.filter(field => field !== 'x' && field !== 'y' && field !== 'certainty'))
   const node = {
     id: identifier(item.id, `${path}.id`),
     title: text(item.title, `${path}.title`, 200, true),
@@ -850,8 +1092,9 @@ function normalizeGeneratedNode(value, index, base) {
 
 function validateGeneratedContentData(value, baseWorkspace) {
   const base = validateWorkspaceData(baseWorkspace)
+  // story is rebuilt from path on every pass; accepting it keeps validation idempotent across the service boundary.
   const fields = ['title', 'summary', 'nodes', 'relations', 'path', 'questions']
-  const generated = record(value, 'generated content', fields)
+  const generated = record(value, 'generated content', [...fields, 'story'], fields)
   const nodesWithProjection = boundedArray(generated.nodes, 'generated content.nodes', limits.nodes)
     .map((node, index) => normalizeGeneratedNode(node, index, base))
   if (!nodesWithProjection.length) fail('generated content.nodes', 'must contain at least one generated node')
@@ -865,7 +1108,7 @@ function validateGeneratedContentData(value, baseWorkspace) {
   const questions = boundedArray(generated.questions, 'generated content.questions', limits.questions)
     .map((question, index) => {
       const questionPath = `generated content.questions[${index}]`
-      const item = record(question, questionPath, ['id', 'nodeId', 'prompt', 'answer', 'relatedNodeIds'], [
+      const item = record(question, questionPath, ['id', 'nodeId', 'prompt', 'answer', 'relatedNodeIds', 'stepId'], [
         'id', 'nodeId', 'prompt', 'answer',
       ])
       const relatedNodeIds = item.relatedNodeIds === undefined
@@ -877,9 +1120,10 @@ function validateGeneratedContentData(value, baseWorkspace) {
         prompt: text(item.prompt, `${questionPath}.prompt`, 3000, true),
         answer: text(item.answer, `${questionPath}.answer`, 20000),
         relatedNodeIds,
+        stepId: '',
       }
     })
-  const candidateNodes = nodesWithProjection.map(({ x, y, ...node }) => node)
+  const candidateNodes = nodesWithProjection.map(({ x, y, ...node }) => ({ ...node, certainty: defaultCertainty(node) }))
   const positions = { ...base.views[0].positions }
   for (const node of nodesWithProjection) {
     if (node.x !== undefined || node.y !== undefined) positions[node.id] = { x: node.x ?? 0, y: node.y ?? 0 }
@@ -887,10 +1131,12 @@ function validateGeneratedContentData(value, baseWorkspace) {
   const candidateView = {
     ...base.views[0],
     nodeIds: candidateNodes.map(node => node.id),
-    path,
     positions,
   }
-  const candidate = validateV2WorkspaceData({
+  for (const id of path) {
+    if (!generatedNodeIds.has(id)) fail('generated content.path', `references node "${id}" outside the generated nodes`)
+  }
+  const draft = {
     ...base,
     title: text(generated.title, 'generated content.title', 200, true),
     summary: text(generated.summary, 'generated content.summary', 20000),
@@ -898,17 +1144,73 @@ function validateGeneratedContentData(value, baseWorkspace) {
     relations,
     views: [candidateView, ...base.views.slice(1)],
     questions,
+  }
+  const story = storyFromPath(path, candidateView.id, candidateNodes, new Set(workspaceIds(draft)), 'ai')
+  const candidate = validateV3WorkspaceData({
+    ...draft,
+    story,
+    questions: questions.map(question => ({
+      ...question,
+      stepId: story.find(step => step.reveal.includes(question.nodeId))?.id ?? '',
+    })),
   })
+  validatePrerequisites(candidate.nodes, candidate.relations, [path], 'generated content.path')
   if (candidate.nodes.some(node => !generatedNodeIds.has(node.id))) {
     fail('generated content.nodes', 'must contain only generated nodes')
   }
   return {
     title: candidate.title,
     summary: candidate.summary,
-    nodes: nodesWithProjection,
+    nodes: nodesWithProjection.map(node => ({ ...node, certainty: defaultCertainty(node) })),
     relations: candidate.relations,
-    path: candidateView.path,
+    path,
+    story: candidate.story,
     questions: candidate.questions,
+  }
+}
+
+const outlineModes = new Set(['simpler', 'example', 'analogy'])
+
+// A proposed story for existing objects. Nothing is written until the user adopts it.
+function validateOutlineData(value, baseWorkspace) {
+  const base = validateWorkspaceData(baseWorkspace)
+  const item = record(value, 'outline', ['question', 'takeaway', 'audience', 'steps'])
+  const nodeIds = new Set(base.nodes.map(node => node.id))
+  const steps = boundedArray(item.steps, 'outline.steps', limits.story).map((step, index) => {
+    const path = `outline.steps[${index}]`
+    const entry = record(step, path, ['title', 'narration', 'form', 'reveal', 'focus', 'citations'])
+    const reveal = stringIds(entry.reveal, `${path}.reveal`, limits.nodes)
+    const focus = stringIds(entry.focus, `${path}.focus`, limits.nodes)
+    for (const id of [...reveal, ...focus]) {
+      if (!nodeIds.has(id)) fail(path, `references missing node "${id}"`)
+    }
+    return {
+      title: text(entry.title, `${path}.title`, 200, true),
+      narration: text(entry.narration, `${path}.narration`, 20000),
+      form: enumValue(entry.form, `${path}.form`, viewForms),
+      reveal,
+      focus,
+      citations: boundedArray(entry.citations, `${path}.citations`, 100).map((citation, citationIndex) => (
+        normalizeIncomingCitation(citation, `${path}.citations[${citationIndex}]`, base)
+      )),
+    }
+  })
+  if (!steps.length) fail('outline.steps', 'must contain at least one step')
+  const introduced = new Set()
+  for (const [index, step] of steps.entries()) {
+    for (const id of step.reveal) {
+      if (introduced.has(id)) fail(`outline.steps[${index}].reveal`, `introduces node "${id}" twice`)
+      introduced.add(id)
+    }
+    for (const id of step.focus) {
+      if (!introduced.has(id)) fail(`outline.steps[${index}].focus`, `focuses node "${id}" before it is introduced`)
+    }
+  }
+  return {
+    question: text(item.question, 'outline.question', 500, true),
+    takeaway: text(item.takeaway, 'outline.takeaway', 1000, true),
+    audience: text(item.audience, 'outline.audience', 200),
+    steps,
   }
 }
 
@@ -991,11 +1293,10 @@ function validateUnderstandingData(value, baseWorkspace) {
   const suggestedViews = boundedArray(item.suggestedViews, 'understanding.suggestedViews', limits.suggestedViews)
     .map((view, index) => {
       const path = `understanding.suggestedViews[${index}]`
-      const value = record(view, path, ['title', 'scenario', 'kind', 'reason'])
+      const value = record(view, path, ['title', 'form', 'reason'])
       return {
         title: text(value.title, `${path}.title`, 200, true),
-        scenario: enumValue(value.scenario, `${path}.scenario`, scenarios),
-        kind: enumValue(value.kind, `${path}.kind`, viewKinds),
+        form: enumValue(value.form, `${path}.form`, viewForms),
         reason: text(value.reason, `${path}.reason`, 1000),
       }
     })
@@ -1021,4 +1322,7 @@ function validateUnderstandingData(value, baseWorkspace) {
   }
 }
 
-export { limits, validateGeneratedContentData, validateUnderstandingData, validateRevisionData, validateWorkspaceData }
+export {
+  limits, outlineModes, storyFromPath, workspaceIds,
+  validateGeneratedContentData, validateOutlineData, validateUnderstandingData, validateRevisionData, validateWorkspaceData,
+}
