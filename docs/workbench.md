@@ -90,6 +90,8 @@ preference is stored separately in browser `localStorage` under
 JetBrains Mono regular and bold are bundled locally as WOFF2 assets, with the
 SIL Open Font License in `public/fonts/OFL.txt`. The app does not fetch fonts
 from an external service.
+Global Google Fonts links for Inter are removed; the classic editor continues
+to use its existing system-font fallback when Inter is unavailable locally.
 
 Diagram colors follow the node's authored semantic type, not its title or an
 inferred architectural role. For example, components, interfaces, states, and

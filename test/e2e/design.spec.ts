@@ -19,6 +19,29 @@ async function workspaces(page: Page): Promise<Workspace[]> {
   }))
 }
 
+test('workbench and classic editor do not request external fonts', async ({ page }) => {
+  const externalFonts: string[] = []
+  page.on('request', request => {
+    const hostname = new URL(request.url()).hostname
+    if (hostname === 'fonts.googleapis.com' || hostname === 'fonts.gstatic.com') {
+      externalFonts.push(request.url())
+    }
+  })
+
+  await page.goto('/')
+  await page.evaluate(async () => { await document.fonts.ready })
+  expect(await page.evaluate(() => document.fonts.check('13px "JetBrains Mono"'))).toBe(true)
+  expect(externalFonts).toEqual([])
+
+  await page.getByRole('button', { name: '切换深色主题', exact: true }).click()
+  await expect(page.locator('.ol-app')).toHaveAttribute('data-theme', 'dark')
+  await page.goto('/?editor=classic')
+  await expect(page.locator('.classic-shell')).toBeVisible()
+  await expect(page.locator('.ol-app')).toHaveCount(0)
+  await page.evaluate(async () => { await document.fonts.ready })
+  expect(externalFonts).toEqual([])
+})
+
 test('theme preference stays separate from workspace data and exported player switches offline', async ({ page, context }) => {
   const playerFile = join(tmpdir(), `onelook-theme-${randomUUID()}.html`)
   let player: Page | undefined
