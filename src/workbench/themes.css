@@ -1,0 +1,86 @@
+/* Shared by the workbench and the self-contained player. */
+:root, [data-theme="light"] {
+  color-scheme: light;
+  --font-ui: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, "PingFang SC", "Microsoft YaHei", monospace;
+  --canvas: #f3f4f6;
+  --paper: #ffffff;
+  --surface: #f8fafc;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe2ea;
+  --selection: #eaf3f6;
+  --accent: #087f99;
+  --solid: #172033;
+  --on-solid: #ffffff;
+  --dot: #dce3ec;
+  --cyan: #0086a3;
+  --cyan-soft: #e4f7fb;
+  --green: #008463;
+  --green-soft: #e4f5ef;
+  --violet: #7c3aed;
+  --violet-soft: #f0eaff;
+  --amber: #a56a09;
+  --amber-soft: #fff6df;
+  --rose: #cf365a;
+  --rose-soft: #fff0f3;
+  --orange: #bd570a;
+  --orange-soft: #fff1e7;
+  --slate: #64748b;
+  --slate-soft: #eef1f5;
+  --panel-shadow: 0 16px 48px #0f172a20;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #020617;
+  --paper: #0f172a;
+  --surface: #131e33;
+  --ink: #e7edf6;
+  --muted: #a0aec3;
+  --line: #29364c;
+  --selection: #173042;
+  --accent: #22d3ee;
+  --solid: #dce7f2;
+  --on-solid: #0f172a;
+  --dot: #1a293d;
+  --cyan: #22d3ee;
+  --cyan-soft: #103443;
+  --green: #34d399;
+  --green-soft: #10382f;
+  --violet: #a78bfa;
+  --violet-soft: #2b2549;
+  --amber: #fbbf24;
+  --amber-soft: #392f18;
+  --rose: #fb7185;
+  --rose-soft: #3d2233;
+  --orange: #fb923c;
+  --orange-soft: #3b2a23;
+  --slate: #a0aec3;
+  --slate-soft: #222d40;
+  --panel-shadow: 0 18px 48px #00000050;
+}
+
+.semantic-cyan { --semantic: var(--cyan); --semantic-soft: var(--cyan-soft); }
+.semantic-green { --semantic: var(--green); --semantic-soft: var(--green-soft); }
+.semantic-violet { --semantic: var(--violet); --semantic-soft: var(--violet-soft); }
+.semantic-amber { --semantic: var(--amber); --semantic-soft: var(--amber-soft); }
+.semantic-rose { --semantic: var(--rose); --semantic-soft: var(--rose-soft); }
+.semantic-orange { --semantic: var(--orange); --semantic-soft: var(--orange-soft); }
+.semantic-slate { --semantic: var(--slate); --semantic-soft: var(--slate-soft); }
+
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 6px 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.theme-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

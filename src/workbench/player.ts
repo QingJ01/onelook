@@ -1,11 +1,13 @@
 import runtime from './player-runtime.js?raw'
 import styles from './player-runtime.css?raw'
+import themeStyles from './themes.css?raw'
+import { nodeVisuals, relationTone } from './visual'
 import { layoutView } from './layout'
 import { stageStateAt } from './model'
 import { nodeKinds, type KnowledgeNode, type Workspace } from './types'
 
 type Stage =
-  | ({ type: 'diagram'; title: string; nodes: { id: string; title: string; kind: string; x: number; y: number; w: number; h: number }[] } & Omit<ReturnType<typeof layoutView>, 'boxes'>)
+  | ({ type: 'diagram'; title: string; nodes: { id: string; title: string; kind: string; tone: string; sigil: string; body: string; x: number; y: number; w: number; h: number }[] } & Omit<ReturnType<typeof layoutView>, 'boxes'>)
   | { type: 'matrix'; title: string; columns: string[]; rows: { id: string; title: string; cells: string[] }[] }
   | { type: 'block'; title: string; fields: [string, string][] }
 
@@ -28,7 +30,9 @@ function stageFor(workspace: Workspace, stageId: string): Stage {
     const nodes = view.nodeIds.flatMap(id => workspace.nodes.filter(node => node.id === id))
     if (view.form === 'matrix') return { type: 'matrix', title: view.title, ...matrixFor(nodes) }
     const { boxes, ...layout } = layoutView({ form: view.form, nodeIds: view.nodeIds, relations: workspace.relations, positions: view.positions, title: workspace.title })
-    return { type: 'diagram', title: view.title, ...layout, nodes: nodes.map(node => ({ id: node.id, title: node.title, kind: nodeKinds[node.kind], ...boxes[node.id]! })) }
+    return { type: 'diagram', title: view.title, ...layout,
+      edges: layout.edges.map(edge => ({ ...edge, tone: relationTone(workspace.relations.find(relation => relation.id === edge.id)?.kind) })),
+      nodes: nodes.map(node => ({ id: node.id, title: node.title, kind: nodeKinds[node.kind], body: node.body, ...nodeVisuals[node.kind], ...boxes[node.id]! })) }
   }
   const flow = workspace.flows.find(item => item.id === stageId)
   if (flow) {
@@ -71,13 +75,13 @@ const escapeJson = (text: string) => text.replace(/[<>&\u2028\u2029]/g, char => 
 export function exportPlayerHtml(workspace: Workspace): string {
   const data = escapeJson(JSON.stringify(playerData(workspace)))
   return `<!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
 <title>${escapeHtml(workspace.title)}</title>
-<style>${styles}</style>
+<style>${themeStyles}\n${styles}</style>
 </head>
 <body>
 <div id="app"></div>

@@ -16,7 +16,10 @@ import { exportPlayerHtml } from './player'
 import { listWorkspaces, getWorkspace, saveWorkspace, deleteWorkspace, listRevisions, restoreRevision, listMigrationBackups } from './storage'
 import { generateContent, understandWorkspace, explainNode, outlineWorkspace, restepNarration, renderArchify, getApiHealth } from './api'
 import { templates, viewForms, nodeKinds, relationKinds, documentTypes, certaintyKinds, type Citation, type Workspace, type Template, type ViewForm, type KnowledgeNode, type RelationKind, type Revision, type GeneratedContent, type MaterialUnderstanding, type StoryOutline, type RestepMode, type AISettings } from './types'
+import { theme, toggleTheme } from './theme'
+import './themes.css'
 import './workbench.css'
+import './design.css'
 
 const location = window.location
 const workspaces = ref<Workspace[]>([]), current = ref<Workspace>()
@@ -387,12 +390,12 @@ async function render() {
 </script>
 
 <template>
-  <div class="ol-app" :class="{ presenting: mode === 'present' }" :inert="switching || undefined" :aria-busy="switching">
+  <div class="ol-app" :data-theme="theme" :class="{ presenting: mode === 'present' }" :inert="switching || undefined" :aria-busy="switching">
     <header class="ol-header">
       <button class="brand" aria-label="OneLook 首页" @click="home"><span class="brand-mark"><Layers3 :size="21" /></span><strong>OneLook<span>一目</span></strong></button>
       <div v-if="current" class="breadcrumb"><ChevronRight :size="14" /><button @click="home">讲解</button><ChevronRight :size="14" /><span>{{ current.title }}</span></div>
       <span v-else class="brand-caption">把一件事讲清楚</span>
-      <div class="header-actions"><button class="icon-button" aria-label="使用帮助" @click="modal = 'help'"><CircleHelp :size="18" /></button><button class="icon-button" aria-label="AI 设置" @click="modal = 'settings'"><Settings2 :size="18" /></button><a class="legacy-link" href="?editor=classic">经典导图</a></div>
+      <div class="header-actions"><button class="theme-switch" :aria-label="theme === 'light' ? '切换深色主题' : '切换浅色主题'" @click="toggleTheme"><span aria-hidden="true">{{ theme === 'light' ? '☼' : '☾' }}</span>{{ theme === 'light' ? '浅色' : '深色' }}</button><button class="icon-button" aria-label="使用帮助" @click="modal = 'help'"><CircleHelp :size="18" /></button><button class="icon-button" aria-label="AI 设置" @click="modal = 'settings'"><Settings2 :size="18" /></button><a class="legacy-link" href="?editor=classic">经典导图</a></div>
     </header>
 
     <div v-if="error" class="error-banner" role="alert"><span>{{ error }}</span><button v-if="saveState === 'error' && !externalChange" @click="retrySave">重试保存</button><button v-if="saveState === 'error'" @click="saveCopy">保留本地副本</button><button v-if="current" @click="exportJSON">导出备份</button><button aria-label="关闭错误提示" @click="error = ''"><X :size="16" /></button></div>
