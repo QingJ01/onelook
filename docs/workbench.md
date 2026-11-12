@@ -82,6 +82,28 @@ only choose the default diagram form and object type. The classic mind map
 editor stays separate; its exported `.json` / `.olook` file can be imported
 one way as a tree explanation from the home page.
 
+## Theme and semantic colors
+
+The workbench defaults to light mode and offers a dark-mode toggle. Its
+preference is stored separately in browser `localStorage` under
+`onelook-ui-theme`; it is not part of workspace data or its IndexedDB record.
+JetBrains Mono regular and bold are bundled locally as WOFF2 assets, with the
+SIL Open Font License in `public/fonts/OFL.txt`. The app does not fetch fonts
+from an external service.
+Global Google Fonts links for Inter are removed; the classic editor continues
+to use its existing system-font fallback when Inter is unavailable locally.
+
+Diagram colors follow the node's authored semantic type, not its title or an
+inferred architectural role. For example, components, interfaces, states, and
+requirements have distinct semantic tones; the same rule applies to the
+explicitly authored kinds in other workspaces.
+
+An exported player is a self-contained offline HTML file with the shared
+semantic theme tokens and its own light/dark toggle. It defaults to light,
+does not persist a theme preference, and uses the system monospace fallback
+rather than embedding font files. Its theme is independent of both the classic
+mind-map editor and HTML exported by the embedded Archify renderer.
+
 **Export.** "导出播放页" writes one HTML file with the story, precomputed
 layouts, and a small player. It carries a `default-src 'none'` content
 security policy and makes no network requests. Archify remains an optional

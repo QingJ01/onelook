@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, useId } from 'vue'
 import { Minus, Plus, LocateFixed } from 'lucide-vue-next'
 import { layoutView, ROOT_ID } from './layout'
 import { nodeKinds, viewForms, type KnowledgeNode, type Relation, type ViewForm } from './types'
+import { nodeVisuals, relationTone } from './visual'
 
 const props = defineProps<{
   form: ViewForm; nodes: KnowledgeNode[]; relations: Relation[]; positions: Record<string, { x: number; y: number }>; title: string
@@ -13,6 +14,13 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ select: [id: string]; move: [id: string, x: number, y: number] }>()
 const zoom = ref(.8)
+const markerId = `arrow-${useId()}`
+const legend = computed(() => Object.entries(nodeKinds).flatMap(([kind, label]) => {
+  const count = props.nodes.filter(node => node.kind === kind && (!props.state || props.state.visible.includes(node.id))).length
+  return count ? [{ kind, label, count, tone: nodeVisuals[kind as KnowledgeNode['kind']].tone }] : []
+}))
+const edgeTone = (id: string) => relationTone(props.relations.find(edge => edge.id === id)?.kind)
+const labelWidth = (label: string) => Math.max(26, Math.min(180, [...label].reduce((width, c) => width + (c.charCodeAt(0) > 255 ? 10 : 6), 12)))
 const canvas = ref<SVGSVGElement>(), shell = ref<HTMLElement>()
 const size = ref({ width: 900, height: 560 })
 const drag = ref<{ id: string; dx: number; dy: number; x: number; y: number }>()
@@ -90,25 +98,25 @@ function end() {
         :viewBox="playing ? `0 0 ${size.width} ${size.height}` : `0 0 ${layout.width} ${layout.height}`"
         :style="playing ? { width: '100%', height: '100%' } : { width: `${layout.width * zoom}px`, height: `${layout.height * zoom}px` }"
         @pointermove="move" @pointerup="end" @pointercancel="drag = undefined">
-        <defs><marker id="edge-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#9ca7ba" /></marker></defs>
+        <defs><marker :id="markerId" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" /></marker></defs>
         <g class="diagram-camera" :style="camera">
           <g v-if="layout.axis" class="diagram-axis">
             <line :x1="layout.axis.x1" :y1="layout.axis.y" :x2="layout.axis.x2" :y2="layout.axis.y" />
             <line v-for="tick in layout.axis.ticks" :key="tick.id" :class="['tick', nodeClass(tick.id)]" :x1="tick.x" :y1="tick.y1" :x2="tick.x" :y2="tick.y2" />
           </g>
-          <g v-for="edge in layout.edges" :key="edge.id" :class="edgeClass(edge)">
-            <path :d="edge.d" pathLength="1" marker-end="url(#edge-arrow)" />
-            <text v-if="edge.label" :x="edge.lx" :y="edge.ly" text-anchor="middle">{{ edge.label }}</text>
+          <g v-for="edge in layout.edges" :key="edge.id" :class="[edgeClass(edge), `semantic-${edgeTone(edge.id)}`]">
+            <path :d="edge.d" pathLength="1" :marker-end="`url(#${markerId})`" />
+            <template v-if="edge.label"><rect class="edge-label-bg" :x="edge.lx - labelWidth(edge.label) / 2" :y="edge.ly - 11" :width="labelWidth(edge.label)" height="16" rx="4" /><text :x="edge.lx" :y="edge.ly" text-anchor="middle">{{ edge.label }}</text></template>
           </g>
           <g v-if="layout.root" class="diagram-root">
             <rect :x="layout.root.box.x" :y="layout.root.box.y" :width="layout.root.box.w" :height="layout.root.box.h" rx="8" />
             <text :x="layout.root.box.x + layout.root.box.w / 2" :y="layout.root.box.y + layout.root.box.h / 2 + 5" text-anchor="middle">{{ layout.root.title.slice(0, 12) }}</text>
           </g>
-          <g v-for="node in nodes" :key="node.id" :class="['diagram-node', nodeClass(node.id)]" :data-node="node.id" :style="{ transform: `translate(${layout.boxes[node.id]!.x}px, ${layout.boxes[node.id]!.y}px)` }">
+          <g v-for="node in nodes" :key="node.id" :class="['diagram-node', nodeClass(node.id), `semantic-${nodeVisuals[node.kind].tone}`]" :data-node="node.id" :style="{ transform: `translate(${layout.boxes[node.id]!.x}px, ${layout.boxes[node.id]!.y}px)` }">
             <foreignObject :width="layout.boxes[node.id]!.w" :height="layout.boxes[node.id]!.h">
               <button class="graph-node" :class="{ selected: selectedId === node.id, draggable }" :aria-pressed="selectedId === node.id" :tabindex="shown(node.id) ? 0 : -1" @click="emit('select', node.id)" @pointerdown="start($event, node.id)">
-                <span class="node-kicker">{{ nodeKinds[node.kind] }}<span v-if="node.provenance === 'ai'" class="ai-tag">AI</span></span>
-                <strong>{{ node.title }}</strong><span class="node-caption">{{ node.citations.length ? `${node.citations.length} 处资料关联` : '待补充来源' }}</span>
+                <span class="node-kicker"><span class="node-sigil" aria-hidden="true">{{ nodeVisuals[node.kind].sigil }}</span>{{ nodeKinds[node.kind] }}<span v-if="node.citations.length" class="source-beacon" :title="`${node.citations.length} 处资料关联`">SRC {{ node.citations.length }}</span><span v-else-if="node.provenance === 'ai'" class="ai-tag">AI</span></span>
+                <strong :title="node.title">{{ node.title }}</strong><span class="node-caption" :title="node.body">{{ node.body || '待补充说明' }}</span>
               </button>
             </foreignObject>
           </g>
@@ -116,6 +124,7 @@ function end() {
         </g>
       </svg>
     </div>
-    <div v-if="!playing" class="graph-bottom"><span>{{ draggable ? '拖动对象调整布局 · 点击编辑内容' : state ? '浅色对象尚未在讲解中出现' : form === 'graph' ? '点击对象查看解释、来源与关联' : '布局自动生成 · 点击对象查看详情' }}</span><div class="zoom-tools"><button aria-label="缩小地图" @click="zoom = Math.max(.4, zoom - .1)"><Minus :size="15" /></button><span>{{ Math.round(zoom * 100) }}%</span><button aria-label="放大地图" @click="zoom = Math.min(1.8, zoom + .1)"><Plus :size="15" /></button><button aria-label="重置地图缩放" @click="zoom = 1"><LocateFixed :size="15" /></button></div></div>
+    <div v-if="legend.length" class="graph-legend" aria-label="对象类型图例"><span v-for="item in legend" :key="item.kind" :class="`semantic-${item.tone}`"><i aria-hidden="true" />{{ item.label }}<b>{{ item.count }}</b></span></div>
+    <div v-if="!playing" class="graph-bottom"><span>{{ draggable ? '拖动对象调整布局 · 点击编辑内容' : state ? '淡化对象尚未在讲解中出现' : form === 'graph' ? '点击对象查看解释、来源与关联' : '布局自动生成 · 点击对象查看详情' }}</span><div class="zoom-tools"><button aria-label="缩小地图" @click="zoom = Math.max(.4, zoom - .1)"><Minus :size="15" /></button><span>{{ Math.round(zoom * 100) }}%</span><button aria-label="放大地图" @click="zoom = Math.min(1.8, zoom + .1)"><Plus :size="15" /></button><button aria-label="重置地图缩放" @click="zoom = 1"><LocateFixed :size="15" /></button></div></div>
   </div>
 </template>
