@@ -22,7 +22,7 @@
     var root = svg('svg', { class: 'diagram', role: 'img', 'aria-label': stage.title })
     var defs = svg('defs', {})
     var marker = svg('marker', { id: 'arrow', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' })
-    marker.appendChild(svg('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: '#9ca7ba' }))
+    marker.appendChild(svg('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: 'context-stroke' }))
     defs.appendChild(marker)
     root.appendChild(defs)
     var camera = svg('g', { class: 'camera' })
@@ -37,9 +37,11 @@
       })
     }
     stage.edges.forEach(function (edge) {
-      var group = svg('g', { class: 'edge' + (edge.cross ? ' cross' : '') })
+      var group = svg('g', { class: 'edge semantic-' + (edge.tone || 'slate') + (edge.cross ? ' cross' : '') })
       group.appendChild(svg('path', { d: edge.d, pathLength: 1, 'marker-end': 'url(#arrow)' }))
       if (edge.label) {
+        var labelWidth = Math.max(26, Math.min(180, Array.from(edge.label).reduce(function (width, c) { return width + (c.charCodeAt(0) > 255 ? 10 : 6) }, 12)))
+        group.appendChild(svg('rect', { class: 'edge-label-bg', x: edge.lx - labelWidth / 2, y: edge.ly - 11, width: labelWidth, height: 16, rx: 4 }))
         var label = svg('text', { x: edge.lx, y: edge.ly, 'text-anchor': 'middle' })
         label.textContent = edge.label
         group.appendChild(label)
@@ -59,8 +61,10 @@
       var group = svg('g', { class: 'node', transform: 'translate(' + item.x + ',' + item.y + ')' })
       var frame = svg('foreignObject', { width: item.w, height: item.h })
       var card = el('div', 'card')
-      card.appendChild(el('span', 'kind', item.kind))
+      card.classList.add('semantic-' + item.tone)
+      card.appendChild(el('span', 'kind', item.sigil + ' ' + item.kind))
       card.appendChild(el('strong', '', item.title))
+      card.appendChild(el('span', 'caption', item.body))
       frame.appendChild(card)
       group.appendChild(frame)
       camera.appendChild(group)
@@ -142,10 +146,31 @@
       })
       fit(parts, step)
     }
+    legend.textContent = ''
+    if (stage.nodes) {
+      var types = {}
+      stage.nodes.forEach(function (item) {
+        if (!visible[item.id]) return
+        if (!types[item.kind]) types[item.kind] = { tone: item.tone, count: 0 }
+        types[item.kind].count++
+      })
+      Object.keys(types).forEach(function (kind) {
+        var chip = el('span', 'semantic-' + types[kind].tone)
+        chip.appendChild(el('i'))
+        chip.appendChild(document.createTextNode(kind + ' ' + types[kind].count))
+        legend.appendChild(chip)
+      })
+    }
     if (parts.rows) {
       for (var rowId in parts.rows) parts.rows[rowId].className = (visible[rowId] ? '' : 'hidden') + (focus[rowId] ? ' focus' : '')
     }
     counter.textContent = (index + 1) + ' / ' + data.steps.length
+    stepNo.textContent = '第 ' + (index + 1) + ' 步'
+    marks.forEach(function (mark, at) {
+      mark.className = at < index ? 'done' : at === index ? 'active' : ''
+      if (at === index) mark.setAttribute('aria-current', 'step')
+      else mark.removeAttribute('aria-current')
+    })
     heading.textContent = step.title
     narration.textContent = step.narration
     details.textContent = ''
@@ -185,12 +210,41 @@
 
   var app = document.getElementById('app')
   var header = el('header')
-  header.appendChild(el('h1', '', data.title))
-  if (data.question) header.appendChild(el('p', 'question', data.question))
+  var identity = el('div', 'identity')
+  identity.appendChild(el('h1', '', data.title))
+  if (data.question) identity.appendChild(el('p', 'question', data.question))
+  header.appendChild(identity)
+  var themeToggle = el('button', 'theme-switch', '☼ 浅色')
+  themeToggle.type = 'button'
+  themeToggle.setAttribute('aria-label', '切换深色主题')
+  themeToggle.addEventListener('click', function () {
+    var dark = document.documentElement.dataset.theme !== 'dark'
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+    themeToggle.textContent = dark ? '☾ 深色' : '☼ 浅色'
+    themeToggle.setAttribute('aria-label', dark ? '切换浅色主题' : '切换深色主题')
+  })
+  header.appendChild(themeToggle)
+  var progress = el('ol', 'progress')
+  progress.setAttribute('aria-label', '讲解进度')
+  var marks = data.steps.map(function (step, at) {
+    var item = el('li')
+    var mark = el('button')
+    mark.type = 'button'
+    mark.title = (at + 1) + '. ' + step.title
+    mark.setAttribute('aria-label', '第 ' + (at + 1) + ' 步：' + step.title)
+    mark.addEventListener('click', function () { go(at - index) })
+    item.appendChild(mark)
+    progress.appendChild(item)
+    return mark
+  })
   var main = el('main')
   var stageBox = el('div', 'stage')
+  var visual = el('section', 'visual')
+  var legend = el('div', 'legend')
+  legend.setAttribute('aria-label', '对象类型图例')
   var side = el('aside')
   var counter = el('span', 'counter')
+  var stepNo = el('span', 'step-no')
   var heading = el('h2')
   var narration = el('p', 'narration')
   var details = el('div', 'details')
@@ -203,13 +257,17 @@
   controls.appendChild(previous)
   controls.appendChild(counter)
   controls.appendChild(next)
+  side.appendChild(stepNo)
   side.appendChild(heading)
   side.appendChild(narration)
   side.appendChild(details)
   side.appendChild(controls)
-  main.appendChild(stageBox)
+  visual.appendChild(stageBox)
+  visual.appendChild(legend)
+  main.appendChild(visual)
   main.appendChild(side)
   app.appendChild(header)
+  if (data.steps.length > 1) app.appendChild(progress)
   app.appendChild(main)
   document.addEventListener('keydown', function (event) {
     if (event.key === 'ArrowRight' || event.key === 'PageDown') go(1)
