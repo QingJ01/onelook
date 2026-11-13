@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, useId } from 'vue'
-import { Minus, Plus, LocateFixed } from 'lucide-vue-next'
+import { Minus, Plus, Maximize } from 'lucide-vue-next'
 import { layoutView, ROOT_ID } from './layout'
 import { nodeKinds, viewForms, type KnowledgeNode, type Relation, type ViewForm } from './types'
 import { nodeVisuals, relationTone } from './visual'
@@ -13,7 +13,6 @@ const props = defineProps<{
   playing?: boolean
 }>()
 const emit = defineEmits<{ select: [id: string]; move: [id: string, x: number, y: number] }>()
-const zoom = ref(.8)
 const markerId = `arrow-${useId()}`
 const legend = computed(() => Object.entries(nodeKinds).flatMap(([kind, label]) => {
   const count = props.nodes.filter(node => node.kind === kind && (!props.state || props.state.visible.includes(node.id))).length
@@ -30,6 +29,11 @@ const layout = computed(() => layoutView({
   form: props.form, nodeIds: props.nodes.map(node => node.id), relations: props.relations, title: props.title,
   positions: drag.value ? { ...props.positions, [drag.value.id]: { x: drag.value.x, y: drag.value.y } } : props.positions,
 }))
+/** Until the reader zooms by hand, the whole diagram is scaled to fit the canvas. */
+const manualZoom = ref<number>()
+const fitZoom = computed(() => Math.max(.7, Math.min(1, (size.value.width - 40) / layout.value.width, (size.value.height - 40) / layout.value.height)))
+const zoom = computed(() => manualZoom.value ?? fitZoom.value)
+const setZoom = (value: number) => { manualZoom.value = Math.max(.4, Math.min(1.8, Math.round(value * 10) / 10)) }
 const visible = computed(() => props.state ? new Set(props.state.visible) : undefined)
 const focus = computed(() => new Set(props.state?.focus ?? []))
 const shown = (id: string) => !visible.value || visible.value.has(id)
@@ -90,7 +94,7 @@ function end() {
 
 <template>
   <div class="graph-shell" :class="{ playing }">
-    <div v-if="!playing" class="graph-topline"><span>{{ viewForms[form].name }}</span><span>{{ nodes.length }} 个对象{{ form === 'timeline' ? '' : ` · ${relations.length} 条关系` }}</span></div>
+    <div v-if="!playing" class="graph-topline"><span><b>{{ viewForms[form].name }}</b>{{ nodes.length }} 个对象{{ form === 'timeline' ? '' : ` · ${relations.length} 条关系` }}</span><span class="graph-hint">{{ draggable ? '拖动对象调整布局 · 点击编辑内容' : state ? '淡化对象尚未在讲解中出现' : form === 'graph' ? '点击对象查看解释、来源与关联' : '布局自动生成 · 点击对象查看详情' }}</span></div>
     <div v-if="!nodes.length" class="graph-empty"><p>还没有对象。添加一个，或从资料生成。</p></div>
     <div v-else ref="shell" class="graph-scroll">
       <svg
@@ -125,6 +129,6 @@ function end() {
       </svg>
     </div>
     <div v-if="legend.length" class="graph-legend" aria-label="对象类型图例"><span v-for="item in legend" :key="item.kind" :class="`semantic-${item.tone}`"><i aria-hidden="true" />{{ item.label }}<b>{{ item.count }}</b></span></div>
-    <div v-if="!playing" class="graph-bottom"><span>{{ draggable ? '拖动对象调整布局 · 点击编辑内容' : state ? '淡化对象尚未在讲解中出现' : form === 'graph' ? '点击对象查看解释、来源与关联' : '布局自动生成 · 点击对象查看详情' }}</span><div class="zoom-tools"><button aria-label="缩小地图" @click="zoom = Math.max(.4, zoom - .1)"><Minus :size="15" /></button><span>{{ Math.round(zoom * 100) }}%</span><button aria-label="放大地图" @click="zoom = Math.min(1.8, zoom + .1)"><Plus :size="15" /></button><button aria-label="重置地图缩放" @click="zoom = 1"><LocateFixed :size="15" /></button></div></div>
+    <div v-if="!playing && nodes.length" class="graph-bottom"><div class="zoom-tools"><button aria-label="缩小地图" title="缩小" @click="setZoom(zoom - .1)"><Minus :size="15" /></button><span>{{ Math.round(zoom * 100) }}%</span><button aria-label="放大地图" title="放大" @click="setZoom(zoom + .1)"><Plus :size="15" /></button><button aria-label="重置地图缩放" title="适应窗口" :class="{ active: manualZoom === undefined }" @click="manualZoom = undefined"><Maximize :size="14" /></button></div></div>
   </div>
 </template>

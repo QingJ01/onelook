@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { Play } from 'lucide-vue-next'
 import StageView from './StageView.vue'
 import EvidenceEditor from './EvidenceEditor.vue'
 import { checkClarity } from './clarity'
@@ -36,6 +37,8 @@ const blocks = computed(() => [
   ...props.workspace.productItems.map(item => ({ id: item.id, name: `方案记录 · ${item.title}` })),
 ])
 const sourceTitle = (id: string) => props.workspace.sources.find(source => source.id === id)?.title ?? id
+/** The question and takeaway stay folded into one line once both are written. */
+const briefOpen = ref(!props.workspace.question || !props.workspace.takeaway)
 const checkPrompt = ref(''), checkAnswer = ref(''), revealedAnswers = ref<string[]>([])
 watch(() => step.value?.id, () => { checkPrompt.value = ''; checkAnswer.value = ''; revealedAnswers.value = [] })
 
@@ -106,27 +109,37 @@ onUnmounted(() => window.removeEventListener('keydown', keydown))
 
 <template>
   <div v-if="playing && step" class="story-play" aria-label="讲解播放">
-    <div class="play-top"><strong>{{ workspace.question || workspace.title }}</strong><span class="play-count">{{ index + 1 }} / {{ workspace.story.length }}</span><button class="text-button" @click="emit('update:playing', false)">退出播放</button></div>
+    <div class="play-top"><strong>{{ workspace.question || workspace.title }}</strong><span class="play-count">{{ index + 1 }} / {{ workspace.story.length }}</span><button class="text-button" title="退出播放（Esc）" @click="emit('update:playing', false)">退出播放</button></div>
+    <ol class="play-progress" aria-label="讲解进度"><li v-for="(item, at) in workspace.story" :key="item.id"><button :class="{ done: at < index, active: at === index }" :aria-label="`第 ${at + 1} 步：${item.title}`" :aria-current="at === index ? 'step' : undefined" :title="`${at + 1}. ${item.title}`" @click="go(at)" /></li></ol>
     <div class="play-body">
       <div class="play-stage"><StageView :workspace="workspace" :stage-id="step.stageId" selected-id="" :state="stageView ? state : undefined" playing /></div>
       <aside class="play-notes" aria-live="polite">
-        <h2>{{ step.title }}</h2>
+        <span class="play-step-no">第 {{ index + 1 }} 步</span><h2>{{ step.title }}</h2>
         <p v-if="step.narration" class="prose play-narration">{{ step.narration }}</p>
         <section v-for="node in focusNodes" :key="node.id" class="play-detail"><span class="mini-label">{{ nodeKinds[node.kind] }}</span><h3>{{ node.title }}</h3><p v-if="node.body" class="prose">{{ node.body }}</p><div v-if="node.example" class="example-box"><span>例子</span><p class="prose">{{ node.example }}</p></div><div v-if="node.pitfall" class="pitfall-box"><span>常见误区</span><p class="prose">{{ node.pitfall }}</p></div></section>
         <div v-if="step.citations.length" class="citation-chips"><span v-for="(citation, at) in step.citations" :key="at" class="play-quote">“{{ citation.quote }}” — {{ sourceTitle(citation.sourceId) }} · v{{ citation.version }}</span></div>
         <section v-for="question in stepQuestions" :key="question.id" class="play-check"><span class="mini-label">检验</span><p>{{ question.prompt }}</p><p v-if="revealedAnswers.includes(question.id)" class="prose">{{ question.answer }}</p><button v-else class="text-button" @click="revealedAnswers.push(question.id)">先想一想，再看参考答案</button></section>
         <section v-if="index === workspace.story.length - 1 && workspace.takeaway" class="play-takeaway"><span class="mini-label">一句话结论</span><p>{{ workspace.takeaway }}</p></section>
-        <div class="play-controls"><button class="ol-button" :disabled="index === 0" @click="go(index - 1)">上一步</button><button class="ol-button primary" :disabled="index >= workspace.story.length - 1" @click="go(index + 1)">下一步</button></div>
+        <div class="play-controls"><span class="play-keys" aria-hidden="true"><kbd>←</kbd><kbd>→</kbd>翻步 · <kbd>Esc</kbd>退出</span><button class="ol-button" :disabled="index === 0" @click="go(index - 1)">上一步</button><button class="ol-button primary" :disabled="index >= workspace.story.length - 1" @click="go(index + 1)">下一步</button></div>
       </aside>
     </div>
   </div>
 
   <div v-else class="story-page">
-    <div class="story-head">
-      <label class="form-label story-question">要讲清的问题<input :value="workspace.question" maxlength="500" placeholder="例如：一次登录请求是怎么被验证的？" @change="commit(d => { d.question = ($event.target as HTMLInputElement).value.trim() }, '修改问题')" /></label>
-      <label class="form-label">一句话结论<input :value="workspace.takeaway" maxlength="1000" placeholder="讲完之后，对方应该记住什么" @change="commit(d => { d.takeaway = ($event.target as HTMLInputElement).value.trim() }, '修改结论')" /></label>
-      <label class="form-label story-audience">写给谁<input :value="workspace.audience" maxlength="200" placeholder="可选" @change="commit(d => { d.audience = ($event.target as HTMLInputElement).value.trim() }, '修改读者')" /></label>
-      <div class="toolbar-actions"><button class="text-button" :disabled="busy || !workspace.nodes.length" @click="emit('outline')">生成提纲</button><button class="text-button" :disabled="!workspace.story.length" @click="emit('exportPlayer')">导出播放页</button><button class="ol-button primary" :disabled="!workspace.story.length" @click="play">播放</button></div>
+    <div class="story-head" :class="{ editing: briefOpen }">
+      <div class="story-brief">
+        <button class="brief-toggle" :aria-expanded="briefOpen" :title="briefOpen ? '收起' : '编辑问题、结论和读者'" @click="briefOpen = !briefOpen">
+          <span class="mini-label">要讲清的问题</span>
+          <strong :class="{ placeholder: !workspace.question }">{{ workspace.question || '还没有写要讲清的问题，点这里填写' }}</strong>
+          <span v-if="!briefOpen" :class="['brief-takeaway', { placeholder: !workspace.takeaway }]"><b>结论</b>{{ workspace.takeaway || '未填写' }}<template v-if="workspace.audience"><b>写给</b>{{ workspace.audience }}</template></span>
+        </button>
+        <div class="toolbar-actions"><button class="text-button" :disabled="busy || !workspace.nodes.length" :title="workspace.nodes.length ? '由 AI 把已有对象编排成步骤' : '先在“结构”里添加对象'" @click="emit('outline')">生成提纲</button><button class="text-button" :disabled="!workspace.story.length" title="导出可离线打开的单个 HTML 文件" @click="emit('exportPlayer')">导出播放页</button><button class="ol-button" :disabled="!workspace.story.length" title="从当前步骤开始播放" @click="play"><Play :size="13" />从这一步播放</button></div>
+      </div>
+      <div v-show="briefOpen" class="story-brief-form">
+        <label class="form-label story-question">要讲清的问题<input :value="workspace.question" maxlength="500" placeholder="例如：一次登录请求是怎么被验证的？" @change="commit(d => { d.question = ($event.target as HTMLInputElement).value.trim() }, '修改问题')" /></label>
+        <label class="form-label">一句话结论<input :value="workspace.takeaway" maxlength="1000" placeholder="讲完之后，对方应该记住什么" @change="commit(d => { d.takeaway = ($event.target as HTMLInputElement).value.trim() }, '修改结论')" /></label>
+        <label class="form-label story-audience">写给谁<input :value="workspace.audience" maxlength="200" placeholder="可选" @change="commit(d => { d.audience = ($event.target as HTMLInputElement).value.trim() }, '修改读者')" /></label>
+      </div>
     </div>
     <details class="clarity-panel" :open="issues.length > 0 && issues.length <= 3">
       <summary>清晰度检查 · {{ issues.length ? `${issues.length} 项待看` : '没有发现问题' }}</summary>
@@ -137,7 +150,7 @@ onUnmounted(() => window.removeEventListener('keydown', keydown))
     <div class="story-body">
       <aside class="story-steps" aria-label="步骤提纲">
         <div class="story-steps-head"><span class="mini-label">步骤</span><button class="text-button" @click="addStep">+ 一步</button></div>
-        <ol><li v-for="(item, at) in workspace.story" :key="item.id"><button :class="{ active: at === index }" :aria-current="at === index ? 'step' : undefined" @click="go(at)"><span>{{ String(at + 1).padStart(2, '0') }}</span>{{ item.title }}</button></li></ol>
+        <ol><li v-for="(item, at) in workspace.story" :key="item.id" :class="{ done: at < index }"><button :class="{ active: at === index }" :aria-current="at === index ? 'step' : undefined" @click="go(at)"><span>{{ String(at + 1).padStart(2, '0') }}</span><em>{{ item.title }}</em><i v-if="item.provenance === 'ai'" title="AI 生成 · 待核实">AI</i></button></li></ol>
         <p v-if="!workspace.story.length" class="small muted">还没有步骤。添加第一步，或生成提纲。</p>
       </aside>
 

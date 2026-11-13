@@ -19,6 +19,13 @@ async function workspaces(page: Page): Promise<Workspace[]> {
   }))
 }
 
+/** On narrow screens the secondary header actions fold into the “更多操作” menu. */
+async function headerButton(page: Page, name: string) {
+  const target = page.getByRole('button', { name, exact: true })
+  if (!(await target.isVisible())) await page.getByRole('button', { name: '更多操作', exact: true }).click()
+  await target.click()
+}
+
 test('workbench and classic editor do not request external fonts', async ({ page }) => {
   const externalFonts: string[] = []
   page.on('request', request => {
@@ -53,7 +60,7 @@ test('theme preference stays separate from workspace data and exported player sw
     const lightPaper = await app.evaluate(element => getComputedStyle(element).getPropertyValue('--paper').trim())
     expect(lightPaper).toBe('#ffffff')
 
-    await page.getByRole('button', { name: '切换深色主题' }).click()
+    await headerButton(page, '切换深色主题')
     await expect(app).toHaveAttribute('data-theme', 'dark')
     await expect.poll(() => page.evaluate(() => localStorage.getItem('onelook-ui-theme'))).toBe('dark')
     await page.reload()
@@ -96,12 +103,12 @@ test('theme preference stays separate from workspace data and exported player sw
     expect(await body.evaluate(element => getComputedStyle(element).color !== getComputedStyle(element).backgroundColor)).toBe(true)
 
     const beforeThemeSwitch = await workspaces(page)
-    await page.getByRole('button', { name: 'AI 设置', exact: true }).click()
+    await headerButton(page, 'AI 设置')
     const settings = page.getByRole('dialog', { name: 'AI 设置' })
     await expect(settings).toBeVisible()
     expect(await settings.evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgb(15, 23, 42)')
     await page.getByRole('button', { name: '关闭弹窗' }).click()
-    await page.getByRole('button', { name: '切换浅色主题' }).click()
+    await headerButton(page, '切换浅色主题')
     await expect(app).toHaveAttribute('data-theme', 'light')
     expect(await workspaces(page)).toEqual(beforeThemeSwitch)
 
@@ -134,6 +141,12 @@ test('theme preference stays separate from workspace data and exported player sw
     const exportedDarkPaper = await player.locator('html').evaluate(element => getComputedStyle(element).getPropertyValue('--paper').trim())
     expect(exportedDarkPaper).not.toBe(exportedLightPaper)
     await player.keyboard.press('ArrowRight')
+    await expect(player.locator('.counter')).toHaveText('2 / 6')
+    await expect(player.getByRole('list', { name: '讲解进度' }).locator('button[aria-current="step"]')).toHaveAccessibleName(/^第 2 步：/)
+    await player.getByRole('list', { name: '讲解进度' }).getByRole('button').nth(3).click()
+    await expect(player.locator('.counter')).toHaveText('4 / 6')
+    await player.keyboard.press('ArrowLeft')
+    await player.keyboard.press('ArrowLeft')
     await expect(player.locator('.counter')).toHaveText('2 / 6')
     await expect(player.locator('.legend')).toContainText('组件 3')
     await expect(player.locator('.legend')).toContainText('接口 1')
@@ -210,4 +223,59 @@ test('wide graph edges remain reachable without document overflow in both themes
       await expect.poll(scrollLeft).toBe(0)
     }
   }
+})
+
+test('compact header menu, story brief, play progress and canvas zoom work at every width', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '编程项目示例', exact: true }).click()
+  await expect(page.locator('.save-status')).toHaveText('已保存到本地')
+  const nav = (name: RegExp) => page.locator('.workbench-nav .nav-item').filter({ hasText: name })
+
+  const more = page.getByRole('button', { name: '更多操作', exact: true })
+  const history = page.getByRole('button', { name: '历史', exact: true })
+  if (page.viewportSize()!.width <= 980) {
+    await expect(history).toBeHidden()
+    await more.click()
+    await expect(more).toHaveAttribute('aria-expanded', 'true')
+    await history.click()
+    await expect(more).toHaveAttribute('aria-expanded', 'false')
+  } else {
+    await expect(more).toBeHidden()
+    await history.click()
+  }
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.getByRole('button', { name: '关闭弹窗' }).click()
+
+  await nav(/^讲解/).click()
+  const brief = page.locator('.brief-toggle')
+  await expect(brief).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByLabel('要讲清的问题')).toBeHidden()
+  await brief.click()
+  await expect(page.getByLabel('要讲清的问题')).toBeVisible()
+  await brief.click()
+  await expect(page.getByLabel('要讲清的问题')).toBeHidden()
+
+  await page.getByRole('button', { name: '播放', exact: true }).first().click()
+  const progress = page.getByRole('list', { name: '讲解进度' }).getByRole('button')
+  await expect(progress).toHaveCount(6)
+  await progress.nth(2).click()
+  await expect(page.locator('.play-count')).toHaveText('3 / 6')
+  await expect(progress.nth(2)).toHaveAttribute('aria-current', 'step')
+  await expect(page.locator('.play-step-no')).toHaveText('第 3 步')
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.story-play')).toHaveCount(0)
+
+  await nav(/^结构/).click()
+  const forms = page.getByRole('radiogroup', { name: '呈现形式' })
+  await expect(forms.getByRole('radio', { name: '关系图', exact: true })).toHaveAttribute('aria-checked', 'true')
+  const percent = async () => Number((await page.locator('.zoom-tools > span').innerText()).replace('%', ''))
+  const fitted = await percent()
+  await page.getByRole('button', { name: '放大地图', exact: true }).click()
+  await expect.poll(percent).toBeGreaterThan(fitted)
+  await page.getByRole('button', { name: '重置地图缩放', exact: true }).click()
+  await expect.poll(percent).toBe(fitted)
+  await forms.getByRole('radio', { name: '流程图', exact: true }).click()
+  await expect(forms.getByRole('radio', { name: '流程图', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await expect(page.locator('.semantic-graph.form-flow')).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
 })

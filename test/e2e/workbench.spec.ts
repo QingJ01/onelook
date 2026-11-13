@@ -34,8 +34,21 @@ async function structure(page: Page, name: '图' | '链路与决策' | '方案�
   await page.getByRole('tab', { name, exact: true }).click()
 }
 
+const formNames = { graph: '关系图', tree: '思维图', flow: '流程图', matrix: '对比表', timeline: '时间线' } as const
+async function setForm(page: Page, form: keyof typeof formNames) {
+  await page.getByRole('radiogroup', { name: '呈现形式' }).getByRole('radio', { name: formNames[form], exact: true }).click()
+  await saved(page)
+}
+
+/** On narrow screens the secondary header actions fold into the “更多操作” menu. */
+async function headerAction(page: Page, role: 'button' | 'link', name: string | RegExp) {
+  const target = page.getByRole(role, { name, exact: typeof name === 'string' })
+  if (!(await target.isVisible())) await page.getByRole('button', { name: '更多操作', exact: true }).click()
+  await target.click()
+}
+
 async function enableAI(page: Page) {
-  await page.getByRole('button', { name: 'AI 设置', exact: true }).click()
+  await headerAction(page, 'button', 'AI 设置')
   await page.getByLabel(/API Key/).fill('synthetic-test-not-a-real-secret')
   await page.getByRole('checkbox', { name: /我同意/ }).check()
   await page.getByRole('button', { name: '完成', exact: true }).click()
@@ -159,7 +172,7 @@ test('views share content but keep form and drag positions independent, then ren
   expect(created).toMatchObject({ title: '登录另一张图', form: 'graph' })
   expect(Object.keys(created.positions)).toEqual([doc.nodes[0].id])
   expect(doc.views[0].positions).toEqual(initial.views[0].positions)
-  await page.getByLabel('呈现形式', { exact: true }).selectOption('tree'); await saved(page)
+  await setForm(page, 'tree')
   await expect(page.locator('.semantic-graph.form-tree')).toBeVisible()
   const switched = (await state(page))[0]
   expect(switched.views.at(-1)).toMatchObject({ form: 'tree', positions: created.positions })
@@ -241,7 +254,7 @@ test('import preflight rejects future schemas and preserves legacy entry', async
   await page.getByRole('button', { name: '确认导入', exact: true }).click(); await saved(page)
   expect((await state(page))[0]).toMatchObject({ schemaVersion: 3, template: 'course', views: [expect.anything()], story: [] })
   expect((await state(page))[0].id).not.toBe(old.id)
-  await page.getByRole('link', { name: /经典导图/ }).click()
+  await headerAction(page, 'link', /经典导图/)
   await expect(page).toHaveURL(/editor=classic/)
   await expect(page.locator('.ol-app')).toHaveCount(0)
   await expect(page.locator('body')).toContainText('中心主题')
@@ -444,7 +457,7 @@ test('the same content switches between graph, mind map, flow, table and timelin
     return boxes.some((a, i) => boxes.some((b, j) => i < j && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1))
   })
   for (const form of ['graph', 'tree', 'flow', 'timeline'] as const) {
-    await page.getByLabel('呈现形式', { exact: true }).selectOption(form); await saved(page)
+    await setForm(page, form)
     await expect(page.locator(`.semantic-graph.form-${form}`)).toBeVisible()
     await expect(page.locator('.diagram-node')).toHaveCount(6)
     await page.waitForTimeout(600)
@@ -454,7 +467,7 @@ test('the same content switches between graph, mind map, flow, table and timelin
   await expect(page.locator('.diagram-axis .tick')).toHaveCount(6)
   await page.getByRole('button', { name: '编辑', exact: true }).click()
   await change(page, '解释', '换了形式，正文还是同一份。')
-  await page.getByLabel('呈现形式', { exact: true }).selectOption('matrix'); await saved(page)
+  await setForm(page, 'matrix')
   await expect(page.locator('.matrix-table tbody tr')).toHaveCount(6)
   await expect(page.locator('.matrix-table tbody tr').first()).toContainText('换了形式，正文还是同一份。')
   await expect(page.locator('.matrix-table thead')).toContainText('常见误区')

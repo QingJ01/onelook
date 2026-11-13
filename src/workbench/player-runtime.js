@@ -165,6 +165,12 @@
       for (var rowId in parts.rows) parts.rows[rowId].className = (visible[rowId] ? '' : 'hidden') + (focus[rowId] ? ' focus' : '')
     }
     counter.textContent = (index + 1) + ' / ' + data.steps.length
+    stepNo.textContent = '第 ' + (index + 1) + ' 步'
+    marks.forEach(function (mark, at) {
+      mark.className = at < index ? 'done' : at === index ? 'active' : ''
+      if (at === index) mark.setAttribute('aria-current', 'step')
+      else mark.removeAttribute('aria-current')
+    })
     heading.textContent = step.title
     narration.textContent = step.narration
     details.textContent = ''
@@ -218,6 +224,19 @@
     themeToggle.setAttribute('aria-label', dark ? '切换浅色主题' : '切换深色主题')
   })
   header.appendChild(themeToggle)
+  var progress = el('ol', 'progress')
+  progress.setAttribute('aria-label', '讲解进度')
+  var marks = data.steps.map(function (step, at) {
+    var item = el('li')
+    var mark = el('button')
+    mark.type = 'button'
+    mark.title = (at + 1) + '. ' + step.title
+    mark.setAttribute('aria-label', '第 ' + (at + 1) + ' 步：' + step.title)
+    mark.addEventListener('click', function () { go(at - index) })
+    item.appendChild(mark)
+    progress.appendChild(item)
+    return mark
+  })
   var main = el('main')
   var stageBox = el('div', 'stage')
   var visual = el('section', 'visual')
@@ -225,6 +244,7 @@
   legend.setAttribute('aria-label', '对象类型图例')
   var side = el('aside')
   var counter = el('span', 'counter')
+  var stepNo = el('span', 'step-no')
   var heading = el('h2')
   var narration = el('p', 'narration')
   var details = el('div', 'details')
@@ -237,6 +257,7 @@
   controls.appendChild(previous)
   controls.appendChild(counter)
   controls.appendChild(next)
+  side.appendChild(stepNo)
   side.appendChild(heading)
   side.appendChild(narration)
   side.appendChild(details)
@@ -246,6 +267,7 @@
   main.appendChild(visual)
   main.appendChild(side)
   app.appendChild(header)
+  if (data.steps.length > 1) app.appendChild(progress)
   app.appendChild(main)
   document.addEventListener('keydown', function (event) {
     if (event.key === 'ArrowRight' || event.key === 'PageDown') go(1)
