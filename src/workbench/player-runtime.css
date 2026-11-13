@@ -11,15 +11,15 @@ header{display:flex;align-items:center;gap:16px;padding:16px 4px 12px;background
 .progress button:hover{background-color:var(--ink)}
 .identity{flex:1;min-width:0}
 header h1{margin:0;font-size:19px;letter-spacing:-.5px}
-header h1:before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 4px var(--cyan-soft);margin-right:14px}
+header h1:before{display:none}
 header .question{margin:6px 0 0;color:var(--muted);font-size:12px}
-main{flex:1;display:flex;min-height:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--paper)}
+main{flex:1;display:flex;min-height:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper)}
 .visual{flex:1;min-width:0;display:flex;flex-direction:column;background-color:var(--paper);background-image:radial-gradient(var(--dot) .8px,transparent .8px);background-size:18px 18px}
 .stage{flex:1;min-width:0;min-height:0;overflow:auto}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:10px;padding:12px 18px;color:var(--muted)}
 .legend:empty{display:none}
 .legend span{display:flex;align-items:center;gap:6px}
-.legend i{width:12px;height:8px;border:1px solid var(--semantic);background:var(--semantic-soft);border-radius:2px}
+.legend i{width:7px;height:7px;border:0;background:var(--semantic);border-radius:50%}
 aside{width:380px;padding:22px 22px 0;border-left:1px solid var(--line);background:var(--paper);overflow:auto;display:flex;flex-direction:column}
 .step-no{display:block;font-size:10px;letter-spacing:.06em;color:var(--accent);margin-bottom:6px}
 aside h2{margin:0 0 12px;font-size:20px;line-height:1.4;letter-spacing:-.3px}
@@ -32,7 +32,7 @@ aside h2{margin:0 0 12px;font-size:20px;line-height:1.4;letter-spacing:-.3px}
 .label{display:block;font-size:10px;color:var(--muted);letter-spacing:.04em}
 blockquote cite{display:block;margin-top:4px;font-size:11px;color:var(--muted);font-style:normal}
 .controls{position:sticky;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 0 16px;border-top:1px solid var(--line);background:var(--paper)}
-button{font:inherit;padding:6px 14px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);cursor:pointer;min-height:34px}
+button{font:inherit;padding:6px 14px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;min-height:34px}
 button.primary{background:var(--solid);border-color:var(--solid);color:var(--on-solid)}
 button:disabled{opacity:.55;cursor:default}
 button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -42,9 +42,10 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outli
 .node{transition:opacity .35s ease}
 .node.dim{opacity:.5}
 .node.hidden{opacity:0;pointer-events:none}
-.card{height:100%;padding:11px 13px;border:1.5px solid var(--semantic,var(--line));border-radius:9px;background:var(--semantic-soft,var(--paper));overflow:hidden}
-.node.focus .card{border:2px solid var(--semantic,var(--accent));box-shadow:inset 0 0 0 2px var(--paper)}
-.card .kind{display:block;font-size:10px;color:var(--semantic,var(--muted));margin-bottom:6px}
+.card{height:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:8px;background:var(--paper);overflow:hidden}
+.node.focus .card{border:2px solid var(--ink);box-shadow:inset 0 0 0 2px var(--canvas)}
+.card .kind{display:block;font-size:10px;color:var(--muted);margin-bottom:6px}
+.card .kind-sigil{color:var(--semantic,var(--muted));font-style:normal;margin-right:4px}
 .card strong{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .card .caption{display:block;font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:5px}
 .edge path{fill:none;stroke:var(--semantic,var(--muted));stroke-width:1.7;stroke-dasharray:1;stroke-dashoffset:0;transition:stroke-dashoffset .5s ease}
@@ -57,14 +58,14 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outli
 .axis{stroke:var(--line);stroke-width:2;transition:opacity .3s ease}
 .axis.tick{stroke-width:1}
 .axis.hidden{opacity:0}
-.root rect{fill:var(--cyan-soft);stroke:var(--cyan)}
+.root rect{fill:var(--paper);stroke:var(--line)}
 .root text{fill:var(--ink);font-size:13px}
 .token{fill:var(--accent)}
 .matrix{border-collapse:collapse;margin:20px;background:var(--paper);font-size:12px}
 .matrix th,.matrix td{border:1px solid var(--line);padding:12px;text-align:left;vertical-align:top;max-width:320px;white-space:pre-wrap}
 .matrix tr.hidden{display:none}
 .matrix tr.focus th,.matrix tr.focus td{background:var(--selection)}
-.block{margin:20px;padding:18px 20px;max-width:640px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+.block{margin:20px;padding:18px 20px;max-width:640px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
 .block h3{margin:0 0 10px}
 .block p{margin:0 0 10px;white-space:pre-wrap}
 .empty{padding:40px;color:var(--muted)}

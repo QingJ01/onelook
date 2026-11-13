@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { ArrowLeft, ArrowRight, Check, CircleCheck, CircleHelp, Download, Ellipsis, FileText, GitCommitHorizontal, History, Layers3, ListOrdered, ListTree, LoaderCircle, Moon, Network, Play, Plus, Search, Settings2, Sun, Table2, Trash2, Waypoints, Workflow, X } from 'lucide-vue-next'
+import { ArrowRight, Check, Ellipsis, LoaderCircle, Search, Trash2, X } from 'lucide-vue-next'
 import StageView from './StageView.vue'
 import StoryStudio from './StoryStudio.vue'
 import SourceLibrary from './SourceLibrary.vue'
@@ -17,7 +17,7 @@ import { listWorkspaces, getWorkspace, saveWorkspace, deleteWorkspace, listRevis
 import { generateContent, understandWorkspace, explainNode, outlineWorkspace, restepNarration, renderArchify, getApiHealth } from './api'
 import { templates, viewForms, nodeKinds, relationKinds, documentTypes, certaintyKinds, type Citation, type Workspace, type Template, type ViewForm, type KnowledgeNode, type RelationKind, type Revision, type GeneratedContent, type MaterialUnderstanding, type StoryOutline, type RestepMode, type AISettings } from './types'
 import { theme, toggleTheme } from './theme'
-import { nodeVisuals, templateTone } from './visual'
+import { nodeVisuals } from './visual'
 import './themes.css'
 import './workbench.css'
 import './design.css'
@@ -37,11 +37,10 @@ const switching = ref(false)
 const loading = ref(true), busy = ref(''), error = ref(''), notice = ref('')
 const saveState = ref<'saved' | 'saving' | 'error'>('saved')
 const moreOpen = ref(false)
-/** Uses the dispatch path: a re-render between listeners can detach the clicked icon from its button. */
+/** Uses the dispatch path so re-renders cannot detach the clicked control from its button. */
 function closeMenu(event: MouseEvent) {
   if (event.composedPath().some(target => target instanceof HTMLElement && target.matches('button, a'))) moreOpen.value = false
 }
-const formIcons = { graph: Waypoints, tree: ListTree, flow: Workflow, matrix: Table2, timeline: GitCommitHorizontal }
 const search = ref(''), templateFilter = ref<Template | 'all'>('all')
 const filteredWorkspaces = computed(() => workspaces.value.filter(w => (templateFilter.value === 'all' || w.template === templateFilter.value) && `${w.title} ${w.question} ${w.summary}`.toLowerCase().includes(search.value.toLowerCase())))
 const nodeSearch = ref('')
@@ -399,29 +398,29 @@ async function render() {
 <template>
   <div class="ol-app" :data-theme="theme" :class="{ presenting: mode === 'present' }" :inert="switching || undefined" :aria-busy="switching">
     <header class="ol-header">
-      <button class="brand" aria-label="OneLook 首页" @click="home"><span class="brand-mark"><Layers3 :size="18" /></span><strong>OneLook<span>一目</span></strong></button>
+      <button class="brand" aria-label="OneLook 首页" @click="home"><strong>OneLook<span>一目</span></strong></button>
       <div v-if="current" class="doc-title">
-        <span :class="['scenario-label', `semantic-${templateTone[current.template]}`]">{{ templates[current.template].name }}</span>
+        <span class="scenario-label">{{ templates[current.template].name }}</span>
         <input :value="current.title" aria-label="讲解标题" maxlength="160" @change="commit(d => d.title = ($event.target as HTMLInputElement).value.trim(), '修改标题')" />
         <span class="save-status" :class="saveState"><LoaderCircle v-if="saveState === 'saving'" class="spin" :size="12" /><Check v-else-if="saveState === 'saved'" :size="12" />{{ saveState === 'saved' ? '已保存到本地' : saveState === 'saving' ? '保存中' : '保存失败' }}</span>
       </div>
       <span v-else class="brand-caption">把一件事讲清楚</span>
       <div class="header-actions">
         <template v-if="current">
-          <button class="ol-button primary play-button" :disabled="!current.story.length" :title="current.story.length ? '从当前步骤开始播放' : '先在“讲解”里添加步骤'" @click="present"><Play :size="13" />播放</button>
-          <button class="icon-button more-toggle" aria-label="更多操作" :aria-expanded="moreOpen" @click="moreOpen = !moreOpen"><Ellipsis :size="18" /></button>
+          <button class="ol-button primary play-button" :disabled="!current.story.length" :title="current.story.length ? '从当前步骤开始播放' : '先在“讲解”里添加步骤'" @click="present">播放</button>
         </template>
-        <div :class="['header-menu', { open: moreOpen, 'in-doc': !!current }]" @click="closeMenu">
+        <button class="icon-button more-toggle" aria-label="更多操作" :aria-expanded="moreOpen" @click="moreOpen = !moreOpen"><Ellipsis :size="18" /></button>
+        <div :class="['header-menu', { open: moreOpen }]" @click="closeMenu">
         <template v-if="current">
           <button v-if="needsBackup" class="backup-reminder" :title="backupAt ? '距上次备份已满 7 天，点击导出备份' : '还没有备份过，点击导出备份'" @click="exportJSON"><i aria-hidden="true" />{{ backupAt ? '该备份了' : '尚未备份' }}</button>
-          <div class="doc-actions"><button class="ol-button ghost" @click="showHistory"><History :size="14" />历史</button><button class="ol-button ghost" @click="exportJSON"><Download :size="14" />备份</button><button class="ol-button ghost" @click="exportMarkdown"><FileText :size="14" />导出</button></div>
+          <div class="doc-actions"><button class="ol-button ghost" @click="showHistory">历史</button><button class="ol-button ghost" @click="exportJSON">备份</button><button class="ol-button ghost" @click="exportMarkdown">导出</button></div>
           <span class="header-divider" aria-hidden="true" />
         </template>
         <div class="header-utils">
         <details class="service-status"><summary :title="health ? '本地服务已连接' : '本地服务未连接'"><i :class="['service-dot', { ready: health, checking: healthChecking }]" /><span class="service-text">{{ healthChecking ? '检查中…' : health ? (health.archify ? '本地服务' : 'Archify 未就绪') : '离线编辑' }}</span></summary><div class="service-pop"><strong>{{ healthChecking ? '正在检查本地服务…' : health ? (health.archify ? '本地服务已连接' : '本地服务已连接 · Archify 未就绪') : '本地服务未连接 · 本地编辑仍可使用' }}</strong><p>{{ healthError || 'AI 需在设置中配置你自己的提供商与密钥。' }}</p><p>启动：<code>pnpm local</code>（或开发用 <code>pnpm dev:all</code>）。存储归属 <strong>{{ location.origin }}</strong>；更换端口、域名或浏览器前请先导出备份，不要把本地服务暴露到公网。</p><div class="toolbar-actions"><button class="ol-button" :disabled="healthChecking" @click="checkHealth">重新检查</button><button class="text-button" @click="exportMigrationBackup">导出迁移前备份</button></div></div></details>
-        <button class="icon-button theme-switch" :aria-label="theme === 'light' ? '切换深色主题' : '切换浅色主题'" :title="theme === 'light' ? '切换深色主题' : '切换浅色主题'" @click="toggleTheme"><Sun v-if="theme === 'light'" :size="17" /><Moon v-else :size="17" /></button>
-        <button class="icon-button" aria-label="使用帮助" title="使用帮助" @click="modal = 'help'"><CircleHelp :size="17" /></button>
-        <button class="icon-button" aria-label="AI 设置" title="AI 设置" @click="modal = 'settings'"><Settings2 :size="17" /></button>
+        <button class="theme-switch" :aria-label="theme === 'light' ? '切换深色主题' : '切换浅色主题'" :title="theme === 'light' ? '切换深色主题' : '切换浅色主题'" @click="toggleTheme">{{ theme === 'light' ? '深色' : '浅色' }}</button>
+        <button class="text-button header-utility" aria-label="使用帮助" title="使用帮助" @click="modal = 'help'">帮助</button>
+        <button class="text-button header-utility" aria-label="AI 设置" title="AI 设置" @click="modal = 'settings'">AI 设置</button>
         <a class="legacy-link" href="?editor=classic">经典导图</a>
         </div>
         </div>
@@ -437,20 +436,20 @@ async function render() {
 
     <main v-if="!current" class="home-scroll">
       <section class="home-content">
-        <div class="section-heading home-heading"><div><h1>讲解</h1><p class="muted">每份讲解讲清一件事。内容保存在当前浏览器，不会自动上传。</p></div><div class="toolbar-actions"><button class="ol-button" title="导入备份文件或经典导图文件" @click="importInput?.click()">导入</button><button class="ol-button primary" @click="showNew()"><Plus :size="14" />新建讲解</button></div></div>
+        <div class="section-heading home-heading"><div><h1>讲解</h1><p class="muted">每份讲解讲清一件事。内容保存在当前浏览器，不会自动上传。</p></div><div class="toolbar-actions"><button class="ol-button" title="导入备份文件或经典导图文件" @click="importInput?.click()">导入</button><button class="ol-button primary" @click="showNew()">新建讲解</button></div></div>
         <div v-if="workspaces.length" class="workspace-filters"><div class="filter-pills"><button :class="{ active: templateFilter === 'all' }" @click="templateFilter = 'all'">全部<span>{{ workspaces.length }}</span></button><button v-for="(info, template) in templates" :key="template" :class="{ active: templateFilter === template }" @click="templateFilter = template">{{ info.name }}</button></div><label class="search-box"><Search :size="15" /><input v-model="search" placeholder="搜索" aria-label="搜索讲解" /></label></div>
         <div v-if="loading" class="empty-state"><LoaderCircle class="spin" />正在读取…</div>
-        <div v-else-if="!filteredWorkspaces.length" class="empty-workspaces"><template v-if="workspaces.length"><p>没有匹配的讲解。</p><button class="text-button" @click="templateFilter = 'all'; search = ''">清除筛选</button></template><template v-else><span class="empty-mark" aria-hidden="true"><Layers3 :size="22" /></span><h2>还没有讲解</h2><p>写下一个要讲清的问题，再分步把它讲明白。也可以先打开一份示例看看成品。</p><button class="ol-button primary" @click="showNew()"><Plus :size="14" />写第一份讲解</button></template></div>
-        <div v-else class="workspace-grid"><article v-for="item in filteredWorkspaces" :key="item.id" :class="['workspace-card', `semantic-${templateTone[item.template]}`]"><button class="workspace-open" @click="openWorkspace(item.id)"><span class="workspace-category">{{ templates[item.template].name }}</span><h3>{{ item.title }}</h3><p>{{ item.question || item.summary || '还没有写要讲清的问题。' }}</p><div class="workspace-meta"><span class="workspace-stats"><span><ListOrdered :size="12" />{{ item.story.length }} 步</span><span><Network :size="12" />{{ item.nodes.length }} 个对象</span><span><FileText :size="12" />{{ item.sources.length }} 份资料</span></span><span>{{ formatDate(item.updatedAt) }}</span></div></button><button class="workspace-delete icon-button" :aria-label="`删除 ${item.title}`" @click="removeWorkspace(item.id)"><Trash2 :size="15" /></button></article></div>
-        <section class="scenario-strip"><span class="strip-label">从示例开始</span><div><button v-for="(info, template) in templates" :key="template" :class="['example-chip', `semantic-${templateTone[template]}`]" :title="info.hint" @click="addExample(template)">{{ info.name }}示例</button></div></section>
+        <div v-else-if="!filteredWorkspaces.length" class="empty-workspaces"><template v-if="workspaces.length"><p>没有匹配的讲解。</p><button class="text-button" @click="templateFilter = 'all'; search = ''">清除筛选</button></template><template v-else><h2>还没有讲解</h2><p>写下一个要讲清的问题，再分步把它讲明白。也可以先打开一份示例看看成品。</p><button class="ol-button primary" @click="showNew()">写第一份讲解</button></template></div>
+        <div v-else class="workspace-grid"><article v-for="item in filteredWorkspaces" :key="item.id" class="workspace-card"><button class="workspace-open" @click="openWorkspace(item.id)"><span class="workspace-category">{{ templates[item.template].name }}</span><h3>{{ item.title }}</h3><p>{{ item.question || item.summary || '还没有写要讲清的问题。' }}</p><div class="workspace-meta"><span class="workspace-stats"><span>{{ item.story.length }} 步</span><span>{{ item.nodes.length }} 个对象</span><span>{{ item.sources.length }} 份资料</span></span><span>{{ formatDate(item.updatedAt) }}</span></div></button><button class="workspace-delete icon-button" :aria-label="`删除 ${item.title}`" @click="removeWorkspace(item.id)"><Trash2 :size="15" /></button></article></div>
+        <section class="scenario-strip"><span class="strip-label">从示例开始</span><div><button v-for="(info, template) in templates" :key="template" class="example-chip" :title="info.hint" @click="addExample(template)">{{ info.name }}示例</button></div></section>
       </section>
     </main>
 
     <template v-else>
       <div class="workbench-body">
-        <aside class="workbench-nav"><button class="back-home" @click="home"><ArrowLeft :size="14" />所有讲解</button>
-          <button :class="['nav-item', { active: tab === 'sources' }]" @click="tab = 'sources'"><FileText :size="15" />资料<span>{{ current.sources.length }}</span></button><button :class="['nav-item', { active: tab === 'structure' || tab === 'archify' }]" @click="tab = 'structure'"><Network :size="15" />结构<span>{{ current.nodes.length }}</span></button><button :class="['nav-item', { active: tab === 'story' }]" @click="tab = 'story'"><ListOrdered :size="15" />讲解<span>{{ current.story.length }}</span></button><button :class="['nav-item', { active: tab === 'practice' }]" @click="tab = 'practice'"><CircleCheck :size="15" />检验<span v-if="dueQuestions.length" class="due-count" :title="`${dueQuestions.length} 题到期`">{{ dueQuestions.length }}</span></button>
-          <div class="nav-group-label object-label">对象<button class="icon-button" aria-label="添加对象" title="添加对象" @click="addNode"><Plus :size="15" /></button></div><label class="node-search"><Search :size="13" /><input v-model="nodeSearch" placeholder="查找…" aria-label="查找对象" /></label><div class="node-list"><button v-for="node in listedNodes" :key="node.id" :class="['node-list-item', `semantic-${nodeVisuals[node.kind].tone}`, { active: selectedId === node.id }]" :title="nodeKinds[node.kind]" @click="inspectNode(node.id)"><i aria-hidden="true" />{{ node.title }}</button><p v-if="!listedNodes.length" class="muted small">暂无对象</p></div><div class="nav-bottom"><p class="small muted">保存在当前浏览器，请定期备份。</p></div>
+        <aside class="workbench-nav"><button class="back-home" @click="home">所有讲解</button>
+          <button :class="['nav-item', { active: tab === 'sources' }]" @click="tab = 'sources'">资料<span>{{ current.sources.length }}</span></button><button :class="['nav-item', { active: tab === 'structure' || tab === 'archify' }]" @click="tab = 'structure'">结构<span>{{ current.nodes.length }}</span></button><button :class="['nav-item', { active: tab === 'story' }]" @click="tab = 'story'">讲解<span>{{ current.story.length }}</span></button><button :class="['nav-item', { active: tab === 'practice' }]" @click="tab = 'practice'">检验<span v-if="dueQuestions.length" class="due-count" :title="`${dueQuestions.length} 题到期`">{{ dueQuestions.length }}</span></button>
+          <div class="nav-group-label object-label">对象<button class="text-button add-object" aria-label="添加对象" title="添加对象" @click="addNode">+ 添加</button></div><label class="node-search"><Search :size="13" /><input v-model="nodeSearch" placeholder="查找…" aria-label="查找对象" /></label><div class="node-list"><button v-for="node in listedNodes" :key="node.id" :class="['node-list-item', `semantic-${nodeVisuals[node.kind].tone}`, { active: selectedId === node.id }]" :title="nodeKinds[node.kind]" @click="inspectNode(node.id)"><i aria-hidden="true" />{{ node.title }}</button><p v-if="!listedNodes.length" class="muted small">暂无对象</p></div><div class="nav-bottom"><p class="small muted">保存在当前浏览器，请定期备份。</p></div>
         </aside>
 
         <section class="workbench-main">
@@ -459,7 +458,7 @@ async function render() {
             <template v-if="structureTab === 'diagram'">
               <div class="canvas-toolbar">
                 <label v-if="activeView" class="view-picker"><span>视图</span><select :value="activeView.id" aria-label="当前视图" @change="viewId = ($event.target as HTMLSelectElement).value"><option v-for="v in current.views" :key="v.id" :value="v.id">{{ v.title }}</option></select></label>
-                <div v-if="activeView" class="form-switch" role="radiogroup" aria-label="呈现形式"><button v-for="(info, form) in viewForms" :key="form" role="radio" :aria-label="info.name" :aria-checked="activeView.form === form" :class="{ active: activeView.form === form }" :title="`${info.name}：${info.answers}`" @click="activeView.form !== form && setViewForm(form)"><component :is="formIcons[form]" :size="14" /><span>{{ info.name }}</span></button></div>
+                <div v-if="activeView" class="form-switch" role="radiogroup" aria-label="呈现形式"><button v-for="(info, form) in viewForms" :key="form" role="radio" :aria-label="info.name" :aria-checked="activeView.form === form" :class="{ active: activeView.form === form }" :title="`${info.name}：${info.answers}`" @click="activeView.form !== form && setViewForm(form)"><span>{{ info.name }}</span></button></div>
                 <span class="toolbar-gap" />
                 <div class="mode-switch"><button :class="{ active: mode === 'explore' }" @click="mode = 'explore'">探索</button><button :class="{ active: mode === 'edit' }" @click="mode = 'edit'">编辑</button></div>
                 <div class="reach-tools"><select v-model="scope" aria-label="关系追踪范围" title="选中对象后，只高亮它的上游或下游"><option value="all">全部关系</option><option value="upstream">上游</option><option value="downstream">下游</option></select></div>
@@ -475,7 +474,7 @@ async function render() {
           <StoryStudio v-if="tab === 'story'" v-model:step-index="stepIndex" :workspace="current" :playing="mode === 'present'" :busy="!!busy" :commit="commit" :draft="stepDraft?.workspaceId === current.id ? stepDraft : undefined" @update:playing="setPlaying" @locate="locateCitation" @inspect="inspectNode" @outline="outline" @restep="restep" @accept-draft="acceptStepDraft" @discard-draft="stepDraft = undefined" @export-player="exportPlayer" />
           <SourceLibrary v-if="tab === 'sources'" :workspace="current" :focus="focusedCitation" :commit="commit" @remove="removeSource" />
           <ReviewStudio v-if="tab === 'practice'" :workspace="current" :now="clock" :selected-node="selectedId" :commit="commit" @inspect="inspectNode" @step="openStep" />
-          <div v-if="tab === 'archify'" class="archify-page"><div class="archify-toolbar"><div><h2>精修图</h2><p class="muted small">由本地 Archify 把当前这张图渲染成可分享的静态页；不随讲解步骤变化。</p></div><div class="toolbar-actions"><button class="text-button" @click="tab = 'structure'">返回结构</button><button v-if="artifact" class="ol-button" @click="download(JSON.stringify(artifact.ir, null, 2), 'diagram.archify.json', 'application/json')">JSON IR</button><button v-if="artifact" class="ol-button" @click="download(artifact.html, `${current.title}.html`, 'text/html')"><Download :size="14" />交互 HTML</button><button class="ol-button primary" :disabled="!!busy || !current.nodes.length" @click="render"><Layers3 :size="15" />{{ artifact ? '重新生成' : '生成视图' }}</button></div></div><div v-if="artifact && !artifactIsCurrent" class="stale-warning">内容已更新，下方为上一次成功生成的视图。请重新生成后再导出最新版本。</div><iframe v-if="artifact" :srcdoc="artifact.html" sandbox="allow-scripts" referrerpolicy="no-referrer" title="Archify 隔离交互视图" /><div v-else class="empty-state"><h3>还没有视图</h3><p>生成可分享的交互 HTML 和 JSON 源。{{ health?.archify ? '' : '需要本地服务与 Archify。' }}</p></div></div>
+          <div v-if="tab === 'archify'" class="archify-page"><div class="archify-toolbar"><div><h2>精修图</h2><p class="muted small">由本地 Archify 把当前这张图渲染成可分享的静态页；不随讲解步骤变化。</p></div><div class="toolbar-actions"><button class="text-button" @click="tab = 'structure'">返回结构</button><button v-if="artifact" class="ol-button" @click="download(JSON.stringify(artifact.ir, null, 2), 'diagram.archify.json', 'application/json')">JSON IR</button><button v-if="artifact" class="ol-button" @click="download(artifact.html, `${current.title}.html`, 'text/html')">交互 HTML</button><button class="ol-button primary" :disabled="!!busy || !current.nodes.length" @click="render">{{ artifact ? '重新生成' : '生成视图' }}</button></div></div><div v-if="artifact && !artifactIsCurrent" class="stale-warning">内容已更新，下方为上一次成功生成的视图。请重新生成后再导出最新版本。</div><iframe v-if="artifact" :srcdoc="artifact.html" sandbox="allow-scripts" referrerpolicy="no-referrer" title="Archify 隔离交互视图" /><div v-else class="empty-state"><h3>还没有视图</h3><p>生成可分享的交互 HTML 和 JSON 源。{{ health?.archify ? '' : '需要本地服务与 Archify。' }}</p></div></div>
         </section>
 
         <aside v-if="selected && tab === 'structure' && structureTab === 'diagram'" class="detail-panel"><div class="detail-heading"><span>详情</span><span :class="['provenance', selected.provenance]">{{ selected.provenance === 'ai' ? 'AI 生成 · 待核实' : selected.provenance === 'demo' ? '示例' : '已编辑' }}</span></div><template v-if="mode === 'edit'"><label class="form-label">标题<input :key="selected.id + '-title'" :value="selected.title" @change="updateNode('title', ($event.target as HTMLInputElement).value)" /></label><label class="form-label">对象类型<select :value="selected.kind" @change="updateNode('kind', ($event.target as HTMLSelectElement).value)"><option v-for="(name, kind) in nodeKinds" :key="kind" :value="kind">{{ name }}</option></select></label><label class="form-label">依据状态<select :value="selected.certainty" aria-label="依据状态" @change="updateNode('certainty', ($event.target as HTMLSelectElement).value)"><option v-for="(name, certainty) in certaintyKinds" :key="certainty" :value="certainty">{{ name }}</option></select></label><label class="form-label">解释<textarea :key="selected.id + '-body'" :value="selected.body" rows="5" @change="updateNode('body', ($event.target as HTMLTextAreaElement).value)" /></label><label class="form-label">例子<textarea :key="selected.id + '-example'" :value="selected.example" rows="3" @change="updateNode('example', ($event.target as HTMLTextAreaElement).value)" /></label><label class="form-label">常见误区<textarea :key="selected.id + '-pitfall'" :value="selected.pitfall" rows="3" @change="updateNode('pitfall', ($event.target as HTMLTextAreaElement).value)" /></label><label v-if="current.template === 'product' || selected.kind === 'requirement'" class="form-label">验收条件 / 待确认项<textarea :key="selected.id + '-acceptance'" :value="selected.acceptance" rows="3" @change="updateNode('acceptance', ($event.target as HTMLTextAreaElement).value)" /></label></template><template v-else><span class="object-type">{{ nodeKinds[selected.kind] }}<span :class="['certainty-chip', selected.certainty]">{{ certaintyKinds[selected.certainty] }}</span></span><h2>{{ selected.title }}</h2><p class="detail-body prose">{{ selected.body || '暂无解释。' }}</p><div v-if="selected.example" class="example-box"><span>例子</span><p class="prose">{{ selected.example }}</p></div><div v-if="selected.pitfall" class="detail-caution"><strong>常见误区</strong><p>{{ selected.pitfall }}</p></div><div v-if="selected.acceptance" class="acceptance-box"><h3>验收条件</h3><p class="prose">{{ selected.acceptance }}</p></div></template>
